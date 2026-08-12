@@ -3407,18 +3407,19 @@ Csb...
          nodele(nm2)=nodele(nm2)+1
          nodele(nm3)=nodele(nm3)+1
          areaele=ncele*areas(ie)/2.d0
-         totalarea(nm1)=totalarea(nm1)+areaele
-         totalarea(nm2)=totalarea(nm2)+areaele
-         totalarea(nm3)=totalarea(nm3)+areaele
+         totalArea(nm1)=totalArea(nm1)+areaele
+         totalArea(nm2)=totalArea(nm2)+areaele
+         totalArea(nm3)=totalArea(nm3)+areaele
       end do
 
       ! cms 11/20/25 updated this section:
       ! Added computation for the area reciprocal
+      ! landlocked nodes already fixed before subroutine is called
       ! Note: legacy code incorrectly divided by mju in momentum
       ! (instead of totalarea), therefore must make sure mju is non-zero
       ! after the areas are computed. Does this impact any other logic
-      ! that uses mju values in newer code?? - if not can remove when
-      ! the legacy code option is removed.
+      ! that uses mju values in newer code?? - if not can remove the
+      ! reset when the legacy code option is removed.
       do i=1,np
          if(mju(i).eq.0) then
             mju(i)=1  ! may be used in momentum
@@ -3464,8 +3465,7 @@ Csb...
 !>                              CURRENTLY NOT USED
 !>
 !> @todo Add logical test to see if either divByTotalArea variable is
-!>       needed. Think about how to allocate and assign - may need
-!>       to add separate subroutines for totalAreaCalc instead.
+!>       needed. Think about how to allocate and assign.
 !>       NOTE: need to trace mju usage throughout code, does setting
 !>       mju=1 instead of 0 affect any of the logical tests that use mju
 !>       in other modules?
@@ -3484,8 +3484,7 @@ Csb...
 
       ! initialize values (cms 11/20/25: added explicit array bounds)
       mju(1:np)=0
-      nodele(1:np)=0
-      totalarea(1:np)=0.d0
+      totalArea(1:np)=0.d0
       divByTotalArea0(1:np)=0.d0
       !divByTotalArea1(1:np)=0.d0  ! NOT USED YET
 
@@ -3499,9 +3498,9 @@ Csb...
          mju(nm2)=mju(nm2)+ncele
          mju(nm3)=mju(nm3)+ncele
          areaele=ncele*areas(ie)/2.d0
-         totalarea(nm1)=totalarea(nm1)+areaele
-         totalarea(nm2)=totalarea(nm2)+areaele
-         totalarea(nm3)=totalarea(nm3)+areaele
+         totalArea(nm1)=totalArea(nm1)+areaele
+         totalArea(nm2)=totalArea(nm2)+areaele
+         totalArea(nm3)=totalArea(nm3)+areaele
       end do
 
       ! cms 11/20/25 updated this section:

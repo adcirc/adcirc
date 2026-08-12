@@ -1448,10 +1448,10 @@ C     Originally added in v51,v53, v55 but never merged into main code
 
       !compute the wetted elements and areas around each node
       call totalAreaInit()
-      !cms v5#: cannot start the hydrology forcing until divByArea is
-      !updated in totalAreaInit. Moved from adcirc_init since call was
-      !after cold/hot start was initialized. Results used by many
-      !modules, so do not put inside useInteriorHydrology test
+      !cms v56# cannot start the hydrology forcing until divByArea is
+      !updated. Moved from adcirc_init since call was after cold/hot
+      !start was initialized. Results used by many modules, so do
+      !not put inside useInteriorHydrology test
       IF (useInteriorHydrology) THEN
          call hotstartInteriorHydrology(timeloc)
       END IF
