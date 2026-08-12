@@ -1431,7 +1431,7 @@ contains
 !    output:: vall(:) = allreduce sum v
 !---------------------------------------------------------------------
       subroutine msg_rvec_allreduce_sum( v, vall, n )
-        use mpi_f08, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM, MPI_DOUBLE_PRECISION
+        use mpi_f08, only: MPI_ALLREDUCE, MPI_SUM, MPI_DOUBLE_PRECISION
         use GLOBAL, only: COMM
         use mod_logging, only: t_log_scope, init_log_scope, allMessage
 

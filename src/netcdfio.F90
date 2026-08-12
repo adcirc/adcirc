@@ -8086,7 +8086,7 @@ contains
 !     jgf49.17.02 Reads data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstart(lun, timeLoc)
-      use SIZES, only: globaldir, mnproc, myproc
+      use SIZES, only: globaldir, mnproc
       use GLOBAL, only: OutputDataDescript_t, imhs, iths, nscoue, &
                         nscouv, nscouc, nscoum, nscouge, nscougv, nscougc, &
                         nscougw, ETA1, ETA2, EtaDisc, &
@@ -8845,7 +8845,6 @@ contains
 !-----------------------------------------------------------------------
    subroutine mapFullDomainToSubdomain(ncid, fd_array_size, &
                                        data_id, subdomain_reals, subdomain_ints )
-      USE SIZES, ONLY : inputDir, globalDir, myproc
                          
       implicit none
       integer, intent(in) :: ncid ! file id to pull data from

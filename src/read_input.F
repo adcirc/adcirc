@@ -985,7 +985,7 @@ C...  tidal potential control namelist
       call logMessage(ECHO,trim(scratchMessage)) 
       write(scratchMessage,*) "sal_use_direct_sh=", sal_use_direct_sh
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*),"sal_use_cache_blocking=", sal_use_cache_blocking
+      write(scratchMessage,*) "sal_use_cache_blocking=", sal_use_cache_blocking
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "nSHOrder=", nSHOrder
       call logMessage(ECHO,trim(scratchMessage))

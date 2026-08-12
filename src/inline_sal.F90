@@ -81,7 +81,7 @@ MODULE MOD_INLINE_SAL
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff 
     real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn                 
-    real(kind=RKIND), private, dimension(:), allocatable :: LoveSalScaling, LovLoadScaling
+    real(kind=RKIND), private, dimension(:), allocatable :: LoveSalScaling !, LoveLoadScaling
 
     real(kind=RKIND), private, dimension(:), allocatable :: lonCell
     real(kind=RKIND), private, dimension(:), allocatable :: sinLatCell, cosLatCell, dASc ! dASc - intended for dA = dlon dlat 
@@ -95,7 +95,7 @@ MODULE MOD_INLINE_SAL
     real(kind=RKIND), private, dimension(:,:), allocatable :: Snm_local_reproSum, SnmRe_local_reproSum, SnmIm_local_reproSum
 
     real(kind=RKIND), private, dimension(:), allocatable :: sshSmoothed
-    real(kind=RKIND), private, dimension(:), pointer :: coastalSmoothingFactor
+    ! real(kind=RKIND), private, dimension(:), pointer :: coastalSmoothingFactor
 
     integer, private :: lmax
     integer, private :: nBlocks, nPoints
@@ -171,7 +171,7 @@ CONTAINS
       if ( this%use_inline_sal ) then
         select case( this%inlineSALMethod )
         case ('SH','sh','sH','Sh')
-          if ( this%use_direct_shtns_self_attraction_loading == .FALSE. ) then
+          if ( this%use_direct_shtns_self_attraction_loading .eqv. .FALSE. ) then
              this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
           endif
 
@@ -186,7 +186,7 @@ CONTAINS
       endif 
 
 #ifndef NONADC
-      this%saldtinc = salinc*dtdp ;  
+      this%saldtinc = REAL(salinc,8)*dtdp ;  
 #endif     
       this%sal_init = .true. ;
 
@@ -342,7 +342,7 @@ CONTAINS
       real(8), intent(in) :: timeloc ! ADCICR pass timeloc = t^{n+1}
       
       !
-      real (8):: saltimeloc, ts(3), num, den, tn
+      real (8):: saltimeloc, tn
 
 
       if ( .not. ssh_inline_sal%use_inline_sal ) then
@@ -434,7 +434,7 @@ CONTAINS
       real (kind=RKIND), dimension(:):: ssh_sal, ssh
     
       ! local !
-      INTEGER:: ii, jj
+      INTEGER:: ii !, jj
 
       ssh_sal = 0.D0 ;
       if ( this%use_inline_sal ) then 
@@ -453,7 +453,7 @@ CONTAINS
                 sshSmoothed(ii) = 0.D0 
              endif
 
-             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
+             sshSmoothed(ii) = REAL(wdnodecode(ii),8)*sshSmoothed(ii) ;        
           end if
           !
         end do
@@ -480,7 +480,7 @@ CONTAINS
       real (kind=RKIND):: ssh_sal( nnode ) ; 
      
       ! local !
-      INTEGER:: ii, jj
+      INTEGER:: ii !, jj
       
       ssh_sal = 0.D0 ;
       if ( this%use_inline_sal ) then 
@@ -498,7 +498,7 @@ CONTAINS
                 sshSmoothed(ii) = 0.D0 
              endif
              !
-             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
+             sshSmoothed(ii) = REAL(wdnodecode(ii),8)*sshSmoothed(ii) ;        
           end if
           !
         end do
@@ -524,7 +524,8 @@ CONTAINS
     end function salAP_reduce_factor        
 
 
-#endif  ! NONADC
+#endif 
+! NONADC
 
     !
     ! initalize private data in this module !
@@ -610,23 +611,23 @@ CONTAINS
     contains 
 
       ! will move this to mesh.F
-      function getarea( x, y ) result( dA )
-        implicit none 
+      !function getarea( x, y ) result( dA )
+      !  implicit none 
   
-        REAL (8):: x(:), y(:), dA
+      !  REAL (8):: x(:), y(:), dA
   
-        REAL (8):: x2mx1, x3mx2, x1mx3, y2my1, y3my2, y1my3  
+      !  REAL (8):: x2mx1, x3mx2, x1mx3, y2my1, y3my2, y1my3  
   
-        X2mX1 = (X(2) - X(1));
-        X3mX2 = (X(3) - X(2));
-        X1mX3 = (X(1) - X(3));
-        Y2mY1 = (Y(2) - Y(1));
-        Y3mY2 = (Y(3) - Y(2));
-        Y1mY3 = (Y(1) - Y(3));
+      !  X2mX1 = (X(2) - X(1));
+      !  X3mX2 = (X(3) - X(2));
+      !  X1mX3 = (X(1) - X(3));
+      !  Y2mY1 = (Y(2) - Y(1));
+      !  Y3mY2 = (Y(3) - Y(2));
+      !  Y1mY3 = (Y(1) - Y(3));
   
-        dA=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
-        
-      end function getarea
+      !  dA=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
+      !  
+      !end function getarea
  
       ! Area of spherical trangle.
       ! 
@@ -707,58 +708,6 @@ CONTAINS
 
       end function getSphericaldA1
   
-
-      ! x - lon in rad
-      ! y - lat in rad
-      function getSphericaldA( x, y ) result( dA )
-        implicit none 
-  
-        REAL (8):: x(:), y(:), dA
-  
-        REAL(8):: xv(3), yv(3), zv(3)
-        REAL(8):: avec(3), bvec(3), cvec(3), axb(3) 
-        REAL(8):: ap, bp, cp 
-        REAL(8):: A, B, C
-  
-        xv = cos( y )*cos( x ) ; 
-        yv = cos( y )*sin( x ) ; 
-        zv = sin( y ) ; 
-  
-        ! vector 
-        avec = (/ xv(1), yv(1), zv(1) /) ; ! ov1
-        bvec = (/ xv(2), yv(2), zv(2) /) ; ! ov2
-        cvec = (/ xv(3), yv(3), zv(3) /) ; ! ov3
-  
-        ! 1, Find arclength of the great circle
-        !%  use arccosine of the dot product
-        !%  
-        ! cp = acos( sum(avec*bvec) ) ;
-        ! bp = acos( sum(avec*cvec) ) ;
-        ! ap = acos( sum(bvec*cvec) ) ;
-  
-        !% Suposed to be well conditioned for all angles
-        axb = cross_product( avec, bvec ) ; 
-        cp = atan( sqrt(sum(axb*axb))/sum(avec*bvec) ) ;
-  
-        axb = cross_product( avec, cvec ) ; 
-        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ; 
-  
-        axb = cross_product( bvec, cvec ) ; 
-        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ; 
-  
-        ! 2. Find internal angle 
-        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ; 
-        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ; 
-        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;  
-  
-        A = acos( A ) ; 
-        B = acos( B ) ;
-        C = acos( C ) ; 
-  
-        ! 3. Return area
-        dA = A + B + C - pii ;     
-      end function
-
       function cross_product( avec, bvec ) result( axb )
          implicit none
   
@@ -843,10 +792,10 @@ CONTAINS
         ! local varibles
         integer :: iCell
         integer :: n, m, l, blk
-        integer :: startIdx, endIdx, ii
+        integer :: startIdx, endIdx
         real (kind=RKIND) :: mFac
 
-        integer :: impierr, myproc
+        ! integer :: impierr, myproc, ii
 
         FORWARDSPHT: IF ( forward ) THEN
           !!!!!!!!!!!!!!!!!!!!!
@@ -993,7 +942,8 @@ CONTAINS
 
                   ! Sum together product of spherical harmonic functions and coefficients
                   do iCell = endIdx, startIdx, -1
-                      ssh(iCell) = ssh(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                      ssh(iCell) = ssh(iCell) + &
+                              mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                   enddo
 
                   !------------
@@ -1007,7 +957,8 @@ CONTAINS
 
                       ! Sum together product of spherical harmonic functions and coefficients
                       do iCell = endIdx, startIdx, -1
-                          ssh(iCell) = ssh(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                          ssh(iCell) = ssh(iCell) + &
+                                  mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                       enddo
 
                   endif
@@ -1030,7 +981,8 @@ CONTAINS
 
                       ! Sum together product of spherical harmonic functions and coefficients
                       do iCell = endIdx, startIdx, -1
-                          ssh(iCell) = ssh(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                          ssh(iCell) = ssh(iCell) + &
+                                  mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                       enddo
 
                   enddo ! n loop
@@ -1060,6 +1012,8 @@ CONTAINS
 
 #ifdef CMPI
                   efactor = merge(  1.0D0, 0.0D0, elemask(ie) > 0 ) ;  ! exclude elements with elemask(ie) < 0  
+#else
+                  efactor = 1.D0 + 0.D0*REAL(elemask(ie),8) ; 
 #endif
       
                   SnmRe_local(l) = SnmRe_local(l) + onethird*sphtRe(ipoint)*dASc(ie)*efactor ;
@@ -1259,7 +1213,7 @@ CONTAINS
 
         !
         ! local varibles
-        integer :: iCell, ii
+        integer :: iCell !, ii
         integer :: n, m, l, blk
         integer :: startIdx, endIdx
         real (kind=RKIND) :: mFac, tbeg, tend
@@ -1301,8 +1255,10 @@ CONTAINS
                ! Compute local integral contribution
                if ( use_direct_shtns_self_attraction_loading_bfb ) then
                  do iCell = endIdx, startIdx, -1
-                    SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                    SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                    SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + &
+                            sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                    SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + &
+                            sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                  enddo
                else
                  do iCell = endIdx, startIdx, -1
@@ -1323,8 +1279,10 @@ CONTAINS
                    ! Compute local integral contribution
                    if ( use_direct_shtns_self_attraction_loading_bfb ) then
                      do iCell = endIdx, startIdx, -1
-                         SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                         SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                         SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + &
+                                 sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                         SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + &
+                                 sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                      enddo
                    else
                      do iCell = endIdx, startIdx, -1
@@ -1354,8 +1312,10 @@ CONTAINS
                    ! Compute local integral contribution
                    if ( use_direct_shtns_self_attraction_loading_bfb ) then
                      do iCell = endIdx, startIdx, -1
-                         SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                         SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                         SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + &
+                                 sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                         SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + &
+                                 sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                      enddo
                    else
                      do iCell = endIdx, startIdx, -1
@@ -1447,7 +1407,8 @@ CONTAINS
 
                 ! Sum together product of spherical harmonic functions and coefficients
                 do iCell = endIdx, startIdx, -1
-                    ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                    ssh_sal(iCell) = ssh_sal(iCell) + &
+                            mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                 enddo
 
                 !------------
@@ -1461,7 +1422,8 @@ CONTAINS
 
                     ! Sum together product of spherical harmonic functions and coefficients
                     do iCell = endIdx, startIdx, -1
-                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                        ssh_sal(iCell) = ssh_sal(iCell) + &
+                                mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
 
                 endif
@@ -1484,7 +1446,8 @@ CONTAINS
 
                     ! Sum together product of spherical harmonic functions and coefficients
                     do iCell = endIdx, startIdx, -1
-                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                        ssh_sal(iCell) = ssh_sal(iCell) + &
+                                mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
 
                 enddo ! n loop
@@ -1655,8 +1618,8 @@ CONTAINS
        real(kind=RKIND), dimension(:), intent(inout) :: pmn
 
        ! local
-       integer :: iCell, i
-       real(kind=RKIND) :: sqrt3
+       integer :: iCell !, i
+       ! real(kind=RKIND) :: sqrt3
 
        l = SHOrderDegreeToIndex(n,m)
 
