@@ -193,7 +193,7 @@
      &    ,idumy,dumy1,dumy2
       use messenger
 #endif
-      use mesh, only : ne, np, nm, dp, totalArea, nm, x, y,
+      use mesh, only : ne, np, nm, dp, nm, x, y, totalArea,
      &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain,
      &   neitab, nneigh, totalAreaUpdate
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
@@ -1421,6 +1421,7 @@ C...ACB pattern
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob()
 
          ! Message-Passing to update nnodecode at ghost nodes
+         ! cms: may need to add divByTotalArea here
 #ifdef CMPI
          CALL UPDATEI(nnodecode,IDUMY,1)
          CALL UPDATER(TotalArea,DUMY1,DUMY2,1)

@@ -1164,10 +1164,7 @@ c...
 !> @details Sets value of nnodecode at cold start by checking for
 !>          landlocked nodes: must be connected to at least one
 !>          functioning  element. The values of nnodecode are then
-!>          copied to the nodecode array at the end of the subroutine.
-!>          Note: this occurred in the call to totalAreaCalc from
-!>          adcirc_init previously, but was moved here (cms 11/20/25)
-!>          to allow for reuse of the totalAreaCalc subroutine.
+!>          copied to the nodecode array in call to totalAreaInit().
 !>
 !>          Also computes the initial water surface elevation after
 !>          checking for geoid offsets and River_et_WSE nodal
@@ -1184,7 +1181,7 @@ c...
       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
-      use global, only : nodecode, nnodecode, noff, h0, nolifa,
+      use global, only : nnodecode, noff, h0, nolifa,
      &   eta1, eta2, EtaDisc, River_above_MSL
       use mod_logging, only : logMessage, allMessage, t_log_scope,
      &   init_log_scope, DEBUG, WARNING, INFO, ERROR
