@@ -1,15 +1,19 @@
 
 module dg_integration
-   use sizes, only: MNE
+   use sizes, only: MNE, myproc
    use NodalAttributes, only: GeoidOffset, LoadGeoidOffset
-   use global, only: noff, nodecode, uu1, vv1, qtime1
+   use global, only: noff, nodecode, uu1, vv1, qtime1, uu2, vv2, dtdp
    use mesh, only: NM
    use DG, only: ZE, RHS_ZE, NEDSD, NEDEL, ATVD, BTVD, DTVD, NEEDN, QNPH_DG, QNAM_DG, &
                  NFEDN, WDFLG, COSNX, SINNX, XLEN, MAX_BOA_DT, neled, hb, nedno, u_modal, &
                  v_modal, niedn, phi_corner, efa_dg, emo_dg, nfeds, pa, dofh, needs, edgeq, xegp, wegp, &
                  m_inv, phi_edge, phi_area, xfac, yfac, bathed, sfaced, negp, bath, srfac, ncele, nagp, &
-                 bath, dbathdx, dbathdy, sfac_elem, nrk, leq, nieds, nleq, prep_DG
+                 bath, dbathdx, dbathdy, sfac_elem, nrk, leq, nieds, nleq, prep_DG, nodal_to_modal
    use ADC_CONSTANTS, only: G
+#ifdef CMPI
+   use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_Barrier, MPI_Abort, MPI_Finalize, &
+        MPI_COMM_WORLD
+#endif
 
    implicit none
 
@@ -32,15 +36,17 @@ contains
 #else
       use GLOBAL, only: DTDP, STATIM, RampExtFlux, NRAMP, DRampExtFlux, &
                         DRAMP, NFFR, NBFR, FTIMINC, QNIN1, QNIN2, &
-                        ESBIN1, ESBIN2, ETA2, ETA1, noff
+                        ESBIN1, ESBIN2, ETA2, ETA1, noff, nodecode
 #endif
-      use SIZES, only: MNE
+      use SIZES, only: MNE, mnp
+      use DG, only : ze, rhs_ze
       use BOUNDARIES, only: NVEL, LBCODEI, NFLUXF, NOPE, NETA, NBD
       use GWCE, only: ETIME1, ETIME2, ETIMINC
 #ifdef CMPI
       use MESSENGER_ELEM, only: updater_elem_mod
       use messenger, only: updateR, updatei
 #endif
+      use mesh, only: DP
 
       implicit none
       integer, intent(in) :: IT
@@ -60,26 +66,36 @@ contains
 
       eta1 = eta2
 
-      call projectMomentum()
-      call positive_depth()
+      do i = 1,mnp
+         if (isnan(uu1(i)) .or. isnan(vv1(i))) then
 #ifdef CMPI
-      call UPDATER(UU1, VV1, DUMY2, 2)
-      call UPDATER_elem_mod(ze, ze, ze, 1, 1)
+            write (*, *) 'PROC ', MYPROC, ' IS ABORTING, NAN VEL at timestep ', it
+            call MPI_ABORT(MPI_COMM_WORLD, MYPROC)
+#else
+            print *, "nan in velocity at timestep ", it
+            stop
 #endif
-      call update_ncele()
-      WDFLG = noff
+         endif
+      enddo
 
-#ifndef NDEBUG
-      call check_bathy(IT)
-      call check_element_depth(IT)
-      call check_edge_depth(IT)
+#ifdef CMPI
+      !call UPDATER(UU1, VV1, DUMY2, 2)
+      !call UPDATER_elem_mod(ze, ze, ze, 1, 1)
 #endif
+      call projectMomentum()
+      !call update_ncele()
+
 
 !.....Begin RK time stepper
 
-      timestepper = 1
       do IRK = 1, NRK
 
+         call positive_depth(it, irk)
+#ifndef NDEBUG
+      call check_bathy(IT, irk)
+      call check_element_depth(IT, irk)
+      call check_edge_depth(IT, irk)
+#endif
          TIMEDG = TIME_A - DTDP
 
 !.....Compute the ramping
@@ -197,10 +213,12 @@ contains
       call write_results()
 
 #ifdef CMPI
-      call UPDATER(ETA2, DUMY1, DUMY2, 1)
+      call UPDATER(ETA2, uu1, vv1, 3)
+      !CALL UPDATER(UU2,VV2,DUMY1,2)
 #endif
 
       call computeOceanPressure(timeh, .false.)
+      call nodal_to_modal(eta2, ze(:,:,1))
 
    end subroutine DG_HYDRO_TIMESTEP
 
@@ -362,7 +380,7 @@ contains
             integer, intent(in) :: IRK
       !! Current RK stage
 
-            real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in
+            real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in, U_T
             real(sz) :: sfac_in, hb_in, nx, ny
             integer :: el_in, el_ex, el
             integer :: n1, n2
@@ -458,11 +476,29 @@ contains
 !.....Check if the flux is large enough to dry up the elements
 !.....1.01D0 is a safty factor.
 
-                     if ((1.01d0*F_HAT*XLEN_EL_IN*MAX_BOA_DT(IRK) >= MASS_EL_IN) &
-                         .or. (1.01d0*F_HAT*XLEN_EL_EX*MAX_BOA_DT(IRK)*(-1.d0) >= &
+                     if ((1.01d0*F_HAT*XLEN(GED)*DTDP >= MASS_EL_IN) &
+                         .or. (1.01d0*F_HAT*XLEN(GED)*DTDP*(-1.d0) >= &
                                MASS_EL_EX)) then
-
+#if 0
+#ifdef CMPI
+                       write (*, *) 'PROC ', MYPROC, ' IS ABORTING DUE TO MASS VIOLATION'
+                       call MPI_ABORT(MPI_COMM_WORLD, MYPROC)
+#else
+                       print *, 'ERROR: Mass violation at global edge ', ged
+                       stop
+#endif
+#else
+                              !uu1(n1) = 0.d0
+                              !uu1(n2) = 0.d0
+                              !vv1(n1) = 0.d0
+                              !vv1(n2) = 0.d0
+                     if (1.01d0*F_HAT*XLEN(GED)*DTDP >= MASS_EL_IN) then
+                       noff(el_in) = 0
+                      else
+                        noff(el_ex) = 0
+                      endif
                         cycle
+#endif
                      end if
 
 !........Check to make sure mass flux is not coming from a dry element
@@ -473,6 +509,16 @@ contains
                            if (f_hat > 0) then
 ! flux going from the dry element (in)
 ! on the wet side (ex): reflect boundary
+                              uu1(n1) = 0.d0
+                              uu1(n2) = 0.d0
+                              vv1(n1) = 0.d0
+                              vv1(n2) = 0.d0
+                             ! U_T = uu2(n1)*TX + vv2(n1)*TY
+                             ! uu1(n1) = U_T*TX
+                             ! vv1(n1) = U_T*TY
+                             ! U_T = uu2(n2)*TX + vv2(n2)*TY
+                             ! uu1(n2) = U_T*TX
+                             ! vv1(n2) = U_T*TY
                               cycle
                            end if
 
@@ -482,6 +528,16 @@ contains
                            if (f_hat < 0) then
 ! flux comming from dry size (ex)
 ! on the wet side (in): reflect boundary
+                              uu1(n1) = 0.d0
+                              uu1(n2) = 0.d0
+                              vv1(n1) = 0.d0
+                              vv1(n2) = 0.d0
+                             ! U_T = uu1(n1)*TX + vv1(n1)*TY
+                             ! uu1(n1) = U_T*TX
+                             ! vv1(n1) = U_T*TY
+                             ! U_T = uu1(n2)*TX + vv1(n2)*TY
+                             ! uu1(n2) = U_T*TX
+                             ! vv1(n2) = U_T*TY
                               cycle
                            end if
                         end if
@@ -696,9 +752,9 @@ contains
                      HB_EX = HB_IN
                      SFAC_EX = SFAC_IN
 
-!$$$            IF (LoadGeoidOffset) then
-!$$$               ZE_EX = ZE_EX + .5*(GeoidOffset(N1)+GeoidOffset(N2))
-!$$$            endif
+                     IF (LoadGeoidOffset) then
+                        ZE_EX = ZE_EX + .5*(GeoidOffset(N1)+GeoidOffset(N2))
+                     endif
 
                      ! Eirik's fix
                      if ((ZE_EX*real(IFNLFA, 8) + HB_EX) <= 0.d0) then
@@ -740,20 +796,66 @@ contains
 
 !.....Use appropriate modules
 
-            use GLOBAL, only: etamax, eta2
-            use MESH, only: NM, AREAS
+            use GLOBAL, only: etamax, eta2, h0
+            use MESH, only: NM, AREAS, dp
             use sizes, only: MNP
+            use dg, only : el_count, eletab, ze, hb
 
-            integer ::   kk, i, n1, n2, n3
-            real(sz) ::  ze1, ze2, ze3
-            real(sz) :: node_area(MNP), node_ze(MNP)
+            integer ::   kk, i, n1, n2, n3, no_nbors, nbor_el, k, j
+            real(sz) ::  ze1, ze2, ze3, ze_dg, area_sum, area, depth
+            real(sz) :: node_area(MNP), node_ze(MNP), hb_dg
+#if 0
+         DO I = 1,MNP
+            NO_NBORS = EL_COUNT(I)
+            AREA_SUM = 0
 
+            nbor_loop1: DO J = 1,NO_NBORS
+               NBOR_EL = ELETAB(I,1+J)
+
+               !IF(WDFLG(NBOR_EL).EQ.0) CYCLE  ! DON'T COUNT DRY ELEMENTS  sb 02/26/07
+
+               AREA = 0.5*AREAS(NBOR_EL)
+               AREA_SUM = AREA_SUM + AREA
+
+            enddo nbor_loop1
+
+
+            ETA2(I) = 0.0
+            nbor_loop2: DO J = 1,NO_NBORS
+               NBOR_EL = ELETAB(I,1+J)
+
+            !IF(WDFLG(NBOR_EL).EQ.0) CYCLE  ! DON'T COUNT DRY ELEMENTS  sb 02/26/07
+
+            ! Find the corner of element J coresponding to node I
+            !K = findloc(NM(NBOR_EL,:), value=I, dim=1)
+               do K = 1,3
+                  if (NM(NBOR_EL,K) .eq. I) exit
+               end do
+
+            ZE_DG = ze(1,NBOR_EL,1)
+            HB_DG = hb(1,NBOR_EL,1)
+
+            DO KK = 2,DOFH
+               ZE_DG = ZE_DG+PHI_CORNER(KK,K,1)*ze(KK,NBOR_EL,1)
+               HB_DG = HB_DG+PHI_CORNER(KK,K,1)*hb(KK,NBOR_EL,1)
+            ENDDO
+
+
+            AREA = 0.50*AREAS(NBOR_EL)/AREA_SUM
+            DEPTH = ZE_DG + HB_DG
+            ETA2(I) = ETA2(I) + AREA*ZE_DG
+
+            if (etamax(i).lt.eta2(i)) etamax(i)=eta2(i)
+          ENDDO nbor_loop2
+       ENDDO
+#else
 !.....Transform from modal coordinates to nodal coordinates and average
 !.....to single nodal values
             node_area = 0.d0
             node_ze = 0.d0
             do I = 1, MNE
-               if (ncele(I) == 1) then
+               !if (.true.) then
+               if (NOFF(I) == 1) then
                   N1 = NM(I, 1)
                   N2 = NM(I, 2)
                   N3 = NM(I, 3)
@@ -779,14 +881,20 @@ contains
 
 !$omp simd
             do I = 1, MNP
-               if (node_area(i) > 0) then
+               if ((node_area(i) > 0) ) then
                   eta2(i) = node_ze(i)/node_area(i)
                else
-                  eta2(i) = 0.d0
+                  eta2(i) = H0 - dp(i)
+                  nodecode(i) = 0
                end if
                etamax(i) = max(etamax(i), eta2(i))
+               if (eta2(i) + dp(i) > h0 + 1e-5) then
+                  nodecode(i) = 1
+               else
+                  nodecode(i) = 0
+               endif
             end do
-
+#endif
          end subroutine WRITE_RESULTS
 
          subroutine projectMomentum()
@@ -806,13 +914,13 @@ contains
                N2 = NM(J, 2)
                N3 = NM(J, 3)
 
-               u1 = UU2(N1)
-               u2 = UU2(N2)
-               u3 = UU2(N3)
+               u1 = UU1(N1)
+               u2 = UU1(N2)
+               u3 = UU1(N3)
 
-               v1 = VV2(N1)
-               v2 = VV2(N2)
-               v3 = VV2(N3)
+               v1 = VV1(N1)
+               v2 = VV1(N2)
+               v3 = VV1(N3)
 
                U_modal(1, J) = (1.d0/3.d0*(u1 + u2 + u3))
                U_modal(2, J) = (-1.d0/6.d0*(u1 + u2) + 1.d0/3.d0*u3)
@@ -925,7 +1033,44 @@ contains
 
          end subroutine computeOceanPressure
 
-         subroutine positive_depth()
+         subroutine adjust_depth()
+            use global, only: NOFF, nodecode, uu1, vv1
+            use global, only: H0
+            use mesh, only: NM, DP
+            use sizes, only: MNE
+
+            implicit none
+
+           integer :: j, k, kk
+           real(sz) :: zevertex(3), depth(3)
+
+           do j = 1,MNE
+               zevertex = 0.d0
+
+               do Kk = 1, 3
+                  ZEVERTEX(1) = ZEVERTEX(1) + PHI_CORNER(KK, 1, 1)*ZE(kk, j, 1)
+                  ZEVERTEX(2) = ZEVERTEX(2) + PHI_CORNER(KK, 2, 1)*ZE(kk, j, 1)
+                  ZEVERTEX(3) = ZEVERTEX(3) + PHI_CORNER(KK, 3, 1)*ZE(kk, j, 1)
+               end do
+
+               do k = 1, 3
+                  depth(k) = zevertex(k) + DP(NM(j, k))
+                  if (depth(k) < (H0-1e6)) then
+                     if (abs(H0 - depth(k)) < 1d-2) then
+                        zevertex(k) = H0 + 0.1d0 - dp(nm(j,k))
+                     endif
+                  endif
+               end do
+! Reproject vertex values into DG modes
+               ZE(1, J, 1) = 1.d0/3.d0*(zevertex(1) + zevertex(2) + zevertex(3))
+               ZE(2, J, 1) = -1.d0/6.d0*(zevertex(1) + zevertex(2)) + 1.d0/3.d0*zevertex(3)
+               ZE(3, J, 1) = -0.5d0*zevertex(1) + 0.5d0*zevertex(2)
+            enddo
+
+         end subroutine adjust_depth
+
+
+         subroutine positive_depth(it, irk)
 !! Enforce ZE to have positive depth using the algorithm in
 !! Shintaro's 2008 paper. There, it is referred to as the operator \(M\Pi_h\).
 
@@ -936,19 +1081,23 @@ contains
 
             implicit none
 
-            integer :: j, kk, k, m1, m2, m3, inds(3)
-            real(sz) :: zevertex(3), depth(3), ze_hat(3), depth_avg, depth2
+            integer, intent(in) :: irk, it
+            integer :: j, kk, k, m1, m2, m3, inds(3), npos
+            real(sz) :: zevertex(3), depth(3), ze_hat(3), depth_avg, depth_hat(3)
             real(sz) :: H1
+            real(sz), parameter :: SMALL = 1d-5
+            real(sz) :: deltaU, deltaV, zeta_Hmax, hmin
 
-            H1 = 2.d0*H0
+            !call adjust_depth()
+            H1 = H0
 
             do j = 1, MNE
                zevertex = 0.d0
 
                do KK = 1, 3
-                  ZEVERTEX(1) = ZEVERTEX(1) + PHI_CORNER(KK, 1, 1)*ZE(kk, j, 1)
-                  ZEVERTEX(2) = ZEVERTEX(2) + PHI_CORNER(KK, 2, 1)*ZE(kk, j, 1)
-                  ZEVERTEX(3) = ZEVERTEX(3) + PHI_CORNER(KK, 3, 1)*ZE(kk, j, 1)
+                  ZEVERTEX(1) = ZEVERTEX(1) + PHI_CORNER(KK, 1, 1)*ZE(kk, j, irk)
+                  ZEVERTEX(2) = ZEVERTEX(2) + PHI_CORNER(KK, 2, 1)*ZE(kk, j, irk)
+                  ZEVERTEX(3) = ZEVERTEX(3) + PHI_CORNER(KK, 3, 1)*ZE(kk, j, irk)
                end do
 
                do k = 1, 3
@@ -957,58 +1106,110 @@ contains
 
                depth_avg = sum(depth)/3.d0
 
-               if (all(depth > H1)) then
+               if (all(depth > H0 + SMALL)) then
                   NOFF(j) = 1
                   nodecode(NM(j, :)) = 1
                   cycle ! move on to the next element
                elseif (depth_avg < 0) then
-                  ze_hat(:) = H0 - DP(nm(j, :))
-                  NOFF(j) = 0
-                  nodecode(NM(j, :)) = 0
-                  UU1(NM(j, :)) = 0.d0
-                  VV1(NM(j, :)) = 0.d0
-               elseif (depth_avg <= H1) then
+#if 0
+#ifdef CMPI
+                  write (*, *) 'PROC ', MYPROC, ' IS ABORTING DUE TO negative depth'
+                  call MPI_ABORT(MPI_COMM_WORLD, MYPROC)
+#else
+                  print*, 'negative depth at timestep ', it, 'at elem ', j
+                  stop
+#endif
+#else
+                   ze_hat = H0 - dp(nm(j,:))
+                   noff(j) = 0
+                   uu1(nm(j,:)) = 0d0
+                   vv1(nm(j,:)) = 0d0
+#endif
+               elseif (depth_avg <= H0 + SMALL) then
 ! If mean value is less than H1, then set the whole element to that depth
                   ze_hat(:) = depth_avg - DP(nm(j, :))
-                  !if (LoadGeoidOffset) ze_hat = ze_hat + GeoidOffset(NM(j,1))
-                  !ze_hat(:) = H0*1.1 - DP(nm(j,:))
                   NOFF(j) = 0
-                  nodecode(NM(j, :)) = 0
-                  UU1(NM(j, :)) = 0.d0
-                  VV1(NM(j, :)) = 0.d0
                else
                   call sort(3, depth, inds)
                   m1 = inds(1)
                   m2 = inds(2)
                   m3 = inds(3)
-                  ze_hat(m1) = H1 - DP(nm(j, m1))
 
-                  ze_hat(m2) = max(H1, depth(2) - 0.5d0*(H1 - depth(1))) - DP(nm(j, m2))
-                  depth2 = ze_hat(m2) + dp(nm(j, m2))
+                  depth_hat(m1) = H1
+                  depth_hat(m2) = max(H1, depth(m2) - (depth_hat(m1) - depth(m1))/2.d0)
+                  depth_hat(m3) = depth(m3) - (depth_hat(m1) - depth(m1)) - (depth_hat(m2) - depth(m2))
 
-                  ze_hat(m3) = depth(3) - (H1 - depth(1)) - (depth2 - depth(2)) - DP(nm(j, m3))
-                  UU1(NM(j, :)) = 0.d0
-                  VV1(NM(j, :)) = 0.d0
+                  ze_hat = depth_hat - DP(nm(j,:))
+
+                  deltaU = 0.d0
+                  deltaV = 0.d0
+                  npos = 0
+
+                  ! Redistribute velocity
+                  do k = 1,3
+                     if (depth_hat(k) > H0 + SMALL) then ! strictly "wet" node
+                        npos = npos + 1
+                     else
+                        deltaU = deltaU + uu1(nm(j,k))
+                        deltaV = deltaV + vv1(nm(j,k))
+                     endif
+                  enddo
+
+                  do k = 1,3
+                     if (depth_hat(k) > H0 + SMALL) then ! strictly "wet" node
+                     else
+                        nodecode(nm(j,k)) = 0
+                     endif
+                  enddo
+
+                  ! wet/dry judgement
+                  ! if previously wet, remains wet
+                  ! if previously dry, use the criteria below
+                  if (NOFF(j) == 0) then
+                    zeta_Hmax = ze_hat(maxloc(depth_hat, 1))
+                    hmin = minval(dp(nm(j,:)))
+                    if (zeta_Hmax - (H0 - hmin) > SMALL) then ! dam break type
+                      NOFF(j) = 1
+                    else ! flood type
+                      NOFF(j) = 0
+                    endif
+                  endif
+
+#if 0
+                  do k = 1,3
+                     if (depth_hat(k) < H0) then
+                        print *, 'negative depth even after redistribution at it ', it
+                        print *, depth_hat(k)
+                        print *, 'm1,m2,m3: ', m1,m2,m3
+                        print *, 'old H1, H2, H3: ', depth(m1), depth(m2), depth(m3)
+                        print *, 'old H_avg = ', depth_avg
+                        print *, 'new H_avg = ', sum(depth_hat)/3.d0
+                        print *, 'H1, H2, H3: ', depth_hat(m1), depth_hat(m2), depth_hat(m3)
+                        stop
+                     endif
+                  enddo
+#endif
                end if
 
 ! Reproject vertex values into DG modes
-               ZE(1, J, 1) = 1.d0/3.d0*(ze_hat(1) + ze_hat(2) + ze_hat(3))
-               ZE(2, J, 1) = -1.d0/6.d0*(ze_hat(1) + ze_hat(2)) + 1.d0/3.d0*ze_hat(3)
-               ZE(3, J, 1) = -0.5d0*ze_hat(1) + 0.5d0*ze_hat(2)
+               ZE(1, J, irk) = 1.d0/3.d0*(ze_hat(1) + ze_hat(2) + ze_hat(3))
+               ZE(2, J, irk) = -1.d0/6.d0*(ze_hat(1) + ze_hat(2)) + 1.d0/3.d0*ze_hat(3)
+               ZE(3, J, irk) = -0.5d0*ze_hat(1) + 0.5d0*ze_hat(2)
 
             end do
+            WDFLG = NOFF
 
          end subroutine positive_depth
 
 #ifndef NDEBUG
-         subroutine check_element_depth(it)
+         subroutine check_element_depth(it, irk)
 !! Loop through elements and check if the depth at any AREA
 !! quadrature point is negative, in which case stop the program.
 
             use sizes, only: MNE
             implicit none
 
-            integer, intent(in) :: it
+            integer, intent(in) :: it, irk
             integer :: l, i, k
             real(sz) :: ze_in, hb_in, depth
 
@@ -1020,7 +1221,7 @@ contains
                      HB_IN = BATH(I, L, pa)
 
                      do k = 1, DOFH
-                        ZE_IN = ZE_IN + ZE(K, L, 1)*PHI_AREA(K, I, pa)
+                        ZE_IN = ZE_IN + ZE(K, L, irk)*PHI_AREA(K, I, pa)
                      end do
 
                      depth = ze_in + hb_in
@@ -1039,13 +1240,13 @@ contains
 
          end subroutine check_element_depth
 
-         subroutine check_edge_depth(it)
+         subroutine check_edge_depth(it, irk)
 !! Loop through internal edges and check if the depth at any EDGE
 !! quadrature point is negative, in which case stop the program.
 
             implicit none
 
-            integer, intent(in), value :: it
+            integer, intent(in), value :: it, irk
             real(sz) :: depth_in, depth_ex
             real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in
             real(sz) :: sfac_in, hb_in
@@ -1085,8 +1286,8 @@ contains
                   ZE_EX = 0d0
 
                   do K = 1, 3
-                     ZE_IN = ZE_IN + ZE(K, EL_IN, 1)*PHI_EDGE(K, GP_IN, LED_IN, pa)
-                     ZE_EX = ZE_EX + ZE(K, EL_EX, 1)*PHI_EDGE(K, GP_EX, LED_EX, pa)
+                     ZE_IN = ZE_IN + ZE(K, EL_IN, irk)*PHI_EDGE(K, GP_IN, LED_IN, pa)
+                     ZE_EX = ZE_EX + ZE(K, EL_EX, irk)*PHI_EDGE(K, GP_EX, LED_EX, pa)
                   end do
 
                   depth_in = ze_in + hb_in
@@ -1104,12 +1305,12 @@ contains
 
          end subroutine check_edge_depth
 
-         subroutine check_bathy(IT)
+         subroutine check_bathy(IT, irk)
       !! Check if the bathymetry in the DG basis matches the nodal DP
             use mesh, only: DP, NM
             implicit none
 
-            integer, value :: it
+            integer, value :: it, irk
             real(sz) :: vertex(3), dps(3)
             integer :: j, kk, i
 
@@ -1141,26 +1342,27 @@ contains
 !! Sort the input array `a` and write the corresponding indices into `is`.
             implicit none
             integer, intent(in) :: n
-            real(sz), intent(inout) :: a(n)
+            real(sz), intent(in) :: a(n)
             integer, intent(out) :: is(n)
 
             integer :: i, j
-            real(sz) :: x
+            real(sz) :: x, b(n)
 
+            b = a
             do i = 1, n
                is(i) = i
             end do
 
             do i = 2, n
-               x = a(i)
+               x = b(i)
                j = i - 1
                do while (j >= 1)
-                  if (a(j) <= x) exit
-                  a(j + 1) = a(j)
+                  if (b(j) <= x) exit
+                  b(j + 1) = b(j)
                   is(j + 1) = is(j)
                   j = j - 1
                end do
-               a(j + 1) = x
+               b(j + 1) = x
                is(j + 1) = i
             end do
          end subroutine sort
@@ -1327,7 +1529,7 @@ contains
                !$omp simd
                simd1: do i = block_start, block_end
                   jj = i - block_start + 1
-                  !IF(ncele(I).EQ.0) CYCLE ! DON'T COUNT DRY ELEMENTS  sb 02/26/07
+                  IF(noff(I).EQ.0) CYCLE ! DON'T COUNT DRY ELEMENTS  sb 02/26/07
                   N1 = NM(I, 1)
                   N2 = NM(I, 2)
                   N3 = NM(I, 3)
@@ -1411,12 +1613,12 @@ contains
                !$omp simd
                simd4: do i = block_start, block_end
                   jj = i - block_start + 1
-                  !IF(ncele(I).EQ.1) then ! DON'T COUNT DRY ELEMENTS  sb 02/26/07
+                  IF(noff(I).EQ.1) then ! DON'T COUNT DRY ELEMENTS  sb 02/26/07
 
                   ZE(2, I, IRK + 1) = -1.d0/6.d0*(ZEVERTEX(jj, 1) + ZEVERTEX(jj, 2)) &
                                       + 1.d0/3.d0*ZEVERTEX(jj, 3)
                   ZE(3, I, IRK + 1) = -.5d0*ZEVERTEX(jj, 1) + .5d0*ZEVERTEX(jj, 2)
-                  !endif
+                  endif
                end do simd4
 
             end do

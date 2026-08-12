@@ -240,8 +240,10 @@ C... SB
       REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
       REAL(8) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
       REAL(8) U1N1, U1N2, U1N3, U1Avg
+      REAL(8) U2N1, U2N2, U2N3
       REAL(8) U1AvgDU1DXA, U1AvgDV1DXA
       REAL(8) V1N1, V1N2, V1N3, V1Avg
+      REAL(8) V2N1, V2N2, V2N3
       REAL(8) V1AvgDU1DYA, V1AvgDV1DYA
       REAL(8) VelNorm, VelTan
       REAL(8) VIDBCPDX, VIDBCPDY
@@ -320,6 +322,12 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
+         U2N1=UU2(NM1)
+         U2N2=UU2(NM2)
+         U2N3=UU2(NM3)
+         V2N1=VV2(NM1)
+         V2N2=VV2(NM2)
+         V2N3=VV2(NM3)
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
@@ -390,12 +398,12 @@ C...  Compute element averaged quantities
 !...  Compute terms associated with the barotropic pressure
 !- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.         
          IF (DG_Cont) THEN
-            BTP1N1=ALPHAL(IE)*PETA1(NM1)
-            BTP2N1=ALPHAL(IE)*PETA2(NM1)
-            BTP1N2=ALPHAL(IE)*PETA1(NM2)
-            BTP2N2=ALPHAL(IE)*PETA2(NM2)
-            BTP1N3=ALPHAL(IE)*PETA1(NM3)
-            BTP2N3=ALPHAL(IE)*PETA2(NM3)
+            BTP1N1=PETA1(NM1)
+            BTP2N1=PETA2(NM1)
+            BTP1N2=PETA1(NM2)
+            BTP2N2=PETA2(NM2)
+            BTP1N3=PETA1(NM3)
+            BTP2N3=PETA2(NM3)
          ELSE
             BTP1N1=ALPHAL(IE)*ETA1(NM1)
             BTP2N1=ALPHAL(IE)*ETA2(NM1)

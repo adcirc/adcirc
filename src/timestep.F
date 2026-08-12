@@ -1256,7 +1256,7 @@ C
                KEMAX=I
             ENDIF
             VELABS=UU2(I)*UU2(I)+VV2(I)*VV2(I)
-            IF (VELABS.GT.VELMAX) THEN
+            IF ((nodecode(i).eq.1).and.(VELABS.GT.VELMAX)) THEN
                VELMAX=VELABS
                KVMAX=I
             ENDIF
@@ -1276,11 +1276,11 @@ C     the screen.
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,dp(kemax),
      &            VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,dp(kemax),VELMAX,
      &            KVMAX,MYPROC
 
             ENDIF
@@ -1288,6 +1288,7 @@ C     the screen.
      &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           5X,'WITH BATHY = ',E15.8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
      &           2X,'ON MYPROC = ',I4)
          ENDIF
@@ -1362,7 +1363,7 @@ C     output the global node number to debug the local PE fort.14s
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,dp(kemax),VELMAX,KVMAX
             ELSE
                WRITE(ScreenUnit,1992)
      &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
@@ -1371,15 +1372,17 @@ C     output the global node number to debug the local PE fort.14s
      &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           5X,'WITH BATHY = ',E15.8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,dp(kemax),VELMAX,KVMAX
+            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,DP(KEMAX),VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9, 2X,
+     &           'WITH BATHY = ', 1pE12.4E3,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
             IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)

@@ -447,7 +447,7 @@ CONTAINS
 
       use adc_constants, only: G, rad2deg
       use sizes, only: myproc, mnffr
-      USE GLOBAL, only: ftiminc, eta2, efa, emo, noff, &
+      USE GLOBAL, only: ftiminc, eta2, efa, emo, noff, h2, &
                         qnin1, qnam, qnph, qnin2, qtime1, h0, ifwind, nbfr, nffr, &
                         nstae, nstav, corif, xel, xev, yel, yev, nne, nnv,  peta1, peta2, &
                         IM, nolica, nolicat, nolifa, ihot, statim
@@ -469,7 +469,7 @@ CONTAINS
       !.....Declare local variables
       logical :: wetflag
       real(sz) :: col
-      real(sz) :: qtratio_dg
+      real(sz) :: qtratio_dg, ze_dg
 
       integer :: n1, n2, n3
       INTEGER :: II, l, P_0, DOF_0, j, k, kk, jj, i, chi,  Q, M, P, SZ2, w, III
@@ -506,7 +506,7 @@ CONTAINS
       G2ROOT = SQRT(G/2.d0)
 
       !.....Set nonlinear flags
-      if (nolica == 0 .or. nolicat == 0) then
+      if (nolicat == 0) then
          NLEQ = 0
          LEQ = 1
       else
@@ -1768,36 +1768,12 @@ CONTAINS
       ! 2/1/24 - Hot starting Only works when everything is wet
       ! ETA2, UU2, and VV2 have been read from a hotstart file
       ! after the call to HOTSTART() in adcirc.F
-      IF (IHOT /= 0) THEN
-         print *, 'Hotstarting mode'
-         DO J = 1, NE
-            N1 = NM(J, 1)
-            N2 = NM(J, 2)
-            N3 = NM(J, 3)
-            ZE(1, J, 1) = 1.D0/3.D0*(ETA2(N1) + ETA2(N2) + ETA2(N3))
-            ZE(2, J, 1) = -1.D0/6.D0*(ETA2(N1) + ETA2(N2)) + 1.D0/3.D0*ETA2(N3)
-            ZE(3, J, 1) = -0.5D0*ETA2(N1) + 0.5D0*ETA2(N2)
-         END DO
-      END IF
+      !H2 = eta2 + dp
 
       NOFF = WDFLG
       peta2 = 0.D0
       peta1 = 0.D0
 
-      if (LoadGeoidOffset) then
-         DO J = 1, NE
-            if (WDFLG(j) == 0) then
-               N1 = NM(J, 1)
-               N2 = NM(J, 2)
-               N3 = NM(J, 3)
-               ze(1, J, 1) = ze(1, J, 1) + 1.d0/3.d0*(GeoidOffset(N1) + GeoidOffset(N2) + &
-                                                      GeoidOffset(N3))
-               ze(2, J, 1) = ze(2, J, 1) + (-1.d0/6.d0*(GeoidOffset(N1) + GeoidOffset(N2)) &
-                                            + 1.d0/3.d0*GeoidOffset(N3))
-               ze(3, J, 1) = ze(3, J, 1) + (-.5d0*GeoidOffset(N1) + .5d0*GeoidOffset(N2))
-            end if
-         END DO
-      end if
    END SUBROUTINE PREP_DG
 
    SUBROUTINE CALC_NORMAL()
@@ -5501,6 +5477,7 @@ CONTAINS
          END DO
          MAX_BOA_DT(IRK) = MAX_BOA*DT
       END DO
+      print *, 'Max_boa_DT = ', max_boa_dt(1)
 
       !-----------------------------------------------------------
       !.... Compute the Runge-Kutta Chebyshev (RKC) version
@@ -5512,6 +5489,7 @@ CONTAINS
     !! Compute DG modal representation of nodal A and store result in B
 
       use mesh, only: NM
+      use global, only : noff
 
       implicit none
       real(sz), intent(in) :: A(:)
@@ -5520,6 +5498,8 @@ CONTAINS
       integer :: j, n1, n2, n3
 
       DO J = 1, MNE
+         !if (.true.) then
+         if (NOFF(J) == 1) then
          N1 = NM(J, 1)
          N2 = NM(J, 2)
          N3 = NM(J, 3)
@@ -5527,6 +5507,7 @@ CONTAINS
          B(1, J) = 1.D0/3.D0*(A(N1) + A(N2) + A(N3))
          B(2, J) = -1.D0/6.D0*(A(N1) + A(N2)) + 1.D0/3.D0*A(N3)
          B(3, J) = -0.5D0*A(N1) + 0.5D0*A(N2)
+         endif
       END DO
    end subroutine nodal_to_modal
 

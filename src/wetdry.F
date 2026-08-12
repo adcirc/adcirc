@@ -198,8 +198,9 @@ CWET...
       integer :: nwetele
       integer :: ibtype64floodplaincnt = 0
       integer :: numGreater
-      ! integer :: nmn1, nmn2, nmn3, nwetnei, nwetadj, n
+      integer :: nmn1, nmn2, nmn3, nwetnei, nwetadj, n
       integer :: cntwet, cntdry, fstwet, curwet
+      real(8) :: dpmin
   
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
@@ -1232,7 +1233,7 @@ C...sb v46.52.03
             ENDIF
          ENDDO
 
-#ifdef SB_WETDRY
+#if 0
 CWET......added by sb on 11/02/2006
 CWET...
 CWET...This section is added after we realize that it's not possible
@@ -1298,7 +1299,10 @@ CWET...
 
          ! Wetting in the DG-CG scheme
          IF (DG_CONT) THEN
-            where (eta2 + dp > 1*h0) nnodecode = 1
+            where (eta2 + dp > 1*h0+1d-5) nnodecode = 1
+
+              where (noffold == 0) noff = 0
+
          ENDIF
 C.....
 C.....Nodal Drying Criteria for the ibtype=64 weir boundary
@@ -1465,6 +1469,8 @@ CWET...
             NCCHANGE=NCCHANGE ! jgf48.4619 do nothing
          ENDIF
 #endif
+         !NOFF = NOFFOLD
+
 CWET...
 CWET...END WET/DRY SECTION - PART 6
 CWET...
