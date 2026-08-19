@@ -398,6 +398,8 @@ BC3D_MSRC = couple2baroclinic3D.F
 GL2LOC_MSRC = gl2loc_mapping.F90
 TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90 
 ITTIDE_MSRC = internaltide.F90
+# DW inline self attraction and loading
+SAL_MSRC   = inline_sal.F90
 
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
@@ -441,6 +443,7 @@ BC3D_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(BC3D_MSRC) )
 # CPB
 GL2LOC_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(GL2LOC_MSRC) )
 ITTIDE_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(ITTIDE_MSRC) )
+SAL_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(SAL_MSRC) )
 TIDE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(TIDE_MSRC) )
 NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
@@ -617,8 +620,8 @@ endif
    adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
-ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 ifeq ($(NETCDF),enable)
    ADCIRC_DEP := $(ADCIRC_DEP) $(NC_MOBJ)
    ADCSWAN_DEP := $(ADCSWAN_DEP) $(NC_MOBJ)
@@ -631,21 +634,21 @@ endif
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(TERM_MOBJ) $(BND_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(TERM_MOBJ) $(BND_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
 ifeq ($(NETCDF),enable)
-   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(NA_MOBJ) \
 	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(TIDE_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(TIDE_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
 	ar -ts $@
 else
-   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
 	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
@@ -659,7 +662,7 @@ endif
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
    padcswan :: $(O_DIR)
-   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -698,7 +701,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(TERM_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(TERM_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(SAL_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -791,6 +794,11 @@ $(O_DIR)constants.o   :  constants.F90 $(O_DIR)sizes.o
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o $(O_DIR)logging.o
 $(O_DIR)internaltide.o : internaltide.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F90 $(O_DIR)sizes.o $(O_DIR)global.o
+ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(LIBADC) $(PARALLEL_ADCIRC) padcswan))
+$(O_DIR)inline_sal.o : inline_sal.F90 $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)messenger.o
+else
+$(O_DIR)inline_sal.o : inline_sal.F90 $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)global.o $(O_DIR)mesh.o
+endif
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(LIBADC) $(PARALLEL_ADCIRC) padcswan))
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)terminate.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
@@ -805,8 +813,8 @@ endif
 $(O_DIR)logging.o     :  logging.F90
 $(O_DIR)io.o          :  io.F90 $(O_DIR)logging.o $(O_DIR)terminate.o
 
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
-$(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o $(SAL_MOBJ)
+$(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o $(SAL_MOBJ)
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 
@@ -855,7 +863,7 @@ endif
 ifeq ($(XDMF),enable)
    WRITE_OUTPUT_DEP := $(WRITE_OUTPUT_DEP) $(O_DIR)xdmfio.o
 endif
-$(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
+$(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP) $(SAL_MOBJ)
 # jgf51.21.28: made xdmf support routines into a module
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)hashtable.o   : hashtable.F90
@@ -870,9 +878,10 @@ $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
-$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
+$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ) $(SAL_MOBJ)
 $(O_DIR)transport.o   : transport.F
-$(O_DIR)timestep.o    : timestep.F
+$(O_DIR)timestep.o    : timestep.F $(SAL_MOBJ)
+$(O_DIR)hstart.o      : hstart.F $(SAL_MOBJ)
 ifeq ($(NETCDF),enable)
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else
