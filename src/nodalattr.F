@@ -317,6 +317,34 @@ C     Variables for bottom friction evaluation along VEW1D channels considering 
       REAL(8), ALLOCATABLE :: subgridBarrier(:,:)
       REAL(8), ALLOCATABLE :: subgridBarrierFriction(:)
       LOGICAL,ALLOCATABLE   :: subgridBarrierOvertopping(:)
+
+
+C BEG DW
+C--------- DW ------ for toy problem: manually setting initiaial condition
+      REAL(8), ALLOCATABLE:: eta0_usr(:)
+      REAL(8), ALLOCATABLE:: uu0_usr(:)
+      REAL(8), ALLOCATABLE:: vv0_usr(:)
+
+      LOGICAL LoadInitialEta
+      LOGICAL LoadInitialUU
+      LOGICAL LoadInitialVV
+
+      INTEGER InitialEtaNoOfVals
+      INTEGER InitialUUNoOfVals
+      INTEGER InitialVVNoOfVals
+
+      LOGICAL FoundInitialEta
+      LOGICAL FoundInitialUU
+      LOGICAL FoundInitialVV
+
+      REAL(8) InitialEtaDefVal
+      REAL(8) InitialUUDefVal
+      REAL(8) InitialVVDefVal
+
+      CHARACTER(LEN=80):: InitialEtaUnits
+      CHARACTER(LEN=80):: InitialUUUnits
+      CHARACTER(LEN=80):: InitialVVUnits
+
 C
 C------------------ For absorbing layer, DW
       REAL(8), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
@@ -517,6 +545,28 @@ C              the read_input call but now it appears after the read_input
 C              call.
 !      ESLM=0.0
       ESLC=0.0
+
+
+C
+C----------------- DW ------------------
+      LoadInitialEta = .FALSE. ;
+      LoadInitialUU = .FALSE. ;
+      LoadInitialVV = .FALSE. ;
+
+      InitialEtaNoOfVals = 1 ;
+      InitialUUNoOfVals = 1  ;
+      InitialVVNoOfVals = 1  ;
+
+      FoundInitialEta = .FALSE. ;
+      FoundInitialUU = .FALSE.  ;
+      FoundInitialVV = .FALSE.  ;
+
+      InitialEtaDefVal = 0.D0 ;
+      InitialUUDefVal = 0.D0 ;
+      InitialVVDefVal = 0.D0 ;
+C--------------------------------------
+
+
 
 C---------------- DW ------------------
       LoadAbsLayerSigma = .FALSE. ;
@@ -854,6 +904,13 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
              IF(LoadSubgridBarrier)THEN
                 SubgridBarrier = na(i)%xdmfMatrix
              ENDIF
+! DW---- for toy problem ----- 
+         CASE ("initial_eta") 
+            LoadInitialEta = .TRUE. ;  
+         CASE ("initial_uu")  
+            LoadInitialUU = .TRUE. ; 
+         CASE ("initial_vv") 
+            LoadInitialVV = .TRUE. ; 
 ! DW---- for sponge layers ---
          CASE ("sponge_generator_layer") 
             IF (LoadAbsLayerSigma) THEN
@@ -917,7 +974,10 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &    (.not.FoundOverlandReductionFactor)).or.
 !-- DW for sponge
      &   ((LoadAbsLayerSigma).and.(.not.FoundAbsLayerSigma)).or. 
-     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
+     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax)) .or. 
+     &   ((LoadInitialEta).and.(.not.FoundInitialEta)) .or.
+     &   ((LoadInitialUU).and.(.not.FoundInitialUU)) .or.
+     &   ((LoadInitialVV).and.(.not.FoundInitialVV))   ) THEN
          WRITE(scratchMessage,1111)
  1111   FORMAT('Nodal Attributes file (unit 13) does ',
      &        'not contain all the attributes listed in the ',
@@ -981,6 +1041,18 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
           ALLOCATE(subgridBarrier(NumOfNodes,SubgridBarrierNoOfVals))
           ALLOCATE(subgridBarrierOvertopping(NumOfNodes))
       ENDIF
+      !c---- DW
+      IF ( LoadInitialEta ) THEN
+         ALLOCATE(eta0_usr(NumOfNodes))
+      END IF
+      IF ( LoadInitialUU ) THEN
+         ALLOCATE(uu0_usr(NumOfNodes))
+      END IF
+      IF ( LoadInitialVV ) THEN
+         ALLOCATE(vv0_usr(NumOfNodes))
+      END IF
+
+
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -1102,6 +1174,35 @@ C 09232016 WP: Add spatially varying linear internal tide friction coefficient
             LoadSubgridBarrier = .True.
          CASE("overland_reduction_factor")
             LoadOverlandReductionFactor = .True.
+!--- beg: DW -- for toy problem ------------
+         CASE("initial_eta")
+            LoadInitialEta = .true.
+!            IF ( LoadInitialEta ) THEN
+!               CALL LoadAttrVec(eta0_usr,
+!     &              InitialEtaDefVal, NumNodesNotDefault, NScreen,
+!     &              MyProc, NAbOut)
+!            ELSE
+!               SkipDataSet = .TRUE. ;
+!           END IF
+         CASE("initial_uu")
+            LoadInitialUU = .true.      
+!            IF ( LoadInitialUU ) THEN
+!               CALL LoadAttrVec(uu0_usr,
+!     &              InitialUUDefVal, NumNodesNotDefault, NScreen,
+!     &              MyProc, NAbOut)
+!            ELSE
+!               SkipDataSet = .TRUE. ;
+!            END IF
+         CASE("initial_vv")
+            LoadInitialVV = .true.      
+!            IF ( LoadInitialVV ) THEN
+!               CALL LoadAttrVec(vv0_usr,
+!     &              InitialVVDefVal, NumNodesNotDefault, NScreen,
+!     &              MyProc, NAbOut)
+!            ELSE
+!               SkipDataSet = .TRUE. ;
+!            END IF
+!--- end: DW -- for toy problem -----------
 ! DW---- for sponge layers ---
          CASE ("sponge_generator_layer") 
             LoadAbsLayerSigma = .TRUE.
@@ -1295,6 +1396,23 @@ C 09232016 WP: Add spatially varying linear internal tide friction
             READ(13,'(A80)') SubgridBarrierUnits
             READ(13,*) SubgridBarrierNoOfVals
             READ(13,*) (SubgridBarrierDefaultValue(j),j=1,SubgridBarrierNoOfVals)
+C---- DW ---- for toy problem ------------
+         CASE("initial_eta")
+            FoundInitialEta = .TRUE. ;
+            READ(13,'(A80)') InitialEtaUnits
+            READ(13,*) InitialEtaNoOfVals
+            READ(13,*) InitialEtaDefVal
+         CASE("initial_uu")
+            FoundInitialUU = .TRUE. ;
+            READ(13,'(A80)') InitialUUUnits
+            READ(13,*) InitialUUNoOfVals
+            READ(13,*) InitialUUDefVal
+         CASE("initial_vv")
+            FoundInitialVV = .TRUE. ;
+            READ(13,'(A80)') InitialVVUnits
+            READ(13,*) InitialVVNoOfVals
+            READ(13,*) InitialVVDefVal
+C-----------------------------------------
 C---- DW ----- for sponge layer ----------
          CASE ("sponge_generator_layer")  
             FoundAbsLayerSigma = .TRUE.
@@ -1498,6 +1616,34 @@ C 09232016 WP : Spatially varying linear internal tide friction
              ELSE
                SkipDataSet = .True.
              ENDIF
+         CASE("initial_eta")
+            IF ( LoadInitialEta ) THEN
+               CALL LoadAttrVec(eta0_usr,
+     &              InitialEtaDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE. ;
+           END IF
+        CASE("initial_uu")    
+            IF ( LoadInitialUU ) THEN
+               CALL LoadAttrVec(uu0_usr,
+     &              InitialUUDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE. ;
+            END IF
+        CASE("initial_vv")   
+            IF ( LoadInitialVV ) THEN
+               CALL LoadAttrVec(vv0_usr,
+     &              InitialVVDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE. ;
+            END IF
+!--- end: DW -- for toy problem -----------
+! DW---- for sponge layers ---
+
+
 C          WP
 !------- DW ---- Absorbing layer -----------
          CASE ("sponge_generator_layer") 

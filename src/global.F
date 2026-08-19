@@ -163,6 +163,11 @@ C     for writing fulldomain hotstart files.
       REAL(8),ALLOCATABLE, TARGET :: SWAN_RSNY2_g(:)
 #endif
 
+      ! inline SAL
+      real(8), allocatable, target:: zetasaltm0_g(:)
+      real(8), allocatable, target:: zetasaltm1_g(:)
+      real(8), allocatable, target:: zetasaltm2_g(:) 
+      
       INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
@@ -400,6 +405,19 @@ C- DMW
       REAL(8),ALLOCATABLE,TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(8),ALLOCATABLE,TARGET ::   BSX1(:),BSY1(:)
       REAL(8),ALLOCATABLE ::   TIP1(:),TIP2(:)
+
+      ! For inline SAL
+      REAL(8), ALLOCATABLE, TARGET :: SAL1(:),SAL2(:) 
+      ! SAL1, SAL2  - inline SAL at previous and current step, 
+
+      ! For faciliting hotstart 
+      REAL(8), ALLOCATABLE, DIMENSION(:), TARGET :: ZETASALTM0,
+     &                                   ZETASALTM1, ZETASALTM2
+      REAL(8):: zetasaltime(3)
+      ! zetasaltm[0-2] - for storing SAL at computed time level. 
+      ! zetasaltime - time at which zetasaltm[0-2] are computed
+      !      
+                                                              
       REAL(8),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
       REAL(8),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(8),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
@@ -507,6 +525,8 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
       LOGICAL :: CAliDisp            = .FALSE.
+      LOGICAL :: CInlineSAL                = .FALSE.
+      LOGICAL :: CVariableDensityVCT = .FALSE.  
 C    kmd48.33bc  - logical statement for hot start using different time step
       ! This is .true. if the time step size of the current run is
       ! different from the time step size in the hotstart file; also
@@ -823,9 +843,12 @@ C----- DW --- periodic bc
       INTEGER, ALLOCATABLE:: IPERCONN(:,:), PERBC_IDN_MAP(:)
 C-------------------end of data declarations----------------------------------C
 
-      CONTAINS
 
-C-----------------------------------------------------------------------
+C---- DW
+      REAL (8), ALLOCATABLE:: RHRAVG(:)
+C----
+
+      CONTAINS
 
 C     ----------------------------------------------------------------
 C      F U N C T I O N   S P H E R I C A L   D I S T A N C E
@@ -961,6 +984,12 @@ C     Allocate an array for VEW1D
       EtaMax_Time(:) = 0.d0
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
       UMax_Time(:) = 0.d0
+
+
+
+      ALLOCATE( RHRAVG(MNP) ) ; 
+      RHRAVG = 1.D0 ; 
+
 !-----------------------------------------------------------------------
       END SUBROUTINE ALLOC_MAIN1a
 !-----------------------------------------------------------------------
@@ -1025,6 +1054,25 @@ C
       RETURN
       END SUBROUTINE ALLOC_MAIN4a
 
+      SUBROUTINE ALLOC_MAIN4c()
+      USE SIZES, ONLY :  MNP
+      IMPLICIT NONE
+C
+
+      IF ( CInlineSAL ) THEN
+         ALLOCATE( SAL1(MNP), SAL2(MNP) )
+         ALLOCATE( ZETASALTM0(MNP), ZETASALTM1(MNP), ZETASALTM2(MNP) ) ; 
+
+         SAL1 = 0.D0 ; 
+         SAL2 = 0.D0 ;
+
+         ZETASALTM0 = 0.D0
+         ZETASALTM1 = 0.D0 
+         ZETASALTM2 = 0.D0  
+      ENDIF
+C
+      RETURN
+      END SUBROUTINE ALLOC_MAIN4c
 
 C...
 C...Allocate space for Earth load/self-attraction tide

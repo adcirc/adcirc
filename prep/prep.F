@@ -2374,6 +2374,30 @@ Casey 180318: Added NWS=13
              write(15,'(a,F15.9,a)') " h2Value = ", h2Value," /"
          END IF
 
+
+         ! Namelist of input variables for SAL
+         IF ( foundInlineSALControlNamelist ) THEN
+             write(15,'(a,L4,a)') "&InlineSALControl"//
+     &          " use_inline_sal = ", use_inline_sal, ","
+             write(15,'(a,L4,a)') " sal_use_direct_sh = ", sal_use_direct_sh, ","
+             write(15,'(a)') " inlineSalMethod = '"//trim(inlineSalMethod)//"',"
+             write(15,'(a,I10,a)') " nSHOrder = ", nSHORder, ","
+             write(15,'(a,L4,a)') " sal_use_cache_blocking = ", sal_use_cache_blocking, ","
+             write(15,'(a,I10,a)') " nCellBlock = ", nCellBlock, ","
+             write(15,'(a,I10,a)') " salinc = ", salinc, ","
+             write(15,'(a,I10,a)') " salExtrapVal = ", salExtrapVal, ","
+             write(15,'(a,F15.9,a)') " salAPBeta = ", salAPBeta, ","
+             write(15,'(a,L4,a)') " sal_use_sh_filter = ", sal_use_sh_filter, "," 
+             write(15,'(a,I3,a)') " sh_filter_scheme = ", sh_filter_scheme, " /" 
+         END IF
+
+         ! Namelist of input varibles for Tsunami 
+         IF ( foundTsunamiSimOption ) THEN
+             write(15,'(a,L4,a)') "&TsunamiSimOption"//
+     &          " use_variable_water_density_VCT = ", use_variable_water_density_VCT, ","
+             write(15,'(a,E15.8,a)') " kappamodulus = ", kappamodulus,  " /" 
+         END IF
+
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
            WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
@@ -7830,7 +7854,9 @@ C---------------------------------------------------------------------------
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
      &    foundVEW1DChannelControlNamelist, meshHasWeir, meshHasInternalWeir,
-     &    meshHasWeirWithPipes
+     &    meshHasWeirWithPipes,
+     &    use_inline_sal
+
       USE GLOBAL_3DVS, ONLY: I3DGB
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
@@ -9196,16 +9222,24 @@ C     Create NetCDF hotstart files if NetCDF was specified.
      & (abs(NHSTAR).EQ.5).OR.(NHSTAR.EQ.567).OR.(NHSTAR.EQ.568)) THEN
          ! must init both hotstart files ... there is not enough information
          ! available to determine if they will both be needed
+
+         PRINT*, "**** use_inline_sal = ", use_inline_sal ;
          IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
             Elev1Descript % file_name = 'fort.67'
-            CALL initNetCDFHotstart(67, Elev1Descript, reterr)
+            CALL initNetCDFHotstart(lun=67, Elev1Descript =
+     &           Elev1Descript, ncerror = reterr,
+     &           includeinlinesal=use_inline_sal )
+
             IF (C3D.eqv..true.) THEN
                CALL initNetCDFHotstart3D(67,NHSTAR)
             ENDIF
          ENDIF
          IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
             Elev1Descript % file_name = 'fort.68'
-            CALL initNetCDFHotstart(68, Elev1Descript, reterr)
+            CALL initNetCDFHotstart(lun=68, Elev1Descript =
+     &           Elev1Descript, ncerror = reterr,
+     &           includeinlinesal=use_inline_sal )
+           
             IF (C3D.eqv..true.) THEN
                CALL initNetCDFHotstart3D(68,NHSTAR)
             ENDIF

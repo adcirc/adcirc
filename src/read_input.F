@@ -78,27 +78,32 @@ C-----------------------------------------------------------------------
      &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
      &   bchgtiminc, base_date, contact, convention, host, comments,
      &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
-     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a,
-     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8,
+     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
+     &   alloc_main4b, alloc_main4c, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
-#if defined CSWAN
+     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus, 
+     &   WarnVel, toLowercase,
+     &   use_variable_water_density_VCT => CVariableDensityVCT
+#if defined CSWAN 
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
+
+
 #ifdef DATETIME
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega,WaveStressGrad_Cap
+     &                     rad2deg,omega,WaveStressGrad_Cap,
+     &                     kappamodulus
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -195,6 +200,8 @@ Casey 180318: Added NWS=13
      &   operator(<=), operator(/=), operator(<), operator(>=),
      &   t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
+      ! use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
+      use MOD_INLINE_SAL, only: initSALModule
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -226,6 +233,20 @@ C
       real(8) :: k2Value = 0.302D0
       real(8) :: h2Value = 0.609D0
       logical :: UniformResMoonSunTimeData = .false.
+
+
+      ! I/O Self-attraction-loading 
+      LOGICAL:: use_inline_sal = .FALSE. 
+      character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation    
+      LOGICAL:: sal_use_direct_sh = .TRUE.
+      LOGICAL:: sal_use_cache_blocking = .TRUE.     
+      INTEGER:: nSHOrder = 64 
+      INTEGER:: nCellBlock = 500  
+      INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
+      INTEGER:: salExtrapVal = 0 
+      REAL (8):: salAPBeta = 0.01D0
+      logical:: sal_use_sh_filter = .false. 
+      integer:: sh_filter_scheme = 2
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
       CHARACTER(len=1024) :: scratchMessage ! message buffer
@@ -295,7 +316,20 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
      &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
-         
+
+C---- DW, Inline Self Attraction & Loading
+      NAMELIST /InlineSALControl/ use_inline_sal,
+     &     sal_use_direct_sh,
+     &     sal_use_cache_blocking,
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal,
+     &     inlineSalMethod, salAPBeta,
+     &     sal_use_sh_filter, sh_filter_scheme
+
+C---- DW, variable water density for Tsunami
+      NAMELIST /TsunamiSimOption/  use_variable_water_density_VCT,
+     &     kappamodulus  
+       
+     
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -942,6 +976,41 @@ C...  tidal potential control namelist
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+      namelistSpecifier =  'InlineSALControl'
+      read(unit=15,nml=InlineSALControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "use_inline_sal=", use_inline_sal
+      call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*) "inlineSALmethod=", inlineSALMethod ;
+      call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*) "sal_use_direct_sh=", sal_use_direct_sh
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sal_use_cache_blocking=", sal_use_cache_blocking
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "nSHOrder=", nSHOrder
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "nCellBlock=", nCellBlock
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salinc=", salinc
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salExtrapVal=", salExtrapVal
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salAPBeta=", salAPBeta 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sal_use_sh_filter=", sal_use_sh_filter 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sh_filter_scheme=", sh_filter_scheme 
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+      namelistSpecifier =  'TsunamiSimOption'
+      read(unit=15,nml=TsunamiSimOption,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "use_variable_water_density_VCT=", use_variable_water_density_VCT
+      call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*) "kappamodulus=", kappamodulus
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -4837,9 +4906,26 @@ C
      &                                MoonSunPositionComputeMethod, 
      &                                MoonSunCoordFile, IncludeNutation, 
      &                                k2Value, h2Value)
+
+      call  initSALModule( useinlinesal = use_inline_sal,
+     &                     inlinesalmethod = inlineSALMethod, 
+     &                     usedirectsh = sal_use_direct_sh, 
+     &                     usecacheblocking = sal_use_cache_blocking, 
+     &                     shorder = nSHOrder, 
+     &                     ncellblock = nCellBlock, 
+     &                     salinc = salinc, 
+     &                     extrapval = salExtrapVal,
+     &                     salAPBeta = salAPBeta, 
+     &                     useshtfilter = sal_use_sh_filter, 
+     &                     filterscheme = sh_filter_scheme  ) ;
+
+
+      call alloc_Main4c() ; 
+
 C...
 C...  CLOSE FORT.15
 C...
+
       CLOSE(15)
 
 !...  When using the consistent matrix, we need to pre-compute the CSR positions
@@ -6323,7 +6409,9 @@ C-----------------------------------------------------------------------
 #ifdef ADCNETCDF        
         USE NETCDF_ERROR, ONLY: check_err
         USE NETCDF
-#endif        
+#endif       
+        use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
+
         IMPLICIT NONE
         INTEGER :: ios
         INTEGER :: ncid
@@ -6351,100 +6439,111 @@ C-----------------------------------------------------------------------
         CHARACTER,ALLOCATABLE :: sal_const(:,:)
 
         IF(NTIP.EQ.2) THEN
-           filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
+           ! initialze  
+           SALTAMP = 0.0D0
+           SALTPHA = 0.0D0
 
+           !
+           ! IFINLINESAL: IF ( ssh_inline_sal%use_inline_sal ) THEN
+           !   !      
+           !   ! CALL ssh_inline_sal%sal_privatedata_init() ; 
+           !
+           IFINLINESAL: IF ( .NOT. ssh_inline_sal%use_inline_sal ) THEN       
+              filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
+  
 #ifdef CMPI
-            np_global_sal = np_global
+              np_global_sal = np_global
 #else
-            np_global_sal = np
+              np_global_sal = np
 #endif            
-
+  
 #ifdef ADCNETCDF
-           INQUIRE(FILE=TRIM(filename_netcdf), EXIST=netcdf_file_found)
+             INQUIRE(FILE=TRIM(filename_netcdf), EXIST=netcdf_file_found)
 #else
-           netcdf_file_found = .false.
+             netcdf_file_found = .false.
 #endif           
-           IF(netcdf_file_found)THEN
+             IFNETCDF: IF(netcdf_file_found)THEN
 #ifdef ADCNETCDF               
-
-            allocate(amp(1:np),pha(1:np))
-            allocate(amp_g(1:np_global_sal),pha_g(1:np_global_sal))
-
-            IF(MYPROC.EQ.0)THEN
-
-              CALL check_err(nf90_open(TRIM(filename_netcdf),
+  
+              allocate(amp(1:np),pha(1:np))
+              allocate(amp_g(1:np_global_sal),pha_g(1:np_global_sal))
+  
+              IF(MYPROC.EQ.0)THEN
+  
+                CALL check_err(nf90_open(TRIM(filename_netcdf),
      &                   NF90_NOWRITE,ncid))
-              CALL check_err(nf90_inq_dimid(ncid, "node", dimid_node))
-              CALL check_err(nf90_inq_dimid(ncid, "num_constituents",
+                CALL check_err(nf90_inq_dimid(ncid, "node", dimid_node))
+                CALL check_err(nf90_inq_dimid(ncid, "num_constituents",
      &                   dimid_nconst))
-              CALL check_err(nf90_inq_dimid(ncid, "char_len", dimid_charlen))
-
-              CALL check_err(nf90_inquire_dimension(ncid, dimid_node, len=n_node_sal))
-              CALL check_err(nf90_inquire_dimension(ncid, dimid_nconst, len=n_const_sal))
-              CALL check_err(nf90_inquire_dimension(ncid, dimid_charlen, len=char_len))
-
-              CALL check_err(nf90_inq_varid(ncid, "constituents", varid_const))
-              CALL check_err(nf90_inq_varid(ncid, "frequency", varid_freq))
-              CALL check_err(nf90_inq_varid(ncid, "sal_amplitude", varid_amp))
-              CALL check_err(nf90_inq_varid(ncid, "sal_phase", varid_pha))
-
-              IF(n_const_sal.NE.ntif)THEN
-                 WRITE(scratchMessage, "(A)") 
+                CALL check_err(nf90_inq_dimid(ncid, "char_len", dimid_charlen))
+  
+                CALL check_err(nf90_inquire_dimension(ncid, dimid_node, len=n_node_sal))
+                CALL check_err(nf90_inquire_dimension(ncid, dimid_nconst, len=n_const_sal))
+                CALL check_err(nf90_inquire_dimension(ncid, dimid_charlen, len=char_len))
+  
+                CALL check_err(nf90_inq_varid(ncid, "constituents", varid_const))
+                CALL check_err(nf90_inq_varid(ncid, "frequency", varid_freq))
+                CALL check_err(nf90_inq_varid(ncid, "sal_amplitude", varid_amp))
+                CALL check_err(nf90_inq_varid(ncid, "sal_phase", varid_pha))
+  
+                IF(n_const_sal.NE.ntif)THEN
+                   WRITE(scratchMessage, "(A)") 
      &               "Invalid number of harmonic "//
      &               "constituents in SAL file"
                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
-              ENDIF
+                ENDIF
               
-              allocate(sal_const(1:n_const_sal, 1:char_len))
-              CALL check_err(nf90_get_var(ncid, varid_const, sal_const, 
+                allocate(sal_const(1:n_const_sal, 1:char_len))
+                CALL check_err(nf90_get_var(ncid, varid_const, sal_const, 
      &           start=(/1,1/), count=(/n_const_sal,char_len/)))
-
-              DO I = 1, ntif
-                 DO J = 1, n_const_sal
-                     const_name = ""
-                     DO K=1, char_len
-                         const_name(K:K) = sal_const(J,K)
-                     ENDDO
-                     IF(TRIM(TIPOTAG(I)).EQ.TRIM(const_name))THEN
-                         CALL check_err(nf90_get_var(ncid, varid_amp, 
+  
+                DO I = 1, ntif
+                   DO J = 1, n_const_sal
+                       const_name = ""
+                       DO K=1, char_len
+                           const_name(K:K) = sal_const(J,K)
+                       ENDDO
+                       IF(TRIM(TIPOTAG(I)).EQ.TRIM(const_name))THEN
+                           CALL check_err(nf90_get_var(ncid, varid_amp, 
      &                       amp_g, start=(/J,1/),count=(/1,np_global_sal/)))
-                         CALL check_err(nf90_get_var(ncid, varid_pha,
+                           CALL check_err(nf90_get_var(ncid, varid_pha,
      &                       pha_g, start=(/J,1/),count=(/1,np_global_sal/)))
-                         pha_g = pha_g * DEG2RAD
+                           pha_g = pha_g * DEG2RAD
 #ifdef CMPI                         
-                         call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
-                         call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
+                           call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
+                           call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
 #else
-                         pha = pha_g
-                         amp = amp_g
+                           pha = pha_g
+                           amp = amp_g
 #endif                         
-                         SALTAMP(I,:) = amp
-                         SALTPHA(I,:) = pha
-
-                         EXIT
-                     ENDIF
-                     IF(J.EQ.n_const_sal)THEN
-                         write(scratchmessage, '(2A)') 
+                           SALTAMP(I,:) = amp
+                           SALTPHA(I,:) = pha
+  
+                           EXIT
+                       ENDIF
+                       IF(J.EQ.n_const_sal)THEN
+                           write(scratchmessage, '(2A)') 
      &                       "Error loading SAL: Could not find ", 
      &                       TRIM(const_name)
                          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
                      ENDIF
                  ENDDO
-              ENDDO
-              CALL check_err(nf90_close(ncid))
-            ELSE
+               ENDDO
+               CALL check_err(nf90_close(ncid))
+              ELSE
+
 #ifdef CMPI            
-                DO I=1, NTIF
-                    call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
-                    call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
-                    SALTAMP(I,:) = amp
-                    SALTPHA(I,:) = pha
-                ENDDO
-
+                  DO I=1, NTIF
+                      call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
+                      call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
+                      SALTAMP(I,:) = amp
+                      SALTPHA(I,:) = pha
+                  ENDDO 
 #endif                
-            ENDIF
-
+              ENDIF 
+  
 #endif               
+
            ELSE
              CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
              IF (ios.gt.0) THEN
@@ -6476,11 +6575,15 @@ C-----------------------------------------------------------------------
                    ! WJP: mapping to local node numbers
                    READ(24,*) JJ,SALTAMP(IDX,find(node_dict,JJ)),
      &                        SALTPHA(IDX,find(node_dict,JJ))
-                END DO
-             END DO
-             CLOSE(24)
-             SALTPHA = SALTPHA*DEG2RAD
-           ENDIF
+                  END DO
+               END DO
+               CLOSE(24)
+               SALTPHA = SALTPHA*DEG2RAD
+
+             ENDIF IFNETCDF
+
+           ENDIF IFINLINESAL 
+           !
         ELSE
            SALTAMP = 0D0
            SALTPHA = 0D0

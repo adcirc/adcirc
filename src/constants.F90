@@ -80,6 +80,14 @@ module ADC_CONSTANTS
 
    real(8), parameter :: omega = 7.29212d-5
 
+   real(8), parameter :: RhoSeaWat0 = 1035.0d0 ! kg/m^3
+   real(8), parameter :: RhoEarth = 5517.0d0 ! Average Earth density
+
+   !----------------!
+   ! bulk modulus
+   ! REAL (8), parameter:: kappamod = 2.041845e+09
+   real(8):: kappamodulus = 2.20d+09
+
    !---Time based factors---!
    real(8), parameter :: hour2sec = 3600.0d0
    real(8), parameter :: sec2hour = 1.0d0/hour2sec

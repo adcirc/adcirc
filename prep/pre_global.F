@@ -29,7 +29,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG,kappamodulus
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -367,7 +367,35 @@ C     Full luni-solar tidal potential namelist: 2024
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
      &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData  
-      
+
+C    inline Self Attraction and Loading
+      ! I/O Self-attraction-loading
+      LOGICAL:: foundInlineSALControlNamelist = .false. 
+      LOGICAL:: use_inline_sal = .FALSE.
+      LOGICAL:: sal_use_direct_sh = .TRUE.
+      LOGICAL:: sal_use_cache_blocking = .TRUE.     
+      INTEGER:: nSHOrder = 64 
+      INTEGER:: nCellBlock = 500  
+      INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
+      INTEGER:: salExtrapVal = 0  
+      character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation    
+      REAL (8):: salAPBeta = 0.09D0
+      LOGICAL:: sal_use_sh_filter
+      INTEGER:: sh_filter_scheme
+
+      NAMELIST /InlineSALControl/ use_inline_sal,
+     &     sal_use_direct_sh,
+     &     sal_use_cache_blocking,
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal,
+     &     inlineSalMethod, salAPBeta, 
+     &     sal_use_sh_filter, sh_filter_scheme
+
+C    Inteneded for Tsunami
+      LOGICAL:: foundTsunamiSimOption = .false. 
+      LOGICAL:: use_variable_water_density_VCT = .false. 
+      NAMELIST /TsunamiSimOption/ use_variable_water_density_VCT,
+     &     kappamodulus  
+
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(8) CONVCR
