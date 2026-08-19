@@ -139,7 +139,8 @@ set(ADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/inline_sal.F90)
 
 set(ADCSWAN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
