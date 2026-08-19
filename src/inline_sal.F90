@@ -621,7 +621,7 @@ contains
          zv = sin(y); 
          method = 1; 
          if (present(mthd)) method = mthd; 
-         if (method > 3 .and. method < 0) then
+         if (method > 3 .or. method < 0) then
             method = 1; 
          end if
 
