@@ -429,7 +429,9 @@ Csb
       LoadCondensedNodes     = .False.
       FoundCondensedNodes    = .FALSE.
       CondensedNodesNoOfVals = 3
-      CondensedNodesDefVal   = 0
+      IF ( ALLOCATED(CondensedNodesDefVal) ) DEALLOCATE(CondensedNodesDefVal)
+      ALLOCATE(CondensedNodesDefVal(CondensedNodesNoOfVals))
+      CondensedNodesDefVal(:) = 0.D0
 C
       LoadTau0           = .False.
       LoadStartDry       = .False.
@@ -986,9 +988,8 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
 Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(AdvectionState(NumOfNodes))
-      IF ( .not.ALLOCATED(CondensedNodesDefVal) ) THEN
-         ALLOCATE(CondensedNodesDefVal(CondensedNodesNoOfVals))
-      ENDIF
+      IF ( ALLOCATED(CondensedNodesDefVal) ) DEALLOCATE(CondensedNodesDefVal)
+      ALLOCATE(CondensedNodesDefVal(CondensedNodesNoOfVals))
       ALLOCATE(CondensedNodes(NumOfNodes,CondensedNodesNoOfVals))
       ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
       ALLOCATE(OverlandReductionFactor(NumOfNodes))
