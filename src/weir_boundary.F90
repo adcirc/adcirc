@@ -21,9 +21,8 @@
 !-----------------------------------------------------------------------
 ! WEIR_BOUNDARY.F
 !   Written by Zachary Cobell, 2013/01/04
-!              The Water Institute
-!              zcobell@thewaterinstitute.org
-!              (225)421-2761
+!              ICEYE
+!              zach.cobell@iceye.com
 !
 !   CONTAINS THE NEW ROUTINES FOR THE SPECIFICATION OF TIME VARYING WEIRS AND
 !   LAND BOUNDARY CONDITIONS. ALL TYPE 3,13,23,4,24,64,5,25 BOUNDARY CONDITIONS

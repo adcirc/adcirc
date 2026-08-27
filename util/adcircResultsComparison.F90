@@ -1,8 +1,8 @@
 !-----------------------------------------------------------------------
 ! adcircResultCompare.F90
 !   Written by Zachary Cobell
-!              The Water Institute
-!              zcobell@thewaterinstitute.org
+!              ICEYE
+!              zach.cobell@iceye.com
 !
 ! This code will comapre two sets of ADCIRC files to see if the
 ! solution is different between them. The solution can be compared

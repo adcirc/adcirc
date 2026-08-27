@@ -20,7 +20,7 @@
 !-----------------------------------------------------------------------
 !  MODULE ADC_CONSTANTS
 !-----------------------------------------------------------------------
-!> @author Zachary Cobell, The Water Institute, zcobell@thewaterinstitute.org
+!> @author Zachary Cobell, ICEYE, zach.cobell@iceye.com
 !>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
