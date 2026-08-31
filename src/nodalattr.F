@@ -988,8 +988,6 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
 Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(AdvectionState(NumOfNodes))
-      IF ( ALLOCATED(CondensedNodesDefVal) ) DEALLOCATE(CondensedNodesDefVal)
-      ALLOCATE(CondensedNodesDefVal(CondensedNodesNoOfVals))
       ALLOCATE(CondensedNodes(NumOfNodes,CondensedNodesNoOfVals))
       ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
       ALLOCATE(OverlandReductionFactor(NumOfNodes))
@@ -3216,6 +3214,8 @@ C     ----------------------------------------------------------------
                NCondensedNodes(I) = J+1
                ListCondensedNodes(K,J+1) = II
                NNodesListCondensedNodes(K) = J+1
+               WRITE(16,*) 'Node ', I, ' is condensed with node ', II, ' at ', J
+               WRITE(16,*) 'CondensedNodesDefVal(J) = ', CondensedNodesDefVal(J)
                CondensedNodes(II,1) = -I ! To tell that node II is one of condensed nodes
             ENDDO
             DO J=1,CondensedNodesNoOfVals
