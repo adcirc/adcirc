@@ -20,4 +20,4 @@ Links
 -----
 
 * `Official Website <https://aquaveo.com/software/sms/introduction>`_
-* `Training and Documentation <https://www.aquaveo.com/software/sms-learning>`_ 
+* `Training and Documentation <https://www.aquaveo.com/software/sms-learning>`_

@@ -16,7 +16,7 @@
 int f_aerosol_size(ARG0) {
     unsigned char *ptr;
     double size1, size2;
-   
+
     if (mode >= 0) {
         ptr = code_table_4_91_location(sec);
 	if (ptr == NULL) return 0;
@@ -53,4 +53,3 @@ int f_aerosol_wavelength(ARG0) {
     }
     return 0;
 }
-

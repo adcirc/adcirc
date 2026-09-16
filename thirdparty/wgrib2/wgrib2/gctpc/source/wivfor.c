@@ -34,7 +34,7 @@ static double false_northing;	/* y offset				*/
   ------------------------------------*/
 long wivforint(double r, double center_long, double false_east,
         double false_north) {
-//long wivforint(r, center_long,false_east,false_north) 
+//long wivforint(r, center_long,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //double center_long;		/* (I) Center longitude */
 //double false_east;		/* x offset				*/
@@ -49,13 +49,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("WAGNER IV"); 
+ptitle("WAGNER IV");
 radius(r);
 cenlon(center_long);
 offsetp(false_east,false_north);
 return(OK);
 }
-
+
 /* Wagner IV forward equations--mapping lat,long to x,y
   ----------------------------------------------------*/
 long wivfor(double lon, double lat, double *x, double *y) {

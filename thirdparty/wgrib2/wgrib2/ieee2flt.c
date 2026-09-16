@@ -20,7 +20,7 @@ float ieee2flt(unsigned char *ieee) {
 	   return (float) 0.0;
 
 	exp = ((ieee[0] & 127) << 1) + (ieee[1] >> 7);
-	fmant = (double) ((int) ieee[3] + (int) (ieee[2] << 8) + 
+	fmant = (double) ((int) ieee[3] + (int) (ieee[2] << 8) +
               (int) ((ieee[1] | 128) << 16));
 	if (ieee[0] & 128) fmant = -fmant;
 	return (float) (ldexp(fmant, (int) (exp - 128 - 22)));

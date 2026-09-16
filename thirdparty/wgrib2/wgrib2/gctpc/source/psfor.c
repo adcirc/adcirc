@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                            POLAR STEREOGRAPHIC 
+NAME                            POLAR STEREOGRAPHIC
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Polar Stereographic projection.  The
@@ -42,7 +42,7 @@ ALGORITHM REFERENCES
   --------------------------------------------*/
 long psforint(double r_maj, double r_min, double c_lon, double c_lat,
         double false_east, double false_north) {
-//long psforint(r_maj,r_min,c_lon,c_lat,false_east,false_north) 
+//long psforint(r_maj,r_min,c_lon,c_lat,false_east,false_north)
 //
 //double r_maj;				/* major axis			*/
 //double r_min;				/* minor axis			*/
@@ -75,7 +75,7 @@ ind = 0;
 if (fabs(fabs(c_lat) - HALF_PI) > EPSLN)
    {
    ind = 1;
-   con1 = fac * center_lat; 
+   con1 = fac * center_lat;
    sincos(con1,&sinphi,&cosphi);
    mcs = msfnz(e,sinphi,cosphi);
    tcs = tsfnz(e,con1,sinphi);
@@ -89,7 +89,7 @@ offsetp(false_east,false_north);
 
 return(OK);
 }
-
+
 /* Polar Stereographic forward equations--mapping lat,long to x,y
   --------------------------------------------------------------*/
 long psfor( double lon, double lat, double *x, double *y) {

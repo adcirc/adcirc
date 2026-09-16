@@ -27,7 +27,7 @@
  *           else
  *            data[i][j] = UNDEFINED
  *           endif
- *             
+ *
  */
 
 
@@ -112,11 +112,11 @@ int f_box_ave(ARG3) {
 	    xsum[k] = tmpsum;
 
 	    /* do ix = 1 .. nx_-1 */
-	    
+
             for (i = 1; i < nx_; i++) {
 
 		/* remove old value data[k+i+1-nxx */
-		
+
 		if (i-1 >= nxx) {
 		    m = i - 1 - nxx;
 	            if (DEFINED_VAL(data[m+k])) {
@@ -153,7 +153,7 @@ int f_box_ave(ARG3) {
 
 	    }
 	}
-	/* at this point xsum, xwt is calculated for entire grid 
+	/* at this point xsum, xwt is calculated for entire grid
 
            could use the same technique to add up the xsum values but
            1. probably not cache friendly for large ny_

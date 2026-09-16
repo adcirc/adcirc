@@ -1,9 +1,9 @@
 !-------------------------------------------------------------------------
 ! control.f90
 !-------------------------------------------------------------------------
-! Author: Jason Fleming (jason.fleming@seahorsecoastal.com) 
+! Author: Jason Fleming (jason.fleming@seahorsecoastal.com)
 !
-! Provide routines for reading, storing, and writing adcirc fort.15 data. 
+! Provide routines for reading, storing, and writing adcirc fort.15 data.
 !
 !-------------------------------------------------------------------------
 !
@@ -185,7 +185,7 @@ integer :: ititer
 integer :: isldia
 real :: convcr
 integer :: itmax
-character(len=80) :: title 
+character(len=80) :: title
 character(len=80) :: institution
 character(len=80) :: source
 character(len=80) :: history
@@ -197,7 +197,7 @@ character(len=80) :: contact
 character(len=80) :: base_date
 !
 logical :: readMetaData
-integer, parameter :: metadataRequired(9)     &     
+integer, parameter :: metadataRequired(9)     &
     = (/3, 5, 6, 367, 368, 567, 568, 667, 668/)
 integer :: outputSpecifiers(9)
 !
@@ -288,7 +288,7 @@ linenum = linenum + 1
 read(15,*,err=10,end=20,iostat=ios) reftim
 linenum = linenum + 1
 !
-! parse the digits of nws 
+! parse the digits of nws
 ncice = 0
 nrs = 0
 if (abs(nws).ge.1000) then
@@ -308,9 +308,9 @@ if ((nws.ne.0).or.(nrs.ne.0).or.(ncice.ne.0)) then
 endif
 numFields = 0
 select case(abs(nws))
-case(0,1) 
+case(0,1)
    ! do nothing
-case(2,4,5,7,12,15,16)   
+case(2,4,5,7,12,15,16)
    read(wtimincLine,*,err=10,end=20,iostat=ios) wtiminc
    numFields = 1
 case(3)
@@ -353,23 +353,23 @@ linenum = linenum + 1
 select case(nramp)
 case(0,1)
    read(15,*,err=10,end=20,iostat=ios) dramp
-case(2) 
+case(2)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime
-case(3) 
+case(3)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime,drampintflux
-case(4) 
+case(4)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime,drampintflux, &
               drampelev
-case(5) 
+case(5)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip
-case(6) 
+case(6)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete
-case(7) 
+case(7)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad
-case(8) 
+case(8)
    read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad,dunrampmete
 case default
@@ -430,7 +430,7 @@ linenum = linenum + 1
 if (nbfr.ne.0) then
    allocate(bountag(nbfr))
    allocate(amig(nbfr))
-   allocate(ff(nbfr)) 
+   allocate(ff(nbfr))
    allocate(face(nbfr))
    do i=1, nbfr
       read(15,'(a5)',err=10,end=20,iostat=ios) bountag(i)
@@ -469,7 +469,7 @@ if ((nfluxf.ne.0).and.(nffr.gt.0)) then
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) famig(i),fff(i),fface(i)
       linenum = linenum + 1
-   end do 
+   end do
    do i=1,nffr
       read(15,'(a10)',err=10,end=20,iostat=ios) nffr_alpha(i)
       linenum = linenum + 1
@@ -543,7 +543,7 @@ linenum = linenum + 1
 read(15,*,err=10,end=20,iostat=ios) ititer,isldia,convcr,itmax
 linenum = linenum + 1
 !
-! read metadata if netcdf or xdmf format was specified in the output 
+! read metadata if netcdf or xdmf format was specified in the output
 ! identifiers
 outputSpecifiers(1) = noute
 outputSpecifiers(2) = noutv
@@ -556,21 +556,21 @@ outputSpecifiers(8) = noutgw
 outputSpecifiers(9) = nhstar
 ! check to see if we need to read in metadata
 readMetaData = .false.
-outputSpec: do i=1,9 
-   metadataReq: do j=1,9 
+outputSpec: do i=1,9
+   metadataReq: do j=1,9
       if (outputSpecifiers(i).eq.metadataRequired(j)) then
          readMetaData = .true.
-         exit outputSpec 
+         exit outputSpec
       endif
    end do metadataReq
 end do outputSpec
 ! now read metadata if any output format indicated it
-if (readMetaData.eqv..true.) then 
+if (readMetaData.eqv..true.) then
    read(15,'(a80)',err=10,end=20,iostat=ios) title
    linenum = linenum + 1
    read(15,'(a80)',err=10,end=20,iostat=ios) institution
    linenum = linenum + 1
-   read(15,'(a80)',err=10,end=20,iostat=ios) source 
+   read(15,'(a80)',err=10,end=20,iostat=ios) source
    linenum = linenum + 1
    read(15,'(a80)',err=10,end=20,iostat=ios) history
    linenum = linenum + 1
@@ -585,7 +585,7 @@ if (readMetaData.eqv..true.) then
    read(15,'(a80)',err=10,end=20,iostat=ios) contact
    linenum = linenum + 1
    read(15,'(a80)',err=10,end=20,iostat=ios) base_date
-endif 
+endif
 !
 if (verbose.eqv..true.) then
    call echoControlFile(6)
@@ -634,19 +634,19 @@ end subroutine readStations
 !---------------------------------------------------------------------
 
 !---------------------------------------------------------------------
-!                      S U B R O U T I N E   
+!                      S U B R O U T I N E
 !   P A R S E  W A V E  A N D  I C E  T I M E  I N C R E M E N T S
 !---------------------------------------------------------------------
-! jgf: This subroutine is needed because of the tricky nature of the 
+! jgf: This subroutine is needed because of the tricky nature of the
 ! WTIMINC line in the fort.15 file. The number of data fields on this
-! line is dependent on the value of NWS, but the exact formatting of 
+! line is dependent on the value of NWS, but the exact formatting of
 ! these data fields (width of fields, number of decimal places, etc)
 ! is unknown. These uncertainties make this line hard to parse.
 !---------------------------------------------------------------------
 subroutine parseWaveAndIceTimeIncrements(wtimincLine,numFields)
 implicit none
 character(len=80), intent(in) :: wtimincLine ! line of data from fort.15
-integer, intent(inout) :: numFields ! number of fields that have already been read 
+integer, intent(inout) :: numFields ! number of fields that have already been read
 !
 character(len=80) :: rstimincField    ! character representation of rstiminc val
 character(len=80) :: cicetimeincField ! character representation of cicetimeinc val
@@ -661,7 +661,7 @@ integer :: istart
 integer :: iend
 !
 rstimincField(:) = ' '
-cicetimeincField(:) = ' ' 
+cicetimeincField(:) = ' '
 foundField = .false.
 j=1
 k=1
@@ -671,7 +671,7 @@ do i=1,len(wtimincLine)
       if (wtimincLine(i:i).ne.' ') then
          ! found the start of a new field
          fieldStarts(j) = i
-         j = j + 1 
+         j = j + 1
          foundField = .true.
       endif
    else
@@ -689,14 +689,14 @@ if (nrs.gt.0) then
    iend = fieldEnds(numFields + 1)
    rstimincField = wtimincLine(istart:iend)
    read(rstimincField,*,err=10,end=20,iostat=ios) rstiminc
-   numFields = numFields + 1 
+   numFields = numFields + 1
 endif
 if (ncice.gt.0) then
    istart = fieldStarts(numFields + 1)
    iend = fieldEnds(numFields + 1)
    cicetimeincField = wtimincLine(istart:iend)
    read(cicetimeincField,*,err=10,end=20,iostat=ios) cice_timinc
-   numFields = numFields + 1 
+   numFields = numFields + 1
 endif
 return
 10 write(6,'("ERROR: Reading line ",I3," gave the following error code: ",I3,".")') lineNum, ios
@@ -710,7 +710,7 @@ end subroutine parseWaveAndIceTimeIncrements
 !---------------------------------------------------------------------
 !
 !---------------------------------------------------------------------
-! S U B R O U T I N E    E C H O    C O N T R O L   F I L E 
+! S U B R O U T I N E    E C H O    C O N T R O L   F I L E
 !---------------------------------------------------------------------
 subroutine echoControlFile(echoUnit)
 implicit none
@@ -720,7 +720,7 @@ character(len=80) :: rstimincLine
 character(len=80) :: cicetimincLine
 character(len=80) :: wtimincComment
 integer :: controlnws ! nws as encoded with ncice and nrs parameters
-integer :: i 
+integer :: i
 integer :: j
 !
 ! initialization
@@ -728,7 +728,7 @@ echoLine = 1
 !
 write(6,*) 'INFO: Echoing control file after reading ',lineNum,' lines.'
 write(echoUnit,fmt='(A,10x,"! rundes")') trim(rundes)
-echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return 
+echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
 write(echoUnit,fmt='(A,10x,"! runid")') trim(runid)
 echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
 write(echoUnit,fmt='(i0,10x,"! nfover")') nfover
@@ -792,13 +792,13 @@ echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
 wtimincLine = ''
 wtimincComment = ''
 select case(abs(nws))
-case(0,1) 
+case(0,1)
    ! do nothing
-case(2,4,5,7,10,11,12,15,16)   
-   write(wtimincLine,*) wtiminc 
+case(2,4,5,7,10,11,12,15,16)
+   write(wtimincLine,*) wtiminc
    wtimincComment = ' ! wtiminc'
-case(3)   
-   write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec 
+case(3)
+   write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec
    wtimincLine = trim(wtimincLine) // ' ! irefyr,irefmo,irefday,irefhr,irefmin,refsec'
    write(echoUnit,'(a)') trim(wtimincLine)
    echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
@@ -837,32 +837,32 @@ echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
 select case(nramp)
 case(0,1)
    write(echoUnit,fmt='(9f6.3,10x,"! dramp")') dramp
-case(2) 
+case(2)
    write(echoUnit,fmt='(9f6.3,10x,"! dramp,drampextflux,fluxsettlingtime")') &
       dramp,drampextflux,fluxsettlingtime
-case(3) 
+case(3)
    write(echoUnit,fmt='(9f6.3,10x, &
    "! dramp,drampextflux,fluxsettlingtime,drampintflux")')  &
       dramp,drampextflux,fluxsettlingtime,drampintflux
-case(4) 
+case(4)
    write(echoUnit,fmt='(9f6.3,10x, &
    "! dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev")') &
       dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev
-case(5) 
+case(5)
    write(echoUnit,fmt='(9f6.3,10x, &
    "! dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip")') &
       dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip
-case(6) 
+case(6)
    write(echoUnit,fmt='(9f6.3,10x, &
    "! dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete")') &
        dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
-case(7) 
+case(7)
    write(echoUnit,fmt='(9f6.3,10x, &
    "! dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad")') &
       dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad
-case(8) 
+case(8)
    write(echoUnit,fmt='(9f6.3,10x, &
    "! dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad,drampunmete")') &
@@ -944,7 +944,7 @@ if ((nfluxf.ne.0).and.(nffr.ne.0)) then
          write(echoUnit,fmt='(3f6.3,10x,"! famig(i),fff(i),fface(i)")') &
              famig(i),fff(i),fface(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      end do 
+      end do
       do i=1,nffr
          write(echoUnit,'(a10,10x,"! nffr_alpha(i)")') nffr_alpha(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
@@ -1015,7 +1015,7 @@ echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
 write(echoUnit,fmt='(i0,1x,i0,f15.7,1x,i0,10x,"! ititer,isldia,convcr,itmax")') ititer,isldia,convcr,itmax
 echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
 !
-! read metadata if netcdf or xdmf format was specified in the output 
+! read metadata if netcdf or xdmf format was specified in the output
 ! identifiers
 outputSpecifiers(1) = noute
 outputSpecifiers(2) = noutv
@@ -1027,7 +1027,7 @@ outputSpecifiers(7) = noutgc
 outputSpecifiers(8) = noutgw
 outputSpecifiers(9) = nhstar
 ! now write metadata if any output format indicated it
-if (readMetaData.eqv..true.) then 
+if (readMetaData.eqv..true.) then
    write(echoUnit,fmt='(a)') trim(title)
    echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
    write(echoUnit,fmt='(a)') trim(institution)
@@ -1047,7 +1047,7 @@ if (readMetaData.eqv..true.) then
    write(echoUnit,fmt='(a)') trim(contact)
    echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
    write(echoUnit,fmt='(a)') trim(base_date)
-endif 
+endif
 !---------------------------------------------------------------------
 end subroutine echoControlFile
 !---------------------------------------------------------------------
@@ -1089,7 +1089,7 @@ character(len=80) :: wtimincComment
 character(len=80) :: drampComment
 integer :: informationID
 integer :: controlnws ! nws as encoded with ncice and nrs parameters
-integer :: i 
+integer :: i
 integer :: j
 !
 write(6,'(a)') 'INFO: Writing control parameters to XDMF.'
@@ -1098,101 +1098,101 @@ informationID = XdmfAddInformation(xdmfFortranObj, 'rundes'//char(0), &
 informationID = XdmfAddInformation(xdmfFortranObj, 'runid'//char(0), &
    trim(adjustl(runid))//char(0))
 write(info,fmt='(i0)') nfover
-informationID = XdmfAddInformation(xdmfFortranObj, 'nfover'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nfover'//char(0), &
    trim(adjustl(info))//char(0))
 
 write(info,fmt='(i0)') nabout
-informationID = XdmfAddInformation(xdmfFortranObj, 'nabout'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nabout'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nscreen
-informationID = XdmfAddInformation(xdmfFortranObj, 'nscreen'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nscreen'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') ihot
-informationID = XdmfAddInformation(xdmfFortranObj, 'ihot'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'ihot'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') ics
-informationID = XdmfAddInformation(xdmfFortranObj, 'ics'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'ics'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') im
-informationID = XdmfAddInformation(xdmfFortranObj, 'im'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'im'//char(0), &
    trim(adjustl(info))//char(0))
 if ((im.eq.21).or.(im.eq.31)) then
    write(info,fmt='(i0)') iden
-   informationID = XdmfAddInformation(xdmfFortranObj, 'iden'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj, 'iden'//char(0), &
       trim(adjustl(info))//char(0))
 endif
 write(info,fmt='(i0)') nolibf
-informationID = XdmfAddInformation(xdmfFortranObj, 'nolibf'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nolibf'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nolifa
-informationID = XdmfAddInformation(xdmfFortranObj, 'nolifa'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nolifa'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nolica
-informationID = XdmfAddInformation(xdmfFortranObj, 'nolica'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nolica'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nolicat
-informationID = XdmfAddInformation(xdmfFortranObj, 'nolicat'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nolicat'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nwp
-informationID = XdmfAddInformation(xdmfFortranObj, 'nwp'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nwp'//char(0), &
    trim(adjustl(info))//char(0))
 
 if (nwp.ne.0) then
    do i=1, nwp
       write(info,'("attribute_name(",i0,")")') i
-      informationID = XdmfAddInformation(xdmfFortranObj, & 
+      informationID = XdmfAddInformation(xdmfFortranObj, &
          trim(adjustl(info))//char(0), trim(adjustl(attrName(i)))//char(0))
    end do
 endif
 write(info,fmt='(i0)') ncor
-informationID = XdmfAddInformation(xdmfFortranObj, 'ncor'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'ncor'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') ntip
-informationID = XdmfAddInformation(xdmfFortranObj, 'ntip'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'ntip'//char(0), &
    trim(adjustl(info))//char(0))
 controlnws = 1000 * ncice + 100 * nrs + abs(nws)
 if (nws.ne.0) then
    controlnws = controlnws * abs(nws)/nws ! to get the sign right
 endif
 write(info,fmt='(i0)') controlnws
-informationID = XdmfAddInformation(xdmfFortranObj, 'nws'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nws'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nramp
-informationID = XdmfAddInformation(xdmfFortranObj, 'nramp'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'nramp'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(f10.5)') g
-informationID = XdmfAddInformation(xdmfFortranObj, 'g'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'g'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(f6.3)') tau0
-informationID = XdmfAddInformation(xdmfFortranObj, 'tau0'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj, 'tau0'//char(0), &
    trim(adjustl(info))//char(0))
 if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
    write(info,fmt='(f6.3,f6.3)') tau0fulldomainmin,tau0fulldomainmax
    informationID = XdmfAddInformation(xdmfFortranObj, &
-      'tau0fulldomainmin,tau0fulldomainmax'//char(0), & 
+      'tau0fulldomainmin,tau0fulldomainmax'//char(0), &
       trim(adjustl(info))//char(0))
 endif
 write(info,fmt='(f15.7)') dtdp
-informationID = XdmfAddInformation(xdmfFortranObj,'dtdp'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'dtdp'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(f15.7)') statim
-informationID = XdmfAddInformation(xdmfFortranObj,'statim'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'statim'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(f15.7)') reftim
-informationID = XdmfAddInformation(xdmfFortranObj,'reftim'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'reftim'//char(0), &
    trim(adjustl(info))//char(0))
 
 wtimincLine = ''
 wtimincComment = ''
 select case(abs(nws))
-case(0,1) 
+case(0,1)
    ! do nothing
-case(2,4,5,7,10,11,12,15,16)   
+case(2,4,5,7,10,11,12,15,16)
    wtimincComment = 'wtiminc'
-case(3)   
+case(3)
    wtimincComment = 'irefyr,irefmo,irefday,irefhr,irefmin,refsec'
-   write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec 
-   informationID = XdmfAddInformation(xdmfFortranObj,trim(wtimincComment)//char(0), & 
+   write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec
+   informationID = XdmfAddInformation(xdmfFortranObj,trim(wtimincComment)//char(0), &
       trim(adjustl(wtimincLine))//char(0))
    wtimincComment = 'nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc'
    write(wtimincLine,*) nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
@@ -1220,46 +1220,46 @@ if (ncice.gt.0) then
     wtimincLine = trim(wtimincLine) // ' ' // trim(cicetimincLine)
 endif
 if ((nws.ne.0).or.(nrs.ne.0).or.(ncice.ne.0)) then
-   informationID = XdmfAddInformation(xdmfFortranObj,trim(wtimincComment)//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,trim(wtimincComment)//char(0), &
       trim(adjustl(wtimincLine))//char(0))
 endif
 
 
 write(info,fmt='(e20.10)') rnday
-   informationID = XdmfAddInformation(xdmfFortranObj,'rnday'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'rnday'//char(0), &
       trim(adjustl(info))//char(0))
 !
 select case(nramp)
 case(0,1)
-   write(info,fmt='(9f6.3)') dramp  
+   write(info,fmt='(9f6.3)') dramp
    drampComment = 'dramp'
-case(2) 
+case(2)
    write(info,fmt='(9f6.3)') &
       dramp,drampextflux,fluxsettlingtime
    drampComment = 'dramp,drampextflux,fluxsettlingtime'
-case(3) 
+case(3)
    write(info,fmt='(9f6.3)')  &
       dramp,drampextflux,fluxsettlingtime,drampintflux
    drampComment = 'dramp,drampextflux,fluxsettlingtime,drampintflux'
-case(4) 
+case(4)
    write(info,fmt='(9f6.3)') &
       dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev
    drampComment = 'dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev'
-case(5) 
+case(5)
    write(info,fmt='(9f6.3)') &
       dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip
    drampComment = 'dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip'
-case(6) 
+case(6)
    write(info,fmt='(9f6.3)') &
        dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
    drampComment = 'dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete'
-case(7) 
+case(7)
    write(info,fmt='(9f6.3)') &
       dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad
    drampComment = 'dramp,drampextflux,fluxsettlingtime,drampintflux,' // &
              'drampelev,dramptip,drampmete,drampwrad'
-case(8) 
+case(8)
    write(info,fmt='(9f6.3)') &
          dramp,drampextflux,fluxsettlingtime,drampintflux, &
              drampelev,dramptip,drampmete,drampwrad,dunrampmete
@@ -1269,38 +1269,38 @@ case default
    write(info,'("ERROR: The value of nramp is ",i2," but this is not a valid value.")') nramp
    stop
 end select
-informationID = XdmfAddInformation(xdmfFortranObj,trim(drampComment)//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,trim(drampComment)//char(0), &
    trim(adjustl(info))//char(0))
 !
 write(info,fmt='(3f6.3)') a00,b00,c00
-informationID = XdmfAddInformation(xdmfFortranObj,'a00,b00,c00'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'a00,b00,c00'//char(0), &
    trim(adjustl(info))//char(0))
 if (nolifa.eq.2) then
    write(info,fmt='(f15.7, i2, i2, f6.3)') &
       h0,nodedrymin,nodewetmin,velmin
    informationID = XdmfAddInformation(xdmfFortranObj, &
-      'h0,nodedrymin,nodewetmin,velmin'//char(0), & 
+      'h0,nodedrymin,nodewetmin,velmin'//char(0), &
       trim(adjustl(info))//char(0))
 else
    write(info,fmt='(f15.7)') h0
-   informationID = XdmfAddInformation(xdmfFortranObj,'h0'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'h0'//char(0), &
       trim(adjustl(info))//char(0))
 endif
 write(info,fmt='(2f15.7)') slam0,sfea0
-   informationID = XdmfAddInformation(xdmfFortranObj,'slam0,sfea0'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'slam0,sfea0'//char(0), &
       trim(adjustl(info))//char(0))
 select case(nolibf)
 case(0)
    write(info,fmt='(f15.7)') tau
-   informationID = XdmfAddInformation(xdmfFortranObj,'tau'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'tau'//char(0), &
       trim(adjustl(info))//char(0))
 case(1)
    write(info,fmt='(f15.7)') cf
-   informationID = XdmfAddInformation(xdmfFortranObj,'cf'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'cf'//char(0), &
       trim(adjustl(info))//char(0))
 case(2)
    write(info,fmt='(4f15.7)') cf,hbreak,ftheta,fgamma
-   informationID = XdmfAddInformation(xdmfFortranObj,'cf,hbreak,ftheta,fgamma'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'cf,hbreak,ftheta,fgamma'//char(0), &
       trim(adjustl(info))//char(0))
 case default
    write(info,'("ERROR: the value of nolibf is ",i2," but this is not a valid value.")') &
@@ -1309,82 +1309,82 @@ case default
 end select
 if (im.eq.10) then
    write(info,fmt='(2f15.7)') eslm,eslc
-   informationID = XdmfAddInformation(xdmfFortranObj,'eslm,eslc'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'eslm,eslc'//char(0), &
       trim(adjustl(info))//char(0))
 else
   write(info,fmt='(f15.7)') eslm
-  informationID = XdmfAddInformation(xdmfFortranObj,'eslm'//char(0), & 
+  informationID = XdmfAddInformation(xdmfFortranObj,'eslm'//char(0), &
       trim(adjustl(info))//char(0))
 endif
 write(info,fmt='(f15.7)') cori
-informationID = XdmfAddInformation(xdmfFortranObj,'cori'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'cori'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') ntif
-informationID = XdmfAddInformation(xdmfFortranObj,'ntif'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'ntif'//char(0), &
    trim(adjustl(info))//char(0))
 do i=1,ntif
    write(info,'(a)')  trim(tipotag(i))
    write(varname,'("tipotag(",i0,")")') i
-   informationID = XdmfAddInformation(xdmfFortranObj, & 
-      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))     
+   informationID = XdmfAddInformation(xdmfFortranObj, &
+      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
    write(info,fmt='(5f15.7)') tpk(i),amigt(i),etrf(i),fft(i),facet(i)
    write(varname,'("tpk(",i0,"),amigt(",i0,"),etrf(",i0,"),fft(",i0,"),facet(",i0,")")' ) &
        i, i, i, i, i
-   informationID = XdmfAddInformation(xdmfFortranObj, & 
+   informationID = XdmfAddInformation(xdmfFortranObj, &
       trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
 end do
 
 write(info,fmt='(i0)') nbfr
-informationID = XdmfAddInformation(xdmfFortranObj,'nbfr'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'nbfr'//char(0), &
    trim(adjustl(info))//char(0))
 do i=1, nbfr
    write(info,'(a)') trim(bountag(i))
    write(varname,'("boundtag(",i0,")")') i
-   informationID = XdmfAddInformation(xdmfFortranObj, & 
-      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))   
+   informationID = XdmfAddInformation(xdmfFortranObj, &
+      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
    write(info,fmt='(3f15.7)') amig(i),ff(i),face(i)
    write(varname,'("amig(",i0,"),ff(",i0,"),face(",i0,")")' ) &
        i, i, i
-   informationID = XdmfAddInformation(xdmfFortranObj, & 
-      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))   
+   informationID = XdmfAddInformation(xdmfFortranObj, &
+      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
 end do
 do i=1, nbfr
    write(info,'(a)') trim(nbfr_alpha(i))
    write(varname,'("nbfr_alpha(",i0,")")') i
-   informationID = XdmfAddInformation(xdmfFortranObj, & 
-      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))   
+   informationID = XdmfAddInformation(xdmfFortranObj, &
+      trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
    do j=1,neta
       write(varname,'("emo(",i0,",",i0,"),efa(",i0,",",i0,")")' ) &
        i, j, i, j
       write(info,fmt='(2f15.7)') emo(i,j),efa(i,j)
-         informationID = XdmfAddInformation(xdmfFortranObj, & 
+         informationID = XdmfAddInformation(xdmfFortranObj, &
             trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
    end do
 end do
 write(info,fmt='(f15.7)') anginn
-informationID = XdmfAddInformation(xdmfFortranObj, & 
+informationID = XdmfAddInformation(xdmfFortranObj, &
    'anginn'//char(0), trim(adjustl(info))//char(0))
 if ((nfluxf.ne.0).and.(nffr.ne.0)) then
    write(info,fmt='(i0)') nffr
-   informationID = XdmfAddInformation(xdmfFortranObj, & 
+   informationID = XdmfAddInformation(xdmfFortranObj, &
       'nffr'//char(0), trim(adjustl(info))//char(0))
    if (nffr.gt.0) then
       do i=1,nffr
          write(info,'(a)') trim(fbountag(i))
          write(varname,'("fboundtag(",i0,")")') i
-         informationID = XdmfAddInformation(xdmfFortranObj, & 
+         informationID = XdmfAddInformation(xdmfFortranObj, &
             trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
          write(info,fmt='(3f6.3)') &
             famig(i),fff(i),fface(i)
          write(varname,'("famig(",i0,"),fff(",i0,"),fface(",i0,")")' ) &
             i, i, i
-         informationID = XdmfAddInformation(xdmfFortranObj, & 
+         informationID = XdmfAddInformation(xdmfFortranObj, &
             trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
-      end do 
+      end do
       do i=1,nffr
          write(info,'(a)') trim(nffr_alpha(i))
          write(varname,'("nffr_alpha(",i0,")")') i
-         informationID = XdmfAddInformation(xdmfFortranObj, & 
+         informationID = XdmfAddInformation(xdmfFortranObj, &
             trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
          do j=1,nvel
             select case(lbcodei(j))
@@ -1392,7 +1392,7 @@ if ((nfluxf.ne.0).and.(nffr.ne.0)) then
                write(info,fmt='(2f6.3)') qnam(i,j), qnph(i,j)
                write(varname,'("qnam(",i0,",",i0,"),qnph(",i0,",",i0,")")' ) &
                   i, j, i, j
-               informationID = XdmfAddInformation(xdmfFortranObj, & 
+               informationID = XdmfAddInformation(xdmfFortranObj, &
                   trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
             case default
                cycle
@@ -1403,20 +1403,20 @@ if ((nfluxf.ne.0).and.(nffr.ne.0)) then
 endif
 
 write(info,fmt='(i0,1x,2f6.3,1x,i0)') noute,toutse,toutfe,nspoole
-informationID = XdmfAddInformation(xdmfFortranObj,'noute,toutse,toutfe,nspoole'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'noute,toutse,toutfe,nspoole'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nstae
-informationID = XdmfAddInformation(xdmfFortranObj,'nstae'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'nstae'//char(0), &
    trim(adjustl(info))//char(0))
 stationType = 'sea_surface_height_above_geoid'
 
 call writeStationsXDMF(nstae, xel, yel, stationType, xdmfFortranObj)
 
 write(info,fmt='(i0,1x,2f15.7,1x,i0)') noutv,toutsv,toutfv,nspoolv
-informationID = XdmfAddInformation(xdmfFortranObj,'noutv,toutsv,toutfv,nspoolv'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'noutv,toutsv,toutfv,nspoolv'//char(0), &
    trim(adjustl(info))//char(0))
 write(info,fmt='(i0)') nstav
-informationID = XdmfAddInformation(xdmfFortranObj,'nstav'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'nstav'//char(0), &
    trim(adjustl(info))//char(0))
 stationType = 'water_column_vertically_averaged_velocity'
 call writeStationsXDMF(nstav, xev, yev, stationType, xdmfFortranObj)
@@ -1424,18 +1424,18 @@ if (im.eq.10) then
    write(info,fmt='(i0,1x,2f15.7,1x,i0)') noutc,toutsc,toutfc,nspoolc
    informationID = XdmfAddInformation(xdmfFortranObj,'noutc,toutsc,toutfc,nspoolc'//char(0), trim(adjustl(info))//char(0))
    write(info,fmt='(i0)') nstac
-   informationID = XdmfAddInformation(xdmfFortranObj,'nstac'//char(0), & 
+   informationID = XdmfAddInformation(xdmfFortranObj,'nstac'//char(0), &
       trim(adjustl(info))//char(0))
-   stationType = 'water_column_vertically_averaged_concentration'   
+   stationType = 'water_column_vertically_averaged_concentration'
    call writeStationsXDMF(nstav, xev, yev, stationType, xdmfFortranObj)
 endif
 if (nws.ne.0) then
    write(info,fmt='(i0,1x,2f15.7,1x,i0)') noutm,toutsm,toutfm,nspoolm
-   informationID = XdmfAddInformation(xdmfFortranObj,'noutm,toutsm,toutfm,nspoolm'//char(0), trim(adjustl(info))//char(0))   
+   informationID = XdmfAddInformation(xdmfFortranObj,'noutm,toutsm,toutfm,nspoolm'//char(0), trim(adjustl(info))//char(0))
    write(info,fmt='(i0)') nstam
-   informationID = XdmfAddInformation(xdmfFortranObj,'nstam'//char(0), & 
-      trim(adjustl(info))//char(0))   
-   stationType = 'atmospheric_pressure_and_wind_velocity_at_sea_level'   
+   informationID = XdmfAddInformation(xdmfFortranObj,'nstam'//char(0), &
+      trim(adjustl(info))//char(0))
+   stationType = 'atmospheric_pressure_and_wind_velocity_at_sea_level'
    call writeStationsXDMF(nstam, xem, yem, stationType, xdmfFortranObj)
 endif
 write(info,fmt='(i0,1x,2f15.7,1x,i0)') noutge,toutsge,toutfge,nspoolge
@@ -1448,22 +1448,22 @@ if (im.eq.10) then
 endif
 if (nws.ne.0) then
    write(info,fmt='(i0,1x,2f15.7,1x,i0)') noutgw,toutsgw,toutfgw,nspoolgw
-   informationID = XdmfAddInformation(xdmfFortranObj,'noutgw,toutsgw,toutfgw,nspoolgw'//   char(0), trim(adjustl(info))//char(0))   
+   informationID = XdmfAddInformation(xdmfFortranObj,'noutgw,toutsgw,toutfgw,nspoolgw'//   char(0), trim(adjustl(info))//char(0))
 endif
 
 write(info,fmt='(i0)') nfreq
-informationID = XdmfAddInformation(xdmfFortranObj,'nfreq'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'nfreq'//char(0), &
    trim(adjustl(info))//char(0))
 if (nfreq.ne.0) then
    do i=1,nfreq
       write(info,'(a10)') namefr(i)
       write(varname,'("namefr(",i0,")")') i
-         informationID = XdmfAddInformation(xdmfFortranObj, & 
-            trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))      
+         informationID = XdmfAddInformation(xdmfFortranObj, &
+            trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
       write(info,fmt='(3f15.7)') hafreq(i),haff(i),haface(i)
       write(varname,'("hafreq(",i0,"),haff(",i0,"),haface(",i0,")")' ) &
          i, i, i
-      informationID = XdmfAddInformation(xdmfFortranObj, & 
+      informationID = XdmfAddInformation(xdmfFortranObj, &
          trim(adjustl(varname))//char(0), trim(adjustl(info))//char(0))
    end do
 endif
@@ -1480,7 +1480,7 @@ write(info,fmt='(i0,1x,i0,f15.7,1x,i0)') ititer,isldia,convcr,itmax
 informationID = XdmfAddInformation(xdmfFortranObj,'ititer,isldia,convcr,itmax' &
    //char(0), trim(adjustl(info))//char(0))
 !
-! read metadata if netcdf or xdmf format was specified in the output 
+! read metadata if netcdf or xdmf format was specified in the output
 ! identifiers
 outputSpecifiers(1) = noute
 outputSpecifiers(2) = noutv
@@ -1492,28 +1492,28 @@ outputSpecifiers(7) = noutgc
 outputSpecifiers(8) = noutgw
 outputSpecifiers(9) = nhstar
 ! now write metadata if any output format indicated it
-if (readMetaData.eqv..true.) then 
+if (readMetaData.eqv..true.) then
    informationID = XdmfAddInformation(xdmfFortranObj,'title'//char(0), &
-      trim(adjustl(title))//char(0))   
+      trim(adjustl(title))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'institution'//char(0), &
       trim(adjustl(institution))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'source'//char(0), &
-      trim(adjustl(source))//char(0))   
+      trim(adjustl(source))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'history'//char(0), &
-      trim(adjustl(history))//char(0))   
+      trim(adjustl(history))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'references'//char(0), &
-      trim(adjustl(references))//char(0))   
+      trim(adjustl(references))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'comments'//char(0), &
-      trim(adjustl(comments))//char(0))   
+      trim(adjustl(comments))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'host'//char(0), &
-      trim(adjustl(host))//char(0))   
+      trim(adjustl(host))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'convention'//char(0), &
-      trim(adjustl(convention))//char(0))   
+      trim(adjustl(convention))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'contact'//char(0), &
-      trim(adjustl(contact))//char(0))   
+      trim(adjustl(contact))//char(0))
    informationID = XdmfAddInformation(xdmfFortranObj,'base_date'//char(0), &
       trim(adjustl(base_date))//char(0))
-endif 
+endif
 !---------------------------------------------------------------------
 end subroutine writeControlXDMF
 !---------------------------------------------------------------------
@@ -1532,12 +1532,12 @@ integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
 integer :: informationID ! information index, used as ID to insert array
 !
 ! add the station locations as an array related to the station information object
-informationID = XdmfAddInformation(xdmfFortranObj,'station longitude'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'station longitude'//char(0), &
    trim(adjustl(stationType))//char(0))
 ! arguments are: fortran obj, information index, values, numValues, arrayType
 call XdmfAddInformationArray(xdmfFortranObj, informationID, stax, nsta, &
    XDMF_ARRAY_TYPE_FLOAT64)
-informationID = XdmfAddInformation(xdmfFortranObj,'station latitude'//char(0), & 
+informationID = XdmfAddInformation(xdmfFortranObj,'station latitude'//char(0), &
    trim(adjustl(stationType))//char(0))
 call XdmfAddInformationArray(xdmfFortranObj, informationID, stay, nsta, &
    XDMF_ARRAY_TYPE_FLOAT64)

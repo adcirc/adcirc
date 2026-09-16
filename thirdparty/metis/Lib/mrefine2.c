@@ -17,7 +17,7 @@
 /*************************************************************************
 * This function is the entry point of refinement
 **************************************************************************/
-void MocRefine2Way2(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float *tpwgts, 
+void MocRefine2Way2(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float *tpwgts,
        float *ubvec)
 {
 
@@ -33,7 +33,7 @@ void MocRefine2Way2(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float
     switch (ctrl->RType) {
       case RTYPE_FM:
         MocBalance2Way2(ctrl, graph, tpwgts, ubvec);
-        MocFM_2WayEdgeRefine2(ctrl, graph, tpwgts, ubvec, 8); 
+        MocFM_2WayEdgeRefine2(ctrl, graph, tpwgts, ubvec, 8);
         break;
       default:
         errexit("Unknown refinement type: %d\n", ctrl->RType);
@@ -51,5 +51,3 @@ void MocRefine2Way2(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->UncoarsenTmr));
 }
-
-

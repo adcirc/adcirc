@@ -7,7 +7,7 @@
 #
 # This yaml runs a series of build tests
 # and acceptance tests used to ensure the
-# ADCIRC code is checked before 
+# ADCIRC code is checked before
 # accepting code into the main branch
 #
 # #######################################################################

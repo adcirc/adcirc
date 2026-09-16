@@ -73,7 +73,7 @@ void Bnd2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
   from = (pwgts[0] < tpwgts[0] ? 1 : 0);
   to = (from+1)%2;
 
-  IFSET(ctrl->dbglvl, DBG_REFINE, 
+  IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d] T[%6d %6d], Nv-Nb[%6d %6d]. ICut: %6d [B]\n",
              pwgts[0], pwgts[1], tpwgts[0], tpwgts[1], graph->nvtxs, graph->nbnd, graph->mincut));
 
@@ -111,14 +111,14 @@ void Bnd2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
     where[higain] = to;
     moved[higain] = nswaps;
 
-    IFSET(ctrl->dbglvl, DBG_MOVEINFO, 
+    IFSET(ctrl->dbglvl, DBG_MOVEINFO,
       printf("Moved %6d from %d. [%3d %3d] %5d [%4d %4d]\n", higain, from, ed[higain]-id[higain], vwgt[higain], mincut, pwgts[0], pwgts[1]));
 
     /**************************************************************
     * Update the id[i]/ed[i] values of the affected nodes
     ***************************************************************/
     SWAP(id[higain], ed[higain], tmp);
-    if (ed[higain] == 0 && xadj[higain] < xadj[higain+1]) 
+    if (ed[higain] == 0 && xadj[higain] < xadj[higain+1])
       BNDDelete(nbnd, bndind,  bndptr, higain);
 
     for (j=xadj[higain]; j<xadj[higain+1]; j++) {
@@ -143,14 +143,14 @@ void Bnd2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
       else {
         if (ed[k] > 0) {  /* It will now become a boundary vertex */
           BNDInsert(nbnd, bndind, bndptr, k);
-          if (moved[k] == -1 && where[k] == from && vwgt[k] <= mindiff) 
+          if (moved[k] == -1 && where[k] == from && vwgt[k] <= mindiff)
             PQueueInsert(&parts, k, ed[k]-id[k]);
         }
       }
     }
   }
 
-  IFSET(ctrl->dbglvl, DBG_REFINE, 
+  IFSET(ctrl->dbglvl, DBG_REFINE,
     printf("\tMinimum cut: %6d, PWGTS: [%6d %6d], NBND: %6d\n", mincut, pwgts[0], pwgts[1], nbnd));
 
   graph->mincut = mincut;
@@ -164,11 +164,11 @@ void Bnd2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
 
 
 /*************************************************************************
-* This function balances two partitions by moving the highest gain 
+* This function balances two partitions by moving the highest gain
 * (including negative gain) vertices to the other domain.
 * It is used only when tha unbalance is due to non contigous
 * subdomains. That is, the are no boundary vertices.
-* It moves vertices from the domain that is overweight to the one that 
+* It moves vertices from the domain that is overweight to the one that
 * is underweight.
 **************************************************************************/
 void General2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
@@ -199,7 +199,7 @@ void General2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
   from = (pwgts[0] < tpwgts[0] ? 1 : 0);
   to = (from+1)%2;
 
-  IFSET(ctrl->dbglvl, DBG_REFINE, 
+  IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d] T[%6d %6d], Nv-Nb[%6d %6d]. ICut: %6d [B]\n",
              pwgts[0], pwgts[1], tpwgts[0], tpwgts[1], graph->nvtxs, graph->nbnd, graph->mincut));
 
@@ -234,14 +234,14 @@ void General2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
     where[higain] = to;
     moved[higain] = nswaps;
 
-    IFSET(ctrl->dbglvl, DBG_MOVEINFO, 
+    IFSET(ctrl->dbglvl, DBG_MOVEINFO,
       printf("Moved %6d from %d. [%3d %3d] %5d [%4d %4d]\n", higain, from, ed[higain]-id[higain], vwgt[higain], mincut, pwgts[0], pwgts[1]));
 
     /**************************************************************
     * Update the id[i]/ed[i] values of the affected nodes
     ***************************************************************/
     SWAP(id[higain], ed[higain], tmp);
-    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1]) 
+    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1])
       BNDDelete(nbnd, bndind,  bndptr, higain);
     if (ed[higain] > 0 && bndptr[higain] == -1)
       BNDInsert(nbnd, bndind,  bndptr, higain);
@@ -258,14 +258,14 @@ void General2WayBalance(CtrlType *ctrl, GraphType *graph, int *tpwgts)
         PQueueUpdate(&parts, k, oldgain, ed[k]-id[k]);
 
       /* Update its boundary information */
-      if (ed[k] == 0 && bndptr[k] != -1) 
+      if (ed[k] == 0 && bndptr[k] != -1)
         BNDDelete(nbnd, bndind, bndptr, k);
-      else if (ed[k] > 0 && bndptr[k] == -1)  
+      else if (ed[k] > 0 && bndptr[k] == -1)
         BNDInsert(nbnd, bndind, bndptr, k);
     }
   }
 
-  IFSET(ctrl->dbglvl, DBG_REFINE, 
+  IFSET(ctrl->dbglvl, DBG_REFINE,
     printf("\tMinimum cut: %6d, PWGTS: [%6d %6d], NBND: %6d\n", mincut, pwgts[0], pwgts[1], nbnd));
 
   graph->mincut = mincut;

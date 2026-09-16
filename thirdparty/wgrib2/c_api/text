@@ -22,5 +22,4 @@ long long int grb2_wrtVA(const char *grb, const char *template, int msgno, float
 
      grb2_wrt(IN,OUT,data,metadata) - grib out mem/fileZZ
 	percentile, int
-	set, string, int	
-              
+	set, string, int

@@ -36,7 +36,7 @@ int f_import_grib(ARG1) {
 	unsigned char *sec[10];       /* sec[9] = last valid bitmap */
     };
     struct local_struct *save;
- 
+
     if (mode == -1) {
         *local = save = (struct local_struct *) malloc( sizeof(struct local_struct));
         if (save == NULL) fatal_error("import_grib: memory allocation","");
@@ -67,8 +67,8 @@ int f_import_grib(ARG1) {
 	/* save->sec[] is defined */
         get_nxny(save->sec, &nx, &ny, &npnts, &res, &scan);
 
-        if (npnts != ndata) 
-             fatal_error_uu("import_grib: size mismatch (%u/%u)", npnts, ndata); 
+        if (npnts != ndata)
+             fatal_error_uu("import_grib: size mismatch (%u/%u)", npnts, ndata);
 
         if (use_g2clib != 0 && use_g2clib != 1)
              fatal_error_i("import_grib: only g2clib = 0 or 1 supported (%d)", use_g2clib);

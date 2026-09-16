@@ -2,7 +2,7 @@
  * New_grid_order
  *
  * put grib file in order for new_grid to work
- *   
+ *
  * 10/2019    Public Domain Wesley Ebisuzaki
  *
  * output for new_grid is put into X
@@ -22,11 +22,11 @@
 extern int file_append, flush_mode;
 extern const char **vectors;
 
-/* 
+/*
  * uv_index
  *  returns index in u_v list
  *   even: U
- *   odd: V 
+ *   odd: V
  *     V that corresponds to U has index+1
  *   -1: not found
  */
@@ -162,7 +162,7 @@ static int wrt_uv_sec(unsigned char **sec1, unsigned char **sec2, struct seq_fil
 int f_new_grid_order(ARG2) {
 
     struct local_struct {
-	struct grib_message *next; 	
+	struct grib_message *next;
 	struct seq_file out, out_no_match;
     };
 
@@ -197,7 +197,7 @@ int f_new_grid_order(ARG2) {
 	if (save->next) {
 	    grib = save->next;
 	    while (grib) {
-	        i = wrt_sec(grib->sec[0], grib->sec[1], grib->sec[2], grib->sec[3], grib->sec[4], 
+	        i = wrt_sec(grib->sec[0], grib->sec[1], grib->sec[2], grib->sec[3], grib->sec[4],
 			grib->sec[5], grib->sec[6], grib->sec[7], &(save->out_no_match));
 	        if (flush_mode) fflush_file(&(save->out));
 		p = grib;
@@ -205,9 +205,9 @@ int f_new_grid_order(ARG2) {
 		free(p->data);
 		free(p);
 	    }
-	    fprintf(stderr,"new_grid_order: some vectors were unmatched, see %s\n", arg2);	
+	    fprintf(stderr,"new_grid_order: some vectors were unmatched, see %s\n", arg2);
 	}
-	
+
 	fclose_file(&(save->out));
 	fclose_file(&(save->out_no_match));
         free(save);

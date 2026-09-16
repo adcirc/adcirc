@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -24,7 +24,7 @@ C
       SUBROUTINE DIFFMERGE63(DIR1,DIR2,SCALEFAC)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/15/99  )                         C 
+C                     (  Serial Version  3/15/99  )                         C
 C  Create a Difference File for elevation data at all nodes from two        C
 C  different directories.                                                   C
 C  This version is compatible with ADCIRC version 33.04                     C
@@ -155,9 +155,9 @@ C
             WRITE(73,2453) I,SCALEFAC*(ETA1(I)-ETA2(I))
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.63 files
@@ -294,7 +294,7 @@ C
          IREC1 = IREC1 + NNODG
          IREC2 = IREC2 + NNODG
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.63 Files
 C
@@ -314,7 +314,7 @@ C
       SUBROUTINE DIFFMERGE64(DIR1,DIR2,SCALEFAC)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/15/99  )                         C 
+C                     (  Serial Version  3/15/99  )                         C
 C  Create a Difference file from velocity data at all nodes from two        C
 C  different directories.                                                   C
 C  This version is compatible with ADCIRC version 33.04                     C
@@ -333,7 +333,7 @@ C
       INTEGER NSTEMP1,NSTEMP2
       INTEGER ITV1,ITV2
       INTEGER ITEMPV1,ITEMPV2
-      INTEGER NP1,NP2 
+      INTEGER NP1,NP2
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
       REAL(8) DTV1,DTV2,SCALEFAC
@@ -448,9 +448,9 @@ C
      &          SCALEFAC*(VV1(I)-VV2(I))
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.64 files
@@ -588,7 +588,7 @@ C
          IREC1 = IREC1 + 2*NNODG
          IREC2 = IREC2 + 2*NNODG
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.64 Files and Differences Log file
 C

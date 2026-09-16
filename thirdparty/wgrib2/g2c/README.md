@@ -20,7 +20,7 @@ the WMO GRIB2 templates and tables see [WMO Information Management
 GRIB2 GitHub repository](https://github.com/wmo-im/GRIB2).
 
 The NCEPLIBS-g2c library is used by [wgrib2](https://www.cpc.ncep.noaa.gov/products/wesley/wgrib2/),
-[grib2io](https://github.com/NOAA-MDL/grib2io), [GRaDS](http://cola.gmu.edu/grads/), and 
+[grib2io](https://github.com/NOAA-MDL/grib2io), [GRaDS](http://cola.gmu.edu/grads/), and
 [Model Evaluation Tools (MET)](https://metplus.readthedocs.io/en/latest/) projects, among
 others.
 
@@ -69,9 +69,9 @@ Hartnett](mailto:edward.hartnett@noaa.gov)
   JPEG 2000 codec written in C language. OpenJPEG is only used if
   CMake build option USE_OpenJPEG is turned on.
 
-- [libaec.a](https://gitlab.dkrz.de/k202009/libaec) - LibAEC is the 
-  Adaptive Entropy Coding library.  This library implements 
-  extended Golomb-Rice coding as defined in the CCSDS recommended standard [121.0-B-3](https://public.ccsds.org/Pubs/121x0b3.pdf). 
+- [libaec.a](https://gitlab.dkrz.de/k202009/libaec) - LibAEC is the
+  Adaptive Entropy Coding library.  This library implements
+  extended Golomb-Rice coding as defined in the CCSDS recommended standard [121.0-B-3](https://public.ccsds.org/Pubs/121x0b3.pdf).
   The library covers the adaptive entropy coder and the preprocessor discussed in
   sections 1 to 5.2.6 of the standard.
 
@@ -92,7 +92,7 @@ of CMake options.
 The NCEPLIBS-g2c library supports the PNG and JPEG2000 methods of image compression
 algorithms within the GRIB2 standard.
 
-By default the library uses Jasper for JPEG functionality, use 
+By default the library uses Jasper for JPEG functionality, use
 `-DUSE_OpenJPEG=ON` to use the OpenJPEG library instead.
 
 NCEPLIBS-g2c is also available through [Spack](https://spack.io) as '[g2c](https://github.com/spack/spack/tree/develop/var/spack/repos/builtin/packages/g2c)'.

@@ -120,21 +120,21 @@ contains
       end if
 
       if (.not. UniformRankSearch) then
-         J = GET_RANK_BINARY_SEARCH(seconds_between, self%times, self%len_times); 
+         J = GET_RANK_BINARY_SEARCH(seconds_between, self%times, self%len_times);
       else
-         J = GET_RANK_UNIFORM(seconds_between, self%times, self%len_times); 
+         J = GET_RANK_UNIFORM(seconds_between, self%times, self%len_times);
       end if
 
-      match = .false.; 
+      match = .false.;
       if (j >= 3 .and. j <= self%len_times - 2) then
-         match = .true.; 
-         idarr = [(j - ii, ii=-2, 1)]; 
+         match = .true.;
+         idarr = [(j - ii, ii=-2, 1)];
       else if (j == 2) then
-         match = .true.; 
-         idarr = [(ii, ii=1, 4)]; 
+         match = .true.;
+         idarr = [(ii, ii=1, 4)];
       else if (j == self%len_times) then
          match = .true.
-         idarr = [(self%len_times - 3 + ii, ii=0, 3)]; 
+         idarr = [(self%len_times - 3 + ii, ii=0, 3)];
       end if
 
       if (match) then
@@ -145,15 +145,15 @@ contains
          call interpolate(self%times(idarr), self%solar_distances(idarr), seconds_between, MoonSunCoor(3, 2))
 
          ! Lunar right ascension interpolation
-         ratmp(1:4) = self%lunar_ras(idarr); 
-         call adjust_RA(ratmp(1:4)); 
+         ratmp(1:4) = self%lunar_ras(idarr);
+         call adjust_RA(ratmp(1:4));
          call interpolate(self%times(idarr), ratmp(1:4), seconds_between, MoonSunCoor(1, 1))
-         MoonSunCoor(1, 1) = modulo(MoonsunCoor(1, 1), 360.d0); 
+         MoonSunCoor(1, 1) = modulo(MoonsunCoor(1, 1), 360.d0);
          ! Solar right ascension interpolation
-         ratmp(1:4) = self%solar_ras(idarr); 
-         call adjust_RA(ratmp(1:4)); 
+         ratmp(1:4) = self%solar_ras(idarr);
+         call adjust_RA(ratmp(1:4));
          call interpolate(self%times(idarr), ratmp(1:4), seconds_between, MoonSunCoor(1, 2))
-         MoonSunCoor(1, 2) = modulo(MoonsunCoor(1, 2), 360.d0); 
+         MoonSunCoor(1, 2) = modulo(MoonsunCoor(1, 2), 360.d0);
          ! Lunar declination interpolation
          call interpolate(self%times(idarr), self%lunar_decs(idarr), seconds_between, MoonSunCoor(2, 1))
 
@@ -162,12 +162,12 @@ contains
       end if
 
       if (.not. match) then
-         IERR = 2; 
+         IERR = 2;
       end if
 
       ! Convert solar distance to AU
       ! MoonSunCoor(3,2) = MoonSunCoor(3,2) * 6.6845871226706E-9
-      MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU; 
+      MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU;
    end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
    integer function recache_data(self, seconds_between, UniformRankSearch) result(ierr)
@@ -218,24 +218,24 @@ contains
       end if
 
       if (.not. UniformRankSearch) then
-         iabeg = GET_RANK_BINARY_SEARCH(seconds_between, tmparr, lenarr) - 4; 
+         iabeg = GET_RANK_BINARY_SEARCH(seconds_between, tmparr, lenarr) - 4;
       else
-         iabeg = GET_RANK_UNIFORM(seconds_between, tmparr, lenarr) - 4; 
+         iabeg = GET_RANK_UNIFORM(seconds_between, tmparr, lenarr) - 4;
       end if
 
-      if (iabeg < 1) iabeg = 1; 
+      if (iabeg < 1) iabeg = 1;
       if (.not. UniformRankSearch) then
          iaend = GET_RANK_BINARY_SEARCH(seconds_between + self%tcache, tmparr, lenarr) + 4
       else
          iaend = GET_RANK_UNIFORM(seconds_between + self%tcache, tmparr, lenarr) + 4
       end if
-      if (iaend > lenarr) iaend = lenarr; 
-      self%tbeg(1) = tmparr(iabeg); 
-      self%tend(1) = tmparr(iaend); 
-      self%len_times = (iaend - iabeg) + 1; 
+      if (iaend > lenarr) iaend = lenarr;
+      self%tbeg(1) = tmparr(iabeg);
+      self%tend(1) = tmparr(iaend);
+      self%len_times = (iaend - iabeg) + 1;
       call self%reallocate_arrays()
 
-      self%times = tmparr(iabeg:iaend); 
+      self%times = tmparr(iabeg:iaend);
       call check_err(nf90_get_var(ncid, lunar_distance_varid, self%lunar_distances, [iabeg], [self%len_times]))
       call check_err(nf90_get_var(ncid, solar_distance_varid, self%solar_distances, [iabeg], [self%len_times]))
       call check_err(nf90_get_var(ncid, lunar_ra_varid, self%lunar_ras, [iabeg], [self%len_times]))
@@ -281,20 +281,20 @@ contains
       integer :: I, N
       logical :: CrossZeroRA
 
-      N = ubound(RA, 1); 
-      CrossZeroRA = .false.; 
+      N = ubound(RA, 1);
+      CrossZeroRA = .false.;
       do I = 1, N - 1
          if (abs(RA(I + 1) - RA(I)) > 120.d0) then
-            CrossZeroRA = .true.; 
+            CrossZeroRA = .true.;
          end if
       end do
 
       if (CrossZeroRA) then
-         where (RA < 180.d0) RA = RA + 360.d0; 
+         where (RA < 180.d0) RA = RA + 360.d0;
       end if
 
-      if (present(fadjust)) fadjust = CrossZeroRA; 
-      return; 
+      if (present(fadjust)) fadjust = CrossZeroRA;
+      return;
    end subroutine adjust_RA
 
    ! Subroutine to perform Lagrange interpolation
@@ -368,17 +368,17 @@ contains
       real(8) :: ds
 
       if (val < arr(1)) then
-         rank = 0; 
-         return; 
+         rank = 0;
+         return;
       end if
 
       if (val > arr(len)) then
-         rank = len + 1; 
-         return; 
+         rank = len + 1;
+         return;
       end if
 
-      ds = (arr(2) - arr(1)); 
-      rank = ceiling((val - arr(1))/ds) + 1; 
+      ds = (arr(2) - arr(1));
+      rank = ceiling((val - arr(1))/ds) + 1;
    end function GET_RANK_UNIFORM
 
    ! Find a rank j in arr such that arr(j-1) < val < = arr(j)  !
@@ -394,41 +394,41 @@ contains
       integer :: low, high, mid
 
       if (val < arr(1)) then
-         rank = 0; 
-         return; 
+         rank = 0;
+         return;
       end if
       if (val > arr(len)) then
-         rank = len + 1; 
-         return; 
+         rank = len + 1;
+         return;
       end if
 
-      low = 1; 
-      high = len; 
+      low = 1;
+      high = len;
       do
-         mid = (low + high)/2; 
+         mid = (low + high)/2;
          if (abs(val - arr(mid)) < 1.0d-12) then
             ! Exact match is found !
-            rank = mid; 
-            exit; 
+            rank = mid;
+            exit;
          end if
 
          if (val < arr(mid)) then
-            high = mid; 
+            high = mid;
          else
-            low = mid; 
+            low = mid;
          end if
 
          if (high == low + 1) then
             ! found the interval to which val  !
             ! falls inbetween is found         !
-            rank = high; 
-            exit; 
+            rank = high;
+            exit;
          end if
 
          if (high < low) then
-            write (*, *) "Error in GET_RANK_BINARY_SEARCH()"; 
-            rank = -1; 
-            exit; 
+            write (*, *) "Error in GET_RANK_BINARY_SEARCH()";
+            rank = -1;
+            exit;
          end if
       end do
 

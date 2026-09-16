@@ -76,7 +76,7 @@ void ReadGraph(GraphType *graph, char *filename, int *wgtflag)
 
   /*printf("%d %d %d %d %d [%d %d]\n", fmt, fmt%10, (fmt/10)%10, ncon, graph->ncon, readew, readvw);*/
 
-  if (graph->nvtxs > MAXIDX) 
+  if (graph->nvtxs > MAXIDX)
     errexit("\nThe matrix is too big: %d [%d %d]\n", graph->nvtxs, MAXIDX, sizeof(idxtype));
 
   xadj = graph->xadj = idxsmalloc(graph->nvtxs+1, 0, "ReadGraph: xadj");
@@ -93,7 +93,7 @@ void ReadGraph(GraphType *graph, char *filename, int *wgtflag)
     oldstr = line;
     newstr = NULL;
 
-    if (strlen(line) == MAXLINE) 
+    if (strlen(line) == MAXLINE)
       errexit("\nBuffer for fgets not big enough!\n");
 
     if (readvw) {
@@ -116,10 +116,10 @@ void ReadGraph(GraphType *graph, char *filename, int *wgtflag)
         break;
 
       adjncy[k] = edge;
-      if (readew) 
+      if (readew)
         adjwgt[k] = ewgt;
       k++;
-    } 
+    }
     xadj[i+1] = k;
   }
 
@@ -155,7 +155,7 @@ void WritePartition(char *fname, idxtype *part, int n, int nparts)
 
   sprintf(filename,"%s.part.%d",fname, nparts);
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
+  if ((fpout = fopen(filename, "w")) == NULL)
     errexit("Problems in opening the partition file: %s", filename);
 
   for (i=0; i<n; i++)
@@ -177,7 +177,7 @@ void WriteMeshPartition(char *fname, int nparts, int ne, idxtype *epart, int nn,
 
   sprintf(filename,"%s.epart.%d",fname, nparts);
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
+  if ((fpout = fopen(filename, "w")) == NULL)
     errexit("Problems in opening the partition file: %s", filename);
 
   for (i=0; i<ne; i++)
@@ -187,7 +187,7 @@ void WriteMeshPartition(char *fname, int nparts, int ne, idxtype *epart, int nn,
 
   sprintf(filename,"%s.npart.%d",fname, nparts);
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
+  if ((fpout = fopen(filename, "w")) == NULL)
     errexit("Problems in opening the partition file: %s", filename);
 
   for (i=0; i<nn; i++)
@@ -211,7 +211,7 @@ void WritePermutation(char *fname, idxtype *iperm, int n)
 
   sprintf(filename,"%s.iperm",fname);
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
+  if ((fpout = fopen(filename, "w")) == NULL)
     errexit("Problems in opening the permutation file: %s", filename);
 
   for (i=0; i<n; i++)
@@ -263,7 +263,7 @@ int CheckGraph(GraphType *graph)
     }
   }
 
-  if (err > 0) 
+  if (err > 0)
     printf("A total of %d errors exist in the input file. Correct them, and run again!\n", err);
 
   return (err == 0 ? 1 : 0);
@@ -319,7 +319,7 @@ idxtype *ReadMesh(char *filename, int *ne, int *nn, int *etype)
 
 
 /*************************************************************************
-* This function writes a graphs into a file 
+* This function writes a graphs into a file
 **************************************************************************/
 void WriteGraph(char *filename, int nvtxs, idxtype *xadj, idxtype *adjncy)
 {
@@ -344,7 +344,7 @@ void WriteGraph(char *filename, int nvtxs, idxtype *xadj, idxtype *adjncy)
 
 
 /*************************************************************************
-* This function writes a graphs into a file 
+* This function writes a graphs into a file
 **************************************************************************/
 void WriteMocGraph(GraphType *graph)
 {

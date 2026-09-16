@@ -6,19 +6,19 @@ PURPOSE:	Transforms input Easting and Northing to longitude and
 		Easting and Northing must be in meters.  The longitude
 		and latitude values will be returned in radians.
 
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand, EROS      May, 1991     
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand, EROS      May, 1991
 S. Nelson, EROS		Dec, 1993	Added function call to "asinz" to
 					fix errors at 90 and -90 deg lat.
 					This replaced calls to "asin".
 
 This function was implemented with formulas supplied by John P. Snyder.
- 
+
 ALGORITHM REFERENCES
 
-1.  Snyder, John P. and Voxland, Philip M., "An Album of Map Projections", 
-    U.S. Geological Survey Professional Paper 1453 , United State Government 
+1.  Snyder, John P. and Voxland, Philip M., "An Album of Map Projections",
+    U.S. Geological Survey Professional Paper 1453 , United State Government
     Printing Office, Washington D.C., 1989.
 
 2.  Snyder, John P., Personal correspondence, January 1991.
@@ -36,7 +36,7 @@ static double false_northing;   /* y offset                             */
   ------------------------------------*/
 long wviiinvint( double r, double center_long, double false_east,
         double false_north) {
-// long wviiinvint(r, center_long,false_east,false_north) 
+// long wviiinvint(r, center_long,false_east,false_north)
 // double r; 			/* (I) Radius of the earth (sphere) */
 // double center_long;		/* (I) Center longitude */
 // double false_east;    		/* x offset                             */
@@ -51,14 +51,14 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("WAGNER VII"); 
+ptitle("WAGNER VII");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
-/* Wagner VII inverse equations--mapping x,y to lat,long 
+
+/* Wagner VII inverse equations--mapping x,y to lat,long
   -----------------------------------------------------*/
 
 long wviiinv(double x, double y, double *lon, double *lat) {
@@ -84,4 +84,3 @@ c = 2.0 * asinz(p / (2.0 * R));
 *lon = adjust_lon(lon_center + 3.0 * atan2(x * tan(c), 2.66723 * p));
 return(OK);
 }
-

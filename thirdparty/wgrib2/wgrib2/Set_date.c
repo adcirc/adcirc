@@ -68,13 +68,13 @@ int f_set_date(ARG1) {
     }
     else {
         i=strlen(arg1);
-        if (i < 4 || i > 14 || i % 2 == 1) fatal_error("set_date: bad date code %s",arg1); 
+        if (i < 4 || i > 14 || i % 2 == 1) fatal_error("set_date: bad date code %s",arg1);
 	/* override date codes, if available */
         i = sscanf(arg1,"%4d%2d%2d%2d%2d%2d" , &year, &month, &day, &hour, &minute, &second);
-        if (i < 1) fatal_error("set_date: bad date code %s",arg1); 
+        if (i < 1) fatal_error("set_date: bad date code %s",arg1);
 
         if (check_datecode(year, month, day) != 0 || hour < 0 || hour >= 24 ||
-	    minute < 0 || minute >= 60 || second < 0 || second >= 60) 
+	    minute < 0 || minute >= 60 || second < 0 || second >= 60)
 		fatal_error("set_date: bad date code %s",arg1);
     }
 

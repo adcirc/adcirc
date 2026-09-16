@@ -46,7 +46,7 @@ CMake Build Method
 
     # Configure with defaults
     cmake ..
-    
+
     # Configure with common options
     cmake .. \
         -DBUILD_ADCIRC=ON \
@@ -67,7 +67,7 @@ CMake Build Method
    Available build options include:
 
    Executable Options:
-   
+
    * BUILD_ADCIRC: Build serial ADCIRC executable
    * BUILD_PADCIRC: Build parallel ADCIRC executable (requires MPI)
    * BUILD_ADCPREP: Build parallel preprocessor (requires MPI)
@@ -78,18 +78,18 @@ CMake Build Method
    * BUILD_UTILITIES: Build ADCIRC utility programs
 
    Output Format Options:
-   
+
    * ENABLE_OUTPUT_NETCDF: Enable NetCDF output format
    * ENABLE_OUTPUT_XDMF: Enable XDMF output format (requires NetCDF)
 
    Debug Options:
-   
+
    * DEBUG_FULL_STACK: Enable detailed stack trace
    * DEBUG_LOG_LEVEL: Force debug log level for screen messages
    * Various component-specific debug options (e.g., DEBUG_WIND_TRACE, DEBUG_MESH_TRACE)
 
    Architecture-specific Options:
-   
+
    * Machine-specific optimizations for different platforms (IBM, SGI, SUN, CRAY)
    * VECTOR_COMPUTER: Enable vector computer optimizations
 
@@ -97,10 +97,10 @@ CMake Build Method
 
     # Build using 4 cores
     make -j4
-    
+
     # Build using all available cores
     make -j
-    
+
     # Build using single core
     make
 
@@ -154,5 +154,4 @@ The simulation will create several output files in the netcdf format including:
 * fort.63.nc - elevation time series at all nodes
 * fort.64.nc - velocity time series at all nodes
 
-For more detailed information on the input and output files, refer to the :doc:`Input Files <../technical_reference/input_files/index>` and :doc:`Output Files <../technical_reference/output_files/index>` sections. 
-
+For more detailed information on the input and output files, refer to the :doc:`Input Files <../technical_reference/input_files/index>` and :doc:`Output Files <../technical_reference/output_files/index>` sections.

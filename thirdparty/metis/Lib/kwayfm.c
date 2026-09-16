@@ -18,7 +18,7 @@
 **************************************************************************/
 void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *tpwgts, float ubfactor, int npasses, int ffactor)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, nmoves, nbnd, tvwgt, myndegrees; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, nmoves, nbnd, tvwgt, myndegrees;
   int from, me, to, oldcut, vwgt, gain;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *pwgts, *perm, *bndptr, *bndind, *minwgt, *maxwgt, *itpwgts;
@@ -35,7 +35,7 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
 
   where = graph->where;
   pwgts = graph->pwgts;
-  
+
   /* Setup the weight intervals of the various subdomains */
   minwgt =  idxwspacemalloc(ctrl, nparts);
   maxwgt = idxwspacemalloc(ctrl, nparts);
@@ -53,7 +53,7 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
 
   IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d]-[%6d %6d], Balance: %5.3f, Nv-Nb[%6d %6d]. Cut: %6d\n",
-             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0], 
+             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0],
              1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nvtxs, graph->nbnd,
              graph->mincut));
 
@@ -76,7 +76,7 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
         from = where[i];
         vwgt = graph->vwgt[i];
 
-        if (myrinfo->id > 0 && pwgts[from]-vwgt < minwgt[from]) 
+        if (myrinfo->id > 0 && pwgts[from]-vwgt < minwgt[from])
           continue;   /* This cannot be moved! */
 
         myedegrees = myrinfo->edegrees;
@@ -85,8 +85,8 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
         j = myrinfo->id;
         for (k=0; k<myndegrees; k++) {
           to = myedegrees[k].pid;
-          gain = myedegrees[k].ed-j; /* j = myrinfo->id. Allow good nodes to move */ 
-          if (pwgts[to]+vwgt <= maxwgt[to]+ffactor*gain && gain >= 0)  
+          gain = myedegrees[k].ed-j; /* j = myrinfo->id. Allow good nodes to move */
+          if (pwgts[to]+vwgt <= maxwgt[to]+ffactor*gain && gain >= 0)
             break;
         }
         if (k == myndegrees)
@@ -95,7 +95,7 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
         for (j=k+1; j<myndegrees; j++) {
           to = myedegrees[j].pid;
           if ((myedegrees[j].ed > myedegrees[k].ed && pwgts[to]+vwgt <= maxwgt[to]) ||
-              (myedegrees[j].ed == myedegrees[k].ed && 
+              (myedegrees[j].ed == myedegrees[k].ed &&
                itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid]))
             k = j;
         }
@@ -111,9 +111,9 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
         }
         if (j == 0)
           continue;
-          
+
         /*=====================================================================
-        * If we got here, we can now move the vertex from 'from' to 'to' 
+        * If we got here, we can now move the vertex from 'from' to 'to'
         *======================================================================*/
         graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -124,7 +124,7 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
         INC_DEC(pwgts[to], pwgts[from], vwgt);
         myrinfo->ed += myrinfo->id-myedegrees[k].ed;
         SWAP(myrinfo->id, myedegrees[k].ed, j);
-        if (myedegrees[k].ed == 0) 
+        if (myedegrees[k].ed == 0)
           myedegrees[k] = myedegrees[--myrinfo->ndegrees];
         else
           myedegrees[k].pid = from;
@@ -221,7 +221,7 @@ void Random_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
 **************************************************************************/
 void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *tpwgts, float ubfactor, int npasses)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, nbnd, tvwgt, myndegrees, oldgain, gain; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, nbnd, tvwgt, myndegrees, oldgain, gain;
   int from, me, to, oldcut, vwgt;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *pwgts, *perm, *bndptr, *bndind, *minwgt, *maxwgt, *moved, *itpwgts;
@@ -239,7 +239,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
 
   where = graph->where;
   pwgts = graph->pwgts;
-  
+
   /* Setup the weight intervals of the various subdomains */
   minwgt =  idxwspacemalloc(ctrl, nparts);
   maxwgt = idxwspacemalloc(ctrl, nparts);
@@ -260,7 +260,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
 
   IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d]-[%6d %6d], Balance: %5.3f, Nv-Nb[%6d %6d]. Cut: %6d\n",
-             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0], 
+             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0],
              1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nvtxs, graph->nbnd,
              graph->mincut));
 
@@ -281,7 +281,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
     }
 
     for (iii=0;;iii++) {
-      if ((i = PQueueGetMax(&queue)) == -1) 
+      if ((i = PQueueGetMax(&queue)) == -1)
         break;
       moved[i] = 1;
 
@@ -289,7 +289,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
       from = where[i];
       vwgt = graph->vwgt[i];
 
-      if (pwgts[from]-vwgt < minwgt[from]) 
+      if (pwgts[from]-vwgt < minwgt[from])
         continue;   /* This cannot be moved! */
 
       myedegrees = myrinfo->edegrees;
@@ -298,8 +298,8 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
       j = myrinfo->id;
       for (k=0; k<myndegrees; k++) {
         to = myedegrees[k].pid;
-        gain = myedegrees[k].ed-j; /* j = myrinfo->id. Allow good nodes to move */ 
-        if (pwgts[to]+vwgt <= maxwgt[to]+gain && gain >= 0)  
+        gain = myedegrees[k].ed-j; /* j = myrinfo->id. Allow good nodes to move */
+        if (pwgts[to]+vwgt <= maxwgt[to]+gain && gain >= 0)
           break;
       }
       if (k == myndegrees)
@@ -308,7 +308,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
       for (j=k+1; j<myndegrees; j++) {
         to = myedegrees[j].pid;
         if ((myedegrees[j].ed > myedegrees[k].ed && pwgts[to]+vwgt <= maxwgt[to]) ||
-            (myedegrees[j].ed == myedegrees[k].ed && 
+            (myedegrees[j].ed == myedegrees[k].ed &&
              itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid]))
           k = j;
       }
@@ -324,9 +324,9 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
       }
       if (j == 0)
         continue;
-          
+
       /*=====================================================================
-      * If we got here, we can now move the vertex from 'from' to 'to' 
+      * If we got here, we can now move the vertex from 'from' to 'to'
       *======================================================================*/
       graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -337,7 +337,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
       INC_DEC(pwgts[to], pwgts[from], vwgt);
       myrinfo->ed += myrinfo->id-myedegrees[k].ed;
       SWAP(myrinfo->id, myedegrees[k].ed, j);
-      if (myedegrees[k].ed == 0) 
+      if (myedegrees[k].ed == 0)
         myedegrees[k] = myedegrees[--myrinfo->ndegrees];
       else
         myedegrees[k].pid = from;
@@ -402,7 +402,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
         }
 
         /* Update the queue */
-        if (me == to || me == from) { 
+        if (me == to || me == from) {
           gain = myrinfo->ed-myrinfo->id;
           if (moved[ii] == 2) {
             if (gain >= 0)
@@ -416,7 +416,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
             PQueueInsert(&queue, ii, gain);
             moved[ii] = 2;
           }
-        } 
+        }
 
         ASSERT(myrinfo->ndegrees <= xadj[ii+1]-xadj[ii]);
         ASSERT(CheckRInfo(myrinfo));
@@ -451,7 +451,7 @@ void Greedy_KWayEdgeRefine(CtrlType *ctrl, GraphType *graph, int nparts, float *
 **************************************************************************/
 void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float *tpwgts, float ubfactor, int npasses)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, nbnd, tvwgt, myndegrees, oldgain, gain, nmoves; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, nbnd, tvwgt, myndegrees, oldgain, gain, nmoves;
   int from, me, to, oldcut, vwgt;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *pwgts, *perm, *bndptr, *bndind, *minwgt, *maxwgt, *moved, *itpwgts;
@@ -469,7 +469,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
 
   where = graph->where;
   pwgts = graph->pwgts;
-  
+
   /* Setup the weight intervals of the various subdomains */
   minwgt =  idxwspacemalloc(ctrl, nparts);
   maxwgt = idxwspacemalloc(ctrl, nparts);
@@ -490,7 +490,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
 
   IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d]-[%6d %6d], Balance: %5.3f, Nv-Nb[%6d %6d]. Cut: %6d [B]\n",
-             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0], 
+             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0],
              1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nvtxs, graph->nbnd,
              graph->mincut));
 
@@ -520,7 +520,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
 
     nmoves = 0;
     for (;;) {
-      if ((i = PQueueGetMax(&queue)) == -1) 
+      if ((i = PQueueGetMax(&queue)) == -1)
         break;
       moved[i] = 1;
 
@@ -528,7 +528,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
       from = where[i];
       vwgt = graph->vwgt[i];
 
-      if (pwgts[from]-vwgt < minwgt[from]) 
+      if (pwgts[from]-vwgt < minwgt[from])
         continue;   /* This cannot be moved! */
 
       myedegrees = myrinfo->edegrees;
@@ -536,7 +536,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
 
       for (k=0; k<myndegrees; k++) {
         to = myedegrees[k].pid;
-        if (pwgts[to]+vwgt <= maxwgt[to] || itpwgts[from]*(pwgts[to]+vwgt) <= itpwgts[to]*pwgts[from]) 
+        if (pwgts[to]+vwgt <= maxwgt[to] || itpwgts[from]*(pwgts[to]+vwgt) <= itpwgts[to]*pwgts[from])
           break;
       }
       if (k == myndegrees)
@@ -544,17 +544,17 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
 
       for (j=k+1; j<myndegrees; j++) {
         to = myedegrees[j].pid;
-        if (itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid]) 
+        if (itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid])
           k = j;
       }
 
       to = myedegrees[k].pid;
 
-      if (pwgts[from] < maxwgt[from] && pwgts[to] > minwgt[to] && myedegrees[k].ed-myrinfo->id < 0) 
+      if (pwgts[from] < maxwgt[from] && pwgts[to] > minwgt[to] && myedegrees[k].ed-myrinfo->id < 0)
         continue;
 
       /*=====================================================================
-      * If we got here, we can now move the vertex from 'from' to 'to' 
+      * If we got here, we can now move the vertex from 'from' to 'to'
       *======================================================================*/
       graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -565,7 +565,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
       INC_DEC(pwgts[to], pwgts[from], vwgt);
       myrinfo->ed += myrinfo->id-myedegrees[k].ed;
       SWAP(myrinfo->id, myedegrees[k].ed, j);
-      if (myedegrees[k].ed == 0) 
+      if (myedegrees[k].ed == 0)
         myedegrees[k] = myedegrees[--myrinfo->ndegrees];
       else
         myedegrees[k].pid = from;
@@ -630,7 +630,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
         }
 
         /* Update the queue */
-        if (me == to || me == from) { 
+        if (me == to || me == from) {
           gain = myrinfo->ed-myrinfo->id;
           if (moved[ii] == 2) {
             if (myrinfo->ed > 0)
@@ -644,7 +644,7 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
             PQueueInsert(&queue, ii, gain);
             moved[ii] = 2;
           }
-        } 
+        }
 
         ASSERT(myrinfo->ndegrees <= xadj[ii+1]-xadj[ii]);
         ASSERT(CheckRInfo(myrinfo));
@@ -669,4 +669,3 @@ void Greedy_KWayEdgeBalance(CtrlType *ctrl, GraphType *graph, int nparts, float 
   idxwspacefree(ctrl, nvtxs);
 
 }
-

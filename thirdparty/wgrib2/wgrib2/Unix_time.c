@@ -1,15 +1,15 @@
 /*
- This file is part of wgrib2 and is distributed under terms of the GNU General 
- Public License.  For details see, Free Software Foundation, Inc., 
+ This file is part of wgrib2 and is distributed under terms of the GNU General
+ Public License.  For details see, Free Software Foundation, Inc.,
  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
  (C) 2009  Pablo Romero
 	first version 24/03/2009
 		requirements: POSIX
         v1.2 1/2022 Manfred Schwarb, W. Ebisuzaki
-		v1.0 needed fix for bug in glibc, 
+		v1.0 needed fix for bug in glibc,
 		in code review found:
-		   restore of $TZ wasn't robust (not needed for linux and windows), 
+		   restore of $TZ wasn't robust (not needed for linux and windows),
 		   year 2038 bug (32-bit integer overflow)
 		   if program error, print -1 which is a valid unix time
 		   if forecast time is not in template (ex. radar), the
@@ -20,7 +20,7 @@
 		change requirements from POSIX to C89
 		remove the conditional compile for POSIX code
 
-Requirements: 
+Requirements:
     ansi C (C89)
 
 Note: v1.0 and v1.2 have different responses to errors.

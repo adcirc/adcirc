@@ -14,4 +14,3 @@
 int f_endif(ARG0) {
     return 0;
 }
-

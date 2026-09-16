@@ -100,7 +100,7 @@ ifeq ($(XDMF),enable)
      $(warning (INFO) XDMF library path is $(XDMFHOME).)
 endif
 
-FFLAGSGSW :=  
+FFLAGSGSW :=
 ifeq ($(GRIB2),enable)
      PPFC    := $(PPFC) -DGRIB2API
      PFC     := $(PFC) -DGRIB2API
@@ -110,7 +110,7 @@ ifeq ($(GRIB2),enable)
      FFLAGS4 := $(FFLAGS4) -DGRIB2API
      FFLAGSGSW := $(FFLAGSGSW) -I$(WGRIB2HOME)
 endif
-ifeq ($(DATETIME),enable) 
+ifeq ($(DATETIME),enable)
      PPFC    := $(PPFC) -DDATETIME
      PFC     := $(PFC) -DDATETIME
      FFLAGS1 := $(FFLAGS1) -DDATETIME
@@ -221,7 +221,7 @@ ifeq ($(BUILDTYPE),padcswan)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   #MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
-  MSG_MOBJ:=  
+  MSG_MOBJ:=
   ifneq ($(wildcard $(SRCDIR)/work/.swanlastcompile),)
     include $(SRCDIR)/work/.swanlastcompile
     ifneq ($(SWANLASTCOMPILE),parallel)
@@ -383,7 +383,7 @@ NC_MSRC    =  netcdfio.F90
 NCE_MSRC   =  netcdf_error.F90
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
-WRITER_MSRC = writer.F 
+WRITER_MSRC = writer.F
 NWS08_MSRC = nws08.F90
 #Casey 090302: Add file for coupling to unstructured SWAN.
 COUP_MSRC  =  couple2swan.F
@@ -396,7 +396,7 @@ SPG_MSRC = quadrature.F90 sponge_layer.F90
 BC3D_MSRC = couple2baroclinic3D.F
 # CPB baroclinic internal tide updates
 GL2LOC_MSRC = gl2loc_mapping.F90
-TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90 
+TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90
 ITTIDE_MSRC = internaltide.F90
 
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
@@ -447,9 +447,9 @@ NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 ############################# Source & Object Files ######################
 
 METIS_SRC  =  metis.F
-PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
+PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F
 ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
-POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
+POST_SRC   =  adcpost.F post.F compare.F diffmerge.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
 B13_SRC    =  build13.F
@@ -860,7 +860,7 @@ $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)hashtable.o   : hashtable.F90
 $(O_DIR)control.o     : control.F
-$(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o 
+$(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
 $(O_DIR)sponge_layer.o : sponge_layer.F90 $(O_DIR)quadrature.o $(ADC_MOBJ)

@@ -45,4 +45,3 @@ if (JAS_ENABLE_MSAN)
 	message("Enabling Memory Sanitizer")
 	jas_enable_sanitizer("msan")
 endif()
-

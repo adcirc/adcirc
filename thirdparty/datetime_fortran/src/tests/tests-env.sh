@@ -24,4 +24,3 @@ btf () { awk '{$1=$NF;}1'; }
 rmres () { sed 's/: PASS$//' | sed 's/: FAIL$//' ; }
 
 pof <$LOG | btf |  rmres  | awk '{print ":test-result: " $0}' >$TRS
-

@@ -6,7 +6,7 @@ ASGSPATH    := /home/jason/asgs/master
 LIBS        := -L$(XDMFLIBPATH) -L$(NETCDFPATH)/lib -L$(HDF5PATH)/lib
 INCLUDES    := -I$(XDMFPATH)/utils -I$(ASGSPATH)/output -I$(NETCDFPATH)/include
 LDFLAGS     := -lXdmfCore -lXdmfUtils -lXdmf -lnetcdff -Wl,-rpath=$(HDF5PATH)/lib
-# 
+#
 # specify compiler=gfortran on the make command line
 ifeq ($(compiler),gfortran)
    FC := gfortran
@@ -16,7 +16,7 @@ ifeq ($(compiler),gfortran)
    endif
 endif
 #
-# If netcdf libraries are available on the target platform, 
+# If netcdf libraries are available on the target platform,
 # use NETCDF=enable on the make command line; this is not needed
 # for xdmf2adcirc or adcirc2xdmf, but it is needed by their dependencies.
 ifeq ($(NETCDF),enable)
@@ -59,7 +59,7 @@ MODS := control.mod adcmesh.mod adcircdata.mod nodalattr.mod asgsio.mod
 all : adcirc2xdmf xdmf2adcirc
 #
 clean :
-	rm -f *.o *.mod *.x $(ASGSPATH)/output/adcmesh.o $(ASGSPATH)/output/asgsio.o $(ASGSPATH)/util/nodalattr/nodalattr.o $(ASGSPATH)/output/adcmesh.mod $(ASGSPATH)/output/asgsio.mod $(ASGSPATH)/util/nodalattr/nodalattr.mod  
+	rm -f *.o *.mod *.x $(ASGSPATH)/output/adcmesh.o $(ASGSPATH)/output/asgsio.o $(ASGSPATH)/util/nodalattr/nodalattr.o $(ASGSPATH)/output/adcmesh.mod $(ASGSPATH)/output/asgsio.mod $(ASGSPATH)/util/nodalattr/nodalattr.mod
 #
 adcirc2xdmf : $(MODS)
 	$(FC) $(FFLAGS) $(INCLUDES) $(LIBS) -o $@.x $@.f90 $(OBJ) $(LDFLAGS)

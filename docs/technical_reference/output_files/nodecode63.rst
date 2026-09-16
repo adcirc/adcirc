@@ -24,4 +24,4 @@ The basic file structure is shown below. Each line of output is represented by a
 Note
 ----
 
-* The nodecode.63 file contains integer values 
+* The nodecode.63 file contains integer values

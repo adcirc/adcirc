@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                           AZIMUTHAL EQUIDISTANT 
+NAME                           AZIMUTHAL EQUIDISTANT
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Azimuthal Equidistant projection.  The
@@ -36,7 +36,7 @@ static double cos_p12;		/* cos of center latitude		*/
   ----------------------------------*/
 long aziminvint( double r_maj, double center_lon, double center_lat,
         double false_east, double false_north) {
-// long aziminvint(r_maj,center_lon,center_lat,false_east,false_north) 
+// long aziminvint(r_maj,center_lon,center_lat,false_east,false_north)
 
 // double r_maj;		/* major axis			*/
 // double center_lon;		/* center longitude		*/
@@ -57,14 +57,14 @@ sincos(center_lat,&sin_p12,&cos_p12);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("AZIMUTHAL EQUIDISTANT"); 
+ptitle("AZIMUTHAL EQUIDISTANT");
 radius(r_major);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Azimuthal inverse equations--mapping x,y to lat/long
   ---------------------------------------------------*/
@@ -119,4 +119,4 @@ if ((fabs(con) < EPSLN) && (fabs(x) < EPSLN))
 *lon = adjust_lon(lon_center + atan2((x * sinz * cos_p12), (con * rh)));
 
 return(OK);
-} 
+}

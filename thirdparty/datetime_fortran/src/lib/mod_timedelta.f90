@@ -16,8 +16,8 @@ public :: timedelta
 
 type :: timedelta
 
-  !! Class of objects that define difference between two datetime 
-  !! instances. 
+  !! Class of objects that define difference between two datetime
+  !! instances.
 
   private
 
@@ -74,7 +74,7 @@ contains
 pure elemental type(timedelta) function timedelta_constructor(days,&
   hours,minutes,seconds,milliseconds)
 
-  !! Constructor function for the `timedelta` class. 
+  !! Constructor function for the `timedelta` class.
 
   integer,intent(in),optional :: days         !! number of days
   integer,intent(in),optional :: hours        !! number of hours
@@ -161,12 +161,12 @@ endfunction getMilliseconds
 
 pure elemental real(kind=real64) function total_seconds(self)
 
-  !! Returns a total number of seconds contained in a `timedelta` 
+  !! Returns a total number of seconds contained in a `timedelta`
   !! instance.
 
   class(timedelta),intent(in) :: self !! `timedelta` instance
 
-  total_seconds = self % days*86400._real64& 
+  total_seconds = self % days*86400._real64&
                 + self % hours*3600._real64&
                 + self % minutes*60._real64&
                 + self % seconds           &
@@ -178,7 +178,7 @@ endfunction total_seconds
 
 pure elemental function timedelta_plus_timedelta(t0,t1) result(t)
 
-  !! Adds two `timedelta` instances together and returns a `timedelta` 
+  !! Adds two `timedelta` instances together and returns a `timedelta`
   !! instance. Overloads the operator `+`.
 
   class(timedelta),intent(in) :: t0 !! lhs `timedelta` instance
@@ -197,7 +197,7 @@ endfunction timedelta_plus_timedelta
 
 pure elemental function timedelta_minus_timedelta(t0,t1) result(t)
 
-  !! Subtracts a `timedelta` instance from another. Returns a 
+  !! Subtracts a `timedelta` instance from another. Returns a
   !! `timedelta` instance. Overloads the operator `-`.
 
   class(timedelta),intent(in) :: t0 !! lhs `timedelta` instance
@@ -212,7 +212,7 @@ endfunction timedelta_minus_timedelta
 
 pure elemental function unary_minus_timedelta(t0) result(t)
 
-  !! Takes a negative of a `timedelta` instance. Overloads the operator 
+  !! Takes a negative of a `timedelta` instance. Overloads the operator
   !! `-`.
 
   class(timedelta),intent(in) :: t0 !! `timedelta` instance
@@ -225,13 +225,13 @@ pure elemental function unary_minus_timedelta(t0) result(t)
   t % milliseconds = -t0 % milliseconds
 
 endfunction unary_minus_timedelta
-  
+
 
 
 pure elemental logical function eq(td0,td1)
 
-  !! `timedelta` object comparison operator. Returns `.true.` if `td0` 
-  !! is equal to `td1` and `.false.` otherwise. Overloads the operator 
+  !! `timedelta` object comparison operator. Returns `.true.` if `td0`
+  !! is equal to `td1` and `.false.` otherwise. Overloads the operator
   !! `==`.
 
   class(timedelta),intent(in) :: td0 !! lhs `timedelta` instance
@@ -245,8 +245,8 @@ endfunction eq
 
 pure elemental logical function neq(td0,td1)
 
-  !! `timedelta` object comparison operator. Returns `.true.` if `td0` 
-  !! is not equal to `td1` and `.false.` otherwise. Overloads the 
+  !! `timedelta` object comparison operator. Returns `.true.` if `td0`
+  !! is not equal to `td1` and `.false.` otherwise. Overloads the
   !! operator `/=`.
 
   class(timedelta),intent(in) :: td0 !! lhs `timedelta` instance
@@ -261,7 +261,7 @@ endfunction neq
 pure elemental logical function gt(td0,td1)
 
   !! `timedelta` object comparison operator. Returns `.true.` if
-  !! `td0` is greater than `td1` and `.false.` otherwise. Overloads the 
+  !! `td0` is greater than `td1` and `.false.` otherwise. Overloads the
   !! operator `>`.
 
   class(timedelta),intent(in) :: td0 !! lhs `timedelta` instance
@@ -275,8 +275,8 @@ endfunction gt
 
 pure elemental logical function ge(td0,td1)
 
-  !! `timedelta` object comparison operator. Returns `.true.` if `td0` 
-  !! is greater than or equal to `td1` and `.false.` otherwise. 
+  !! `timedelta` object comparison operator. Returns `.true.` if `td0`
+  !! is greater than or equal to `td1` and `.false.` otherwise.
   !! Overloads the operator >=.
 
   class(timedelta),intent(in) :: td0 !! lhs `timedelta` instance
@@ -290,8 +290,8 @@ endfunction ge
 
 pure elemental logical function lt(td0,td1)
 
-  !! `timedelta` object comparison operator. Returns `.true.` if `td0` 
-  !! is less than `td1` and `.false.` otherwise. Overloads the operator 
+  !! `timedelta` object comparison operator. Returns `.true.` if `td0`
+  !! is less than `td1` and `.false.` otherwise. Overloads the operator
   !! `<`.
 
   class(timedelta),intent(in) :: td0 !! lhs `timedelta` instance
@@ -305,8 +305,8 @@ endfunction lt
 
 pure elemental logical function le(td0,td1)
 
-  !! `timedelta` object comparison operator. Returns `.true.` if `td0` 
-  !! is less than or equal to `td1` and `.false.` otherwise. Overloads 
+  !! `timedelta` object comparison operator. Returns `.true.` if `td0`
+  !! is less than or equal to `td1` and `.false.` otherwise. Overloads
   !! the operator `<=`.
 
   class(timedelta),intent(in) :: td0 !! lhs `timedelta` instance

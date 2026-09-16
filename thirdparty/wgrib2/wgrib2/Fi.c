@@ -14,4 +14,3 @@
 int f_fi(ARG0) {
     return 0;
 }
-

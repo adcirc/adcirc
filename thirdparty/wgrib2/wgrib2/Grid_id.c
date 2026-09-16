@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 #include "grb2.h"
 #include "wgrib2.h"
@@ -10,7 +10,7 @@
    6/2012 Public Domain Wesley Ebisuzaki
 
    identify grid
-  
+
 */
 
 
@@ -33,8 +33,7 @@ int f_grid_id(ARG0) {
     if (mode < 0) return 0;
     i = grid_id(sec, &r_major,&r_minor, &proj_id, proj_args, N_proj_args, &grid_defn);
 
-    sprintf(inv_out,"grid_id err=%d r_major=%.1lf m r_minor=%.1lf m proj_id=%d n=%d nx=%d ny=%d", i, r_major, r_minor, 
+    sprintf(inv_out,"grid_id err=%d r_major=%.1lf m r_minor=%.1lf m proj_id=%d n=%d nx=%d ny=%d", i, r_major, r_minor,
           (int) proj_id,grid_defn.n,grid_defn.nx,grid_defn.ny);
     return 0;
 }
-

@@ -37,7 +37,7 @@ static double feast[6];		/* False easting, one for each region */
 /* Initialize the Interrupted Mollweide projection
   --------------------------------------------*/
 long imolwforint(double r) {
-//long imolwforint(r) 
+//long imolwforint(r)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //{
 /* Place parameters in static storage for common use
@@ -64,11 +64,11 @@ feast[5] = R * 2.19988776387;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("INTERRUPTED MOLLWEIDE EQUAL-AREA"); 
+ptitle("INTERRUPTED MOLLWEIDE EQUAL-AREA");
 radius(r);
 return(OK);
 }
-
+
 /* Interrupted Mollweide forward equations--mapping lat,long to x,y
   -------------------------------------------------------------*/
 long imolwfor(double lon, double lat, double *x, double *y) {
@@ -92,20 +92,20 @@ long region;
    ----------------------------------------------------------------------*/
 if (lat >= 0.0)
    {
-   if (lon >= 0.34906585 && lon < 1.91986217719) region = 0; 
-   else if 
+   if (lon >= 0.34906585 && lon < 1.91986217719) region = 0;
+   else if
      ((lon >= 1.919862177 && lon <= (PI + 1.0E-14)) ||
 				 (lon >= (-PI - 1.0E-14) && lon < -1.745329252))
-        region=1; 
+        region=1;
    else region = 2;
    }
 else
    {
-   if (lon >= 0.34906585 && lon < 2.44346095279) region = 3; 
-   else if 
+   if (lon >= 0.34906585 && lon < 2.44346095279) region = 3;
+   else if
      ((lon >= 2.44346095279 && lon <= (PI +1.0E-14)) ||
 				(lon >= (-PI - 1.0E-14) && lon<-1.2217304764))
-        region=4; 
+        region=4;
    else region = 5;
    }
 

@@ -34,12 +34,12 @@
  *    The disadvantage of the NCEP-style is that you have to
  *    have tables.  In practise, different products have
  *    different tables.
- * 
+ *
  * Scaling_0001.c is a table to use NCEP-style grib precision.
  *   this table will be changed with no regard to users.
  *
  * You should use Scaling_0001.c as a example on how to write
- * your own NCEP-style grib precission.  I suggest that you 
+ * your own NCEP-style grib precission.  I suggest that you
  * call your routine Scaling_(something unique).c  The
  * first letter of the C code must start with a capital
  * in order for the scipts to recognize it as source code
@@ -75,7 +75,7 @@ For ECMWF style (number of bit of precision)
    DEC = don't car
    BIN = don't car
    BITS > 0
-   
+
 */
 
 struct prec {

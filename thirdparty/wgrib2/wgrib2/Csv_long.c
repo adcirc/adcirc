@@ -32,13 +32,13 @@ int f_csv_long(ARG1) {
     unsigned int j;
     char vt[20],rt[20],st[20];
     int year, month, day, hour, minute, second;
-	
+
     /* initialization phase */
 
     if (mode == -1) {
         WxText = decode = latlon = 1;
         if ((*local = (void *) ffopen(arg1,file_append ? "a" : "w")) == NULL)
-		fatal_error("csv_long could not open file %s", arg1);  
+		fatal_error("csv_long could not open file %s", arg1);
 	return 0;
     }
 

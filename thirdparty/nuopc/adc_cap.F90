@@ -170,7 +170,7 @@ module adc_cap
   use NUOPC_Model, &
     model_routine_SS        => SetServices,    &
     model_label_SetClock    => label_SetClock, &
-    model_label_CheckImport => label_CheckImport, &    
+    model_label_CheckImport => label_CheckImport, &
     model_label_Advance     => label_Advance,  &
     model_label_Finalize    => label_Finalize
 
@@ -209,7 +209,7 @@ module adc_cap
   use adc_mod, only: eliminate_ghosts
   !use adc_mod, only: adc_cpl_int,adc_cpl_num,adc_cpl_den  !time info is getting from driver
   !use adc_mod, only: read_config
-  
+
   implicit none
 
 !C... v50.xx sm -- added for coupling with NOUPC Cap
@@ -235,13 +235,13 @@ module adc_cap
   type (fld_list_type) :: fldsFrAdc(fldsMax)
 
   type(meshdata),save  :: mdataIn, mdataOut
-  
+
   character(len=2048):: info
   integer :: dbrc     ! temporary debug rc value
 
   !to test feild halo update.
   type (ESMF_RouteHandle), save :: ATM_HaloRouteHandel
-  
+
   !real(ESMF_KIND_R8)      :: WaveCouplingIntervalSec, WindCouplingIntervalSec  !in seconds
   !type(ESMF_TimeInterval) :: WaveCouplingInterval, WindCouplingInterval
 
@@ -250,7 +250,7 @@ module adc_cap
 
 ! DW
   logical, save:: first_import_atm = .true. ;
-  logical, save:: first_import_wav = .true. ; 
+  logical, save:: first_import_wav = .true. ;
 
   real,parameter :: wave_force_limmit = 0.05
 
@@ -275,17 +275,17 @@ module adc_cap
     ! Local variables
     integer                      :: num,i
     rc = ESMF_SUCCESS
-    
+
     ! read config file
-    !call read_config()   !information will be read 
-                          !from nems.configure by NEMS driver as time slots  
+    !call read_config()   !information will be read
+                          !from nems.configure by NEMS driver as time slots
     ! the NUOPC model component will register the generic methods
     call NUOPC_CompDerive(model, model_routine_SS, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    
+
     ! set entry point for methods that require specific implementation
     call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_INITIALIZE, &
       phaseLabelList=(/"IPDv00p1"/), userRoutine=InitializeP1, rc=rc)
@@ -299,7 +299,7 @@ module adc_cap
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    
+
     !Assume no need to change clock settings
     ! attach specializing method(s)
 !    call NUOPC_CompSpecialize(model, specLabel=model_label_SetClock, &
@@ -347,12 +347,12 @@ module adc_cap
      write(info,*) subname,"fldsFrAdc(num)%stdname  ", fldsFrAdc(num)%stdname
    end do
 !
-    
+
     write(info,*) subname,' --- adc SetServices completed --- '
     !print *,      subname,' --- adc SetServices completed --- '
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
   end subroutine
-  
+
   !-----------------------------------------------------------------------------
     !> First initialize subroutine called by NUOPC.  The purpose
     !! is to set which version of the Initialize Phase Definition (IPD)
@@ -434,10 +434,10 @@ module adc_cap
     end if
     write(message, '(A,L)') trim(subname)//' debug flag is set to ', dbug
     call ESMF_LogWrite(trim(message), ESMF_LOGMSG_INFO)
-    
+
     !NUOPC4MET = .true.
     !NUOPC4WAV = .true.
-        
+
     CALL ADCIRC_Init(adc_comm)
 
     !WTIMINC = 3*3600.0
@@ -557,10 +557,10 @@ module adc_cap
 !https://esgf.esrl.noaa.gov/projects/couplednems/coupling_fields
 !ocn_current_zonal
 !ocncz
-!m s-1	Ocean current X component.	 	 	 	
+!m s-1	Ocean current X component.
 !ocn_current_merid
 !ocncm
-!m s-1	Ocean current Y component.	 	
+!m s-1	Ocean current Y component.
 
 
 
@@ -639,8 +639,8 @@ module adc_cap
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
-    
-    ! local variables    
+
+    ! local variables
     type(ESMF_Field)        :: field
     !Saeed added
     type(meshdata)               :: mdata
@@ -657,10 +657,10 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_velx(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_vely(:)
-   
+
     character(len=128)         :: fldname, timeStr
     integer                    :: i1,num
-    logical :: surge_forcing = .false. ; 
+    logical :: surge_forcing = .false. ;
     ! DW
 
     rc = ESMF_SUCCESS
@@ -690,7 +690,7 @@ module adc_cap
     call create_parallel_esmf_mesh_from_meshdata(mdata, meshloc, ModelMesh)
     !    print *,"ADC ..3.............................................. >> "
     !
-    
+
     if (dbug) then
        call ESMF_MeshWrite(ModelMesh, filename="adc_mesh", rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -728,7 +728,7 @@ module adc_cap
 ! Jul 2023
 ! UT ! Initialized an export field omask
     do num = 1, fldsFrAdc_num
-       if (fldsFrAdc(num)%shortname == 'omask' .and. fldsFrAdc(num)%connected) then 
+       if (fldsFrAdc(num)%shortname == 'omask' .and. fldsFrAdc(num)%connected) then
           call State_getFldPtr_(ST=exportState, fldname='omask', fldptr=dataPtr_mask, &
             rc=rc,dump=.false.,timeStr=timeStr)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -757,7 +757,7 @@ module adc_cap
       !   EXPORT
       !-----------------------------------------
       !pack and send exported fields: zeta, velx, vely
-     
+
       ! >>>>> PACK and send ZETA
       call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
         rc=rc,dump=.false.,timeStr=timeStr)
@@ -769,7 +769,7 @@ module adc_cap
         return  ! bail out
 
       !fill only owned nodes for tmp vector
-      do i1 = 1, mdataOut%NumOwnedNd, 1  
+      do i1 = 1, mdataOut%NumOwnedNd, 1
         dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
 
@@ -784,7 +784,7 @@ module adc_cap
       do i1 = 1, mdataOut%NumOwnedNd, 1
          dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
-      
+
       ! >>>>> PACK and send VELY
       call State_getFldPtr(ST=exportState,fldname='vely',fldptr=dataPtr_vely,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -796,7 +796,7 @@ module adc_cap
       do i1 = 1, mdataOut%NumOwnedNd, 1
         dataPtr_vely(i1) = VV2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
-      
+
     else
       write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -819,7 +819,7 @@ module adc_cap
     !print *,      subname,' --- initialization phase 2 completed --- '
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
   end subroutine InitializeP2
-  
+
 
  !> Adds a set of fields to an ESMF_State object.  Each field is wrapped
   !! in an ESMF_Field object.  Memory is either allocated by ESMF or
@@ -920,7 +920,7 @@ module adc_cap
     ! - the parent clock is on the slow timescale atm timesteps
     ! - reset the component clock to have a timeStep that is for adc-wav of the parent
     !   -> timesteps
-    
+
     !call ESMF_TimeIntervalSet(ADCTimeStep, s=     adc_cpl_int, sN=adc_cpl_num, sD=adc_cpl_den, rc=rc) ! 5 minute steps
     !TODO: use nint !!?
 !    call ESMF_TimeIntervalSet(ADCTimeStep, s= adc_cpl_int , rc=rc) ! 5 minute steps
@@ -934,13 +934,13 @@ module adc_cap
 !      line=__LINE__, &
 !      file=__FILE__)) &
 !      return  ! bail out
-      
+
 !    print *, "ADC Timeinterval1 = "
 !    call ESMF_TimeIntervalPrint(ADCTimeStep, options="string", rc=rc)
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
 !        line=__LINE__, &
 !        file=__FILE__)) &
-!        return  ! bail out    
+!        return  ! bail out
 
 !  end subroutine
   !-----------------------------------------------------------------------------
@@ -948,14 +948,14 @@ module adc_cap
 !  subroutine SetClock_not_active(model, rc)
 !    type(ESMF_GridComp)  :: model
 !    integer, intent(out) :: rc
-!    
+!
 !    ! local variables
 !    type(ESMF_Clock)              :: clock
 !    type(ESMF_TimeInterval)       :: ADCTimeStep, timestep
 !    character(len=*),parameter  :: subname='(adc_cap:SetClock)'
 
 !    rc = ESMF_SUCCESS
-    
+
     ! query the Component for its clock, importState and exportState
 !    call ESMF_GridCompGet(model, clock=clock, rc=rc)
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -976,10 +976,10 @@ module adc_cap
 !      line=__LINE__, &
 !      file=__FILE__)) &
 !      return  ! bail out
-      
+
     ! initialize internal clock
     ! here: parent Clock and stability timeStep determine actual model timeStep
-!    call ESMF_TimeIntervalSet(ADCTimeStep, s=adc_cpl_int, rc=rc) 
+!    call ESMF_TimeIntervalSet(ADCTimeStep, s=adc_cpl_int, rc=rc)
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
 !      line=__LINE__, &
 !      file=__FILE__)) &
@@ -989,7 +989,7 @@ module adc_cap
 !      line=__LINE__, &
 !      file=__FILE__)) &
 !      return  ! bail out
-    
+
 !  end subroutine
 
 
@@ -1049,7 +1049,7 @@ module adc_cap
     integer :: YY, MM, DD, H, M, S
     integer :: ss,ssN,ssD
     logical :: wave_forcing, meteo_forcing, surge_forcing
-! DW 
+! DW
     logical :: ice_forcing
 
     type(ESMF_Time) :: BeforeCaribbeanTime,AfterCaribbeanTime
@@ -1134,7 +1134,7 @@ module adc_cap
     !Get and fill imported fields
     ! <<<<< RECEIVE and UN-PACK SXX
    wave_forcing= .true.
-   
+
    do num = 1,fldsToAdc_num
       if (fldsToAdc(num)%shortname == 'sxx') wave_forcing = wave_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'syy') wave_forcing = wave_forcing .and. fldsToAdc(num)%connected
@@ -1146,7 +1146,7 @@ module adc_cap
         ! Wave time step
         RSTIMINC = nint(timeStepAbs)  !TODO: Get it from coupler based on the time slots.
                                       !TODO: This implemetation wotks for one time slot for wind and wave right now.
-                                      !TODO: 
+                                      !TODO:
         !RSTIMINC = adc_cpl_int +  adc_cpl_num / adc_cpl_den
         !print *, ' in cap   ....> RSTIMINC > ', RSTIMINC
         call State_getFldPtr_(ST=importState,fldname='sxx',fldptr=dataPtr_sxx, &
@@ -1252,15 +1252,15 @@ module adc_cap
 !		 sxx:add_offset = 0.f ;
 !		 sxx:valid_min = -3000 ;
 !	 	 sxx:valid_max = 3000 ;
- 
+
 !    Therefore we need to divide sxx/rho to change its unit to m3s-2
-!    in force calculation we do d(sxx)/dx therefore the final force 
-!    unit will be m2s-2 which is the correct one.   
+!    in force calculation we do d(sxx)/dx therefore the final force
+!    unit will be m2s-2 which is the correct one.
 
         ADCIRC_SXX = ADCIRC_SXX / RhoWat0
         ADCIRC_SYY = ADCIRC_SYY / RhoWat0
         ADCIRC_SXY = ADCIRC_SXY / RhoWat0
-        
+
         !print *, 'in cap maxval(ADCIRC_SXX)', maxval(ADCIRC_SXX)
 
         InterpoWeight = 0.0  !avoid time interpolation
@@ -1287,13 +1287,13 @@ module adc_cap
         NUOPC4WAV = .false.
         write(info,*) subname,' --- no wave forcing exchange / waves are not all connected --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-    endif        
+    endif
     !-----------------------------------------
     !   IMPORT from ATM
     !-----------------------------------------
    meteo_forcing= .true.
 ! DW
-   ice_forcing=.true. 
+   ice_forcing=.true.
    do num = 1,fldsToAdc_num
       if (fldsToAdc(num)%shortname == 'pmsl')    meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'imwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
@@ -1306,15 +1306,15 @@ module adc_cap
 
 
 !99999 CONTINUE
-    
+
     if ( meteo_forcing) then
         !NWS = 39   ! over write NWS option to be sure we incldue wind forcing
-        
-        !WTIMINC = wrf_int 
+
+        !WTIMINC = wrf_int
         !WTIMINC = wrf_int +  wrf_num / wrf_den
         WTIMINC =  nint(timeStepAbs)  !TODO: Get it from coupler based on the time slots.
                                       !TODO: This implemetation wotks for one time slot for wind and wave right now.
-                                      !TODO: 
+                                      !TODO:
         !Get and fill imported fields
         ! <<<<< RECEIVE and UN-PACK pmsl
         call State_getFldPtr_(ST=importState,fldname='pmsl',fldptr=dataPtr_pmsl,rc=rc,dump=.false.,timeStr=timeStr)
@@ -1324,7 +1324,7 @@ module adc_cap
           return  ! bail out
 
         !print *, 'size > 5 dataPtr_pmsl>', size(dataPtr_pmsl) !, dataPtr_pmsl(5:)
-        
+
         !-----------------------------------------
         ! <<<<< RECEIVE and UN-PACK imwh10m    V-Y wind comp
         call State_getFldPtr_(ST=importState,fldname='imwh10m',fldptr=dataPtr_imwh10m,rc=rc,dump=.false.,timeStr=timeStr)
@@ -1349,7 +1349,7 @@ module adc_cap
             file=__FILE__)) &
             return  ! bail out
         endif
-        
+
         write(info,*) subname,' --- meteo forcing exchange OK / atm feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
         !print *, info
@@ -1367,11 +1367,11 @@ module adc_cap
 
         allocate (dumy1(1:NP),dumy2(1:NP)) ! GML added
 
-        WVNX1 = WVNX2   
-        WVNY1 = WVNY2  
+        WVNX1 = WVNX2
+        WVNY1 = WVNY2
         PRN1  = PRN2
         CICE1  = CICE2  ! GML added
-       
+
         ! Fill owned nodes from imported data to model variable
         !TODO: unit check
         do i1 = 1, mdataOut%NumOwnedNd, 1
@@ -1381,13 +1381,13 @@ module adc_cap
         do i1 = 1, mdataOut%NumOwnedNd, 1
             WVNY2(mdataOut%owned_to_present_nodes(i1)) =  dataPtr_imwh10m(i1) !* 0.0  !Meridionalis v-comp or y-comp
         end do
-        
+
         do i1 = 1, mdataOut%NumOwnedNd, 1
 !            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
 !++ GML  in ADCIRC global.F RhoWat0=1000.D0; g = 9.80665
             PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
           !if ( abs(dataPtr_pmsl(i1) ).gt. 1e11)  then
-          !  STOP '  dataPtr_pmsl > mask '     
+          !  STOP '  dataPtr_pmsl > mask '
           !end if
         end do
 !++ GML
@@ -1397,9 +1397,9 @@ module adc_cap
               CICE2(mdataOut%owned_to_present_nodes(i1)) =  dataPtr_icec(i1) !
            end do
         endif
-!++ 
+!++
 
-        ! Ghost nodes update 
+        ! Ghost nodes update
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 !  DW
@@ -1408,22 +1408,22 @@ module adc_cap
           call UPDATER( CICE2(:), dumy1(:), dumy1(:),3)
         endif
 
-!c  DW, Sep 2021 
+!c  DW, Sep 2021
 !c   -- Nearest extrapolation in time for the first imported step
         if ( first_import_atm  ) then
-            WVNX1 = WVNX2 ; 
-            WVNY1 = WVNY2 ; 
+            WVNX1 = WVNX2 ;
+            WVNY1 = WVNY2 ;
             PRN1 = PRN2   ;
 
             if ( ice_forcing ) then
-              CICE1 = CICE2 ; 
+              CICE1 = CICE2 ;
             endif
             first_import_atm = .false. ;
         end if
-!c 
+!c
  !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
  !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
- !      !      Todo: look at atmesh code to see if there could be a better fix.  
+ !      !      Todo: look at atmesh code to see if there could be a better fix.
 !        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
 !
 !          WVNX2 = 1e-10
@@ -1442,38 +1442,38 @@ module adc_cap
 !          CICE2 = 0.0d0
 !!++
 !          first_exchange = .false.
-!        end if  
+!        end if
 !
-    
- !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
- !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
+
+ !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), &
+ !           MAXVAL(WVNY1), MAXVAL(WVNY2) ;
 
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
-        !end if  
-    
+        !end if
+
         !if (sum(WVNX2) .eq. 0.0 ) then
         !  WVNX2 = 8.0
-        !end if  
-    
+        !end if
+
         !if (sum(WVNX1) .eq. 0.0 ) then
         !  WVNX1 = 8.0
-        !end if  
-        
+        !end if
+
 
         !if (sum(WVNY2) .eq. 0.0 ) then
         !  WVNY2 = -8.0
-        !end if  
-    
+        !end if
+
         !if (sum(WVNY1) .eq. 0.0 ) then
         !  WVNY1 = -8.0
-        !end if  
+        !end if
 
 
         !where(abs(PRN1).gt. 1e11)  PRN1 =  1e4
         !where(abs(PRN2).gt. 1e11)  PRN2 =  1e4
 
-        
+
         ! where(abs(WVNX1).gt. 1e6)  WVNX1 =  8.0
         !where(abs(WVNX2).gt. 1e6)  WVNX2 =  8.0
 
@@ -1488,8 +1488,8 @@ module adc_cap
         !WVNY1 = -8.0
 
         !where(dataPtr_pmsl .gt. 1e20)  dataPtr_pmsl =  10e4
-        !where(dataPtr_pmsl .lt. 8e4 )  dataPtr_pmsl =  10e4        
-        
+        !where(dataPtr_pmsl .lt. 8e4 )  dataPtr_pmsl =  10e4
+
         !print *, 'size(dataPtr_pmsl) > ',  size(dataPtr_pmsl)
         !print *, 'size(PRN2)         > ',  size(PRN2)
 
@@ -1497,15 +1497,15 @@ module adc_cap
         !
         !where((WVNX2).gt. 20)  WVNX2 =  20
         !where((WVNY2).gt. 20)  WVNY2 =  20
-        !where((PRN2) .gt. 1e20)   PRN2 =  1e4                
+        !where((PRN2) .gt. 1e20)   PRN2 =  1e4
 
         !where((WVNX1).gt. 20)  WVNX1 =  20
         !where((WVNY1).gt. 20)  WVNY1 =  20
-        !where((PRN1).gt.  1e20)   PRN1 =  1e4  
-        
-        !PRN1 =  1e4  
-        !PRN2 =  1e4  
-        
+        !where((PRN1).gt.  1e20)   PRN1 =  1e4
+
+        !PRN1 =  1e4
+        !PRN2 =  1e4
+
         ! Ghost nodes update for meteo infos
         !call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 
@@ -1520,7 +1520,7 @@ module adc_cap
          !PRN2  = 10000.0
 
         !print *, 'in cap after maxval(WVNX2)', maxval(WVNX2)
-        !print *, 'in cap after maxval(WVNY2)', maxval(WVNY2)    
+        !print *, 'in cap after maxval(WVNY2)', maxval(WVNY2)
 
 
     else
@@ -1656,7 +1656,7 @@ module adc_cap
 
     call ESMF_StateGet(ST, itemName=trim(fldname), field=lfield, rc=lrc)
     if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
     call ESMF_FieldGet(lfield, farrayPtr=fldptr, rc=lrc)
     if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (present(rc)) rc = lrc
@@ -1666,14 +1666,14 @@ module adc_cap
     !!TODO: this should not be here. It should initilize once
     !call ESMF_FieldHaloStore ( lfield, routehandle = ATM_HaloRouteHandel, rc=lrc)
     !if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    !! 
+    !!
     !!Halo update
     !call ESMF_FieldHalo      ( lfield, ATM_HaloRouteHandel, rc=lrc)
     !if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     !!
     !!TODO: this should not be here. It should finalize once
     !call ESMF_FieldHaloRelease (routehandle = ATM_HaloRouteHandel, rc=lrc)
-    !if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+    !if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     !if (present(rc)) rc = lrc
     !write(info,*) ' --- ATM  halo routehandel in work >>>>>  ---'
     !call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1718,9 +1718,9 @@ module adc_cap
   subroutine CheckImport_not_comp(model, rc)
     type(ESMF_GridComp)   :: model
     integer, intent(out)  :: rc
-    
+
     ! This is the routine that enforces correct time stamps on import Fields
-    
+
     ! local variables
     type(ESMF_Clock)        :: driverClock
     type(ESMF_Time)         :: startTime, currTime
@@ -1730,14 +1730,14 @@ module adc_cap
 
     rc = ESMF_SUCCESS
     return
-    
+
 !    ! query Component for the driverClock
 !    call NUOPC_ModelGet(model, driverClock=driverClock, rc=rc)
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
 !      line=__LINE__, &
 !      file=__FILE__)) &
 !      return  ! bail out
-    
+
 !    ! get the start time and current time out of the clock
 !    call ESMF_ClockGet(driverClock, startTime=startTime, &
 !      currTime=currTime, rc=rc)
@@ -1745,8 +1745,8 @@ module adc_cap
 !      line=__LINE__, &
 !      file=__FILE__)) &
 !      return  ! bail out
-    
-   
+
+
   end subroutine
 
   !-----------------------------------------------------------------------------

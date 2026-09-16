@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                    VAN DER GRINTEN 
+NAME                    VAN DER GRINTEN
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Van der Grinten projection.  The
 		Easting and Northing must be in meters.  The longitude
 		and latitude values will be returned in radians.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		March, 1993
 
 This function was adapted from the Van Der Grinten projection code
 (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -39,7 +39,7 @@ static double false_northing;	/* y offset in meters			*/
   ----------------------------------------*/
 long vandginvint(double r, double center_long, double false_east,
         double false_north) {
-//long vandginvint(r, center_long,false_east,false_north) 
+//long vandginvint(r, center_long,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
@@ -55,13 +55,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("VAN DER GRINTEN"); 
+ptitle("VAN DER GRINTEN");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Van Der Grinten inverse equations--mapping x,y to lat/long
   ---------------------------------------------------------*/
 long vandginv(double x, double y, double *lon, double *lat) {
@@ -112,7 +112,7 @@ if (fabs(xx) < EPSLN)
    *lon = lon_center;
    return(OK);
    }
-*lon = adjust_lon(lon_center + PI * (xys - 1.0 + sqrt(1.0 + 2.0 * 
+*lon = adjust_lon(lon_center + PI * (xys - 1.0 + sqrt(1.0 + 2.0 *
 		 (xx * xx - yy * yy) + xys * xys)) / 2.0 / xx);
 
 return(OK);

@@ -93,7 +93,7 @@ int f_set_bitmap(ARG1) {
     }
     return 0;
 }
- 
+
 /*
  * HEADER:100:grib_out:output:1:writes decoded/modified data in grib-2 format to file X
  */
@@ -125,7 +125,7 @@ int f_grib_out(ARG1) {
 
 	/* gds may have been modified, check for new npnts */
 	get_nxny_(sec, &new_nx, &new_ny, &new_npnts, &new_res, &new_scan);
-	if (ndata != new_npnts) 
+	if (ndata != new_npnts)
 	   fprintf(stderr,"grib_out: gds modified, data size %u -> %u, data = undefined\n",
 		ndata, new_npnts);
 
@@ -137,7 +137,7 @@ int f_grib_out(ARG1) {
 	   for (i = 0; i < new_npnts; i++) data_tmp[i] = UNDEFINED;
 	}
 
-        grib_wrt(sec, data_tmp, new_npnts, new_nx, new_ny, use_scale, dec_scale, 
+        grib_wrt(sec, data_tmp, new_npnts, new_nx, new_ny, use_scale, dec_scale,
 		bin_scale, wanted_bits, max_bits, grib_type, save);
         if (flush_mode) fflush_file(save);
 	free(data_tmp);
@@ -151,20 +151,20 @@ int f_grib_out(ARG1) {
  * under some conditions, data will be changed
  */
 
-int grib_wrt(unsigned char **sec, float *data, unsigned int ndata, unsigned int nx, unsigned int ny, int use_scale, int dec_scale, 
+int grib_wrt(unsigned char **sec, float *data, unsigned int ndata, unsigned int nx, unsigned int ny, int use_scale, int dec_scale,
 	int bin_scale, int wanted_bits, int max_bits, enum output_grib_type grib_type, struct seq_file *out) {
 
-    if (grib_type == simple) simple_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits, max_bits, out); 
+    if (grib_type == simple) simple_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits, max_bits, out);
     else if (grib_type == ieee_packing) ieee_grib_out(sec, data, ndata, out);
 #if G2_JPEG2000_ENABLED == 1
     else if (grib_type == jpeg) jpeg2000_grib_out(sec, data, ndata, nx, ny, use_scale, dec_scale, bin_scale, wanted_bits, max_bits, out);
 #endif
-    else if (grib_type == complex1) complex_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits, 
-	max_bits, 1, use_bitmap, out); 
-    else if (grib_type == complex2) complex_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits, 
-	max_bits, 2, use_bitmap, out); 
-    else if (grib_type == complex3) complex_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits, 
-	max_bits, 3, use_bitmap, out); 
+    else if (grib_type == complex1) complex_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits,
+	max_bits, 1, use_bitmap, out);
+    else if (grib_type == complex2) complex_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits,
+	max_bits, 2, use_bitmap, out);
+    else if (grib_type == complex3) complex_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits,
+	max_bits, 3, use_bitmap, out);
 #ifdef USE_AEC
     else if (grib_type == aec) aec_grib_out(sec, data, ndata, use_scale, dec_scale, bin_scale, wanted_bits, max_bits, out);
 #endif
@@ -352,7 +352,7 @@ int f_set_scaling(ARG2) {
 
 static unsigned int mask[] = {0,1,3,7,15,31,63,127,255};
 
-void flist2bitstream(float *list, unsigned char *bitstream, unsigned int ndata, int nbits) 
+void flist2bitstream(float *list, unsigned char *bitstream, unsigned int ndata, int nbits)
 {
 
     int cbits, jbits;
@@ -404,15 +404,15 @@ int set_order(unsigned char **sec, enum output_order_type order) {
  * write sections as a grib message
  */
 
-int wrt_sec(unsigned const char *sec0, unsigned const char *sec1, unsigned const char *sec2, 
-    unsigned const char *sec3, unsigned const char *sec4, unsigned const char *sec5, 
+int wrt_sec(unsigned const char *sec0, unsigned const char *sec1, unsigned const char *sec2,
+    unsigned const char *sec3, unsigned const char *sec4, unsigned const char *sec5,
     unsigned const char *sec6, unsigned const char *sec7, struct seq_file *file) {
 
     size_t size;
     unsigned char s[16];
     int i;
     unsigned int s1, s2, s3, s4, s5, s6, s7, s8;
-   
+
     s1 = (sec1 ? uint4(sec1) : 0);
     s2 = (sec2 ? uint4(sec2) : 0);
     s3 = (sec3 ? uint4(sec3) : 0);
@@ -422,7 +422,7 @@ int wrt_sec(unsigned const char *sec0, unsigned const char *sec1, unsigned const
     s7 = (sec7 ? uint4(sec7) : 0);
     s8 = GB2_Sec8_size;
 
-    size = (size_t) GB2_Sec0_size + s1 + s2 + s3 + s4 + s5 + 
+    size = (size_t) GB2_Sec0_size + s1 + s2 + s3 + s4 + s5 +
       (size_t) s6 + (size_t) s7 + s8;
 
     for (i = 0; i < 8; i++) s[i] = sec0[i];

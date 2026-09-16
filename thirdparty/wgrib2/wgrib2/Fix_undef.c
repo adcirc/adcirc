@@ -31,7 +31,7 @@ int fix_undef(unsigned char **sec) {
 
     int center, gdt;
     unsigned char *p;
- 
+
     gdt = code_table_3_1(sec);
     center = GB2_Center(sec);
     p = NULL;

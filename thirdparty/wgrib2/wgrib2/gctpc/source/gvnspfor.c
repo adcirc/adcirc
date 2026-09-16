@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                 GENERAL VERTICAL NEAR-SIDE PERSPECTIVE 
+NAME                 GENERAL VERTICAL NEAR-SIDE PERSPECTIVE
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the General Vertical Near-Side Perspective
@@ -7,15 +7,15 @@ PURPOSE:	Transforms input longitude and latitude to Easting and
 		radians.  The Easting and Northing values will be
 		returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		Mar, 1993
 
 This function was adapted from the General Vertical Near-Side Perspective
 projection code (FORTRAN) in the General Cartographic Transformation Package
 software which is available from the U.S. Geological Survey National Mapping
 Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -45,7 +45,7 @@ static double false_northing;	/* y offset in meters			*/
   ---------------------------------------------------------------*/
 long gvnspforint(double r, double h, double center_long, double center_lat,
         double false_east, double false_north) {
-//long gvnspforint(r, h,center_long, center_lat,false_east,false_north) 
+//long gvnspforint(r, h,center_long, center_lat,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double h;			/* height above sphere			*/
@@ -66,7 +66,7 @@ sincos(center_lat, &sin_p15, &cos_p15);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("GENERAL VERTICAL NEAR-SIDE PERSPECTIVE"); 
+ptitle("GENERAL VERTICAL NEAR-SIDE PERSPECTIVE");
 radius(r);
 genrpt(h,"Height of Point Above Surface of Sphere:   ");
 cenlon(center_long);
@@ -74,8 +74,8 @@ cenlat(center_lat);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
-/* General Vertical Near-Side Perspective forward equations--mapping 
+
+/* General Vertical Near-Side Perspective forward equations--mapping
    lat,long to x,y
   ----------------------------------------------------------------*/
 long gvnspfor(double lon, double lat, double *x, double *y) {

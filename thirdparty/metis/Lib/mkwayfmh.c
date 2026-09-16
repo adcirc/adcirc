@@ -17,10 +17,10 @@
 /*************************************************************************
 * This function performs k-way refinement
 **************************************************************************/
-void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int nparts, 
+void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int nparts,
        float *orgubvec, int npasses)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, ncon, nmoves, nbnd, myndegrees, same; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, ncon, nmoves, nbnd, myndegrees, same;
   int from, me, to, oldcut, gain;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *perm, *bndptr, *bndind;
@@ -39,7 +39,7 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
 
   where = graph->where;
   npwgts = graph->npwgts;
-  
+
   /* Setup the weight intervals of the various subdomains */
   minwgt =  fwspacemalloc(ctrl, nparts*ncon);
   maxwgt = fwspacemalloc(ctrl, nparts*ncon);
@@ -68,7 +68,7 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
   }
   else {
     maxlb = ubvec[0];
-    for (i=1; i<ncon; i++) 
+    for (i=1; i<ncon; i++)
       maxlb = (ubvec[i] > maxlb ? ubvec[i] : maxlb);
 
     for (i=0; i<nparts; i++) {
@@ -84,7 +84,7 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
 
   if (ctrl->dbglvl&DBG_REFINE) {
     printf("Partitions: [%5.4f %5.4f], Nv-Nb[%6d %6d]. Cut: %6d, LB: ",
-            npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)], 
+            npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)],
             graph->nvtxs, graph->nbnd, graph->mincut);
     ComputeHKWayLoadImbalance(ncon, nparts, npwgts, tvec);
     for (i=0; i<ncon; i++)
@@ -111,7 +111,7 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
         from = where[i];
         nvwgt = graph->nvwgt+i*ncon;
 
-        if (myrinfo->id > 0 && AreAllHVwgtsBelow(ncon, 1.0, npwgts+from*ncon, -1.0, nvwgt, minwgt+from*ncon)) 
+        if (myrinfo->id > 0 && AreAllHVwgtsBelow(ncon, 1.0, npwgts+from*ncon, -1.0, nvwgt, minwgt+from*ncon))
           continue;   /* This cannot be moved! */
 
         myedegrees = myrinfo->edegrees;
@@ -119,8 +119,8 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
 
         for (k=0; k<myndegrees; k++) {
           to = myedegrees[k].pid;
-          gain = myedegrees[k].ed - myrinfo->id; 
-          if (gain >= 0 && 
+          gain = myedegrees[k].ed - myrinfo->id;
+          if (gain >= 0 &&
               (AreAllHVwgtsBelow(ncon, 1.0, npwgts+to*ncon, 1.0, nvwgt, maxwgt+to*ncon) ||
                IsHBalanceBetterFT(ncon, nparts, npwgts+from*ncon, npwgts+to*ncon, nvwgt, ubvec)))
             break;
@@ -131,22 +131,22 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
         for (j=k+1; j<myndegrees; j++) {
           to = myedegrees[j].pid;
           if ((myedegrees[j].ed > myedegrees[k].ed &&
-               (AreAllHVwgtsBelow(ncon, 1.0, npwgts+to*ncon, 1.0, nvwgt, maxwgt+to*ncon) || 
+               (AreAllHVwgtsBelow(ncon, 1.0, npwgts+to*ncon, 1.0, nvwgt, maxwgt+to*ncon) ||
                IsHBalanceBetterFT(ncon, nparts, npwgts+from*ncon, npwgts+to*ncon, nvwgt, ubvec))) ||
-              (myedegrees[j].ed == myedegrees[k].ed && 
+              (myedegrees[j].ed == myedegrees[k].ed &&
                IsHBalanceBetterTT(ncon, nparts, npwgts+myedegrees[k].pid*ncon, npwgts+to*ncon, nvwgt, ubvec)))
             k = j;
         }
 
         to = myedegrees[k].pid;
 
-        if (myedegrees[k].ed-myrinfo->id == 0 
+        if (myedegrees[k].ed-myrinfo->id == 0
             && !IsHBalanceBetterFT(ncon, nparts, npwgts+from*ncon, npwgts+to*ncon, nvwgt, ubvec)
-            && AreAllHVwgtsBelow(ncon, 1.0, npwgts+from*ncon, 0.0, npwgts+from*ncon, maxwgt+from*ncon)) 
+            && AreAllHVwgtsBelow(ncon, 1.0, npwgts+from*ncon, 0.0, npwgts+from*ncon, maxwgt+from*ncon))
           continue;
 
         /*=====================================================================
-        * If we got here, we can now move the vertex from 'from' to 'to' 
+        * If we got here, we can now move the vertex from 'from' to 'to'
         *======================================================================*/
         graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -158,7 +158,7 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
         where[i] = to;
         myrinfo->ed += myrinfo->id-myedegrees[k].ed;
         SWAP(myrinfo->id, myedegrees[k].ed, j);
-        if (myedegrees[k].ed == 0) 
+        if (myedegrees[k].ed == 0)
           myedegrees[k] = myedegrees[--myrinfo->ndegrees];
         else
           myedegrees[k].pid = from;
@@ -232,7 +232,7 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
 
     if (ctrl->dbglvl&DBG_REFINE) {
       printf("\t [%5.4f %5.4f], Nb: %6d, Nmoves: %5d, Cut: %6d, LB: ",
-              npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)], 
+              npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)],
               nbnd, nmoves, graph->mincut);
       ComputeHKWayLoadImbalance(ncon, nparts, npwgts, tvec);
       for (i=0; i<ncon; i++)
@@ -254,10 +254,10 @@ void MCRandom_KWayEdgeRefineHorizontal(CtrlType *ctrl, GraphType *graph, int npa
 /*************************************************************************
 * This function performs k-way refinement
 **************************************************************************/
-void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int nparts, 
+void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int nparts,
        float *ubvec, int npasses)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, ncon, nbnd, myndegrees, oldgain, gain, nmoves; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, ncon, nbnd, myndegrees, oldgain, gain, nmoves;
   int from, me, to, oldcut;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *perm, *bndptr, *bndind, *moved;
@@ -277,7 +277,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
 
   where = graph->where;
   npwgts = graph->npwgts;
-  
+
   /* Setup the weight intervals of the various subdomains */
   minwgt =  fwspacemalloc(ctrl, ncon*nparts);
   maxwgt = fwspacemalloc(ctrl, ncon*nparts);
@@ -296,7 +296,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
 
   if (ctrl->dbglvl&DBG_REFINE) {
     printf("Partitions: [%5.4f %5.4f], Nv-Nb[%6d %6d]. Cut: %6d, LB: ",
-            npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)], 
+            npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)],
             graph->nvtxs, graph->nbnd, graph->mincut);
     ComputeHKWayLoadImbalance(ncon, nparts, npwgts, tvec);
     for (i=0; i<ncon; i++)
@@ -327,7 +327,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
 
     nmoves = 0;
     for (;;) {
-      if ((i = PQueueGetMax(&queue)) == -1) 
+      if ((i = PQueueGetMax(&queue)) == -1)
         break;
       moved[i] = 1;
 
@@ -346,12 +346,12 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
         if (IsHBalanceBetterFT(ncon, nparts, npwgts+from*ncon, npwgts+to*ncon, nvwgt, ubvec))
           break;
       }
-      if (k == myndegrees) 
+      if (k == myndegrees)
         continue;  /* break out if you did not find a candidate */
 
       for (j=k+1; j<myndegrees; j++) {
         to = myedegrees[j].pid;
-        if (IsHBalanceBetterTT(ncon, nparts, npwgts+myedegrees[k].pid*ncon, npwgts+to*ncon, nvwgt, ubvec)) 
+        if (IsHBalanceBetterTT(ncon, nparts, npwgts+myedegrees[k].pid*ncon, npwgts+to*ncon, nvwgt, ubvec))
           k = j;
       }
 
@@ -369,14 +369,14 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
         continue;
 
 /* DELETE
-      if (myedegrees[k].ed-myrinfo->id < 0 && 
+      if (myedegrees[k].ed-myrinfo->id < 0 &&
           AreAllHVwgtsBelow(ncon, 1.0, npwgts+from*ncon, 0.0, nvwgt, maxwgt+from*ncon) &&
           AreAllHVwgtsAbove(ncon, 1.0, npwgts+to*ncon, 0.0, nvwgt, minwgt+to*ncon) &&
           AreAllHVwgtsBelow(ncon, 1.0, npwgts+to*ncon, 1.0, nvwgt, maxwgt+to*ncon))
         continue;
 */
       /*=====================================================================
-      * If we got here, we can now move the vertex from 'from' to 'to' 
+      * If we got here, we can now move the vertex from 'from' to 'to'
       *======================================================================*/
       graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -388,7 +388,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
       where[i] = to;
       myrinfo->ed += myrinfo->id-myedegrees[k].ed;
       SWAP(myrinfo->id, myedegrees[k].ed, j);
-      if (myedegrees[k].ed == 0) 
+      if (myedegrees[k].ed == 0)
         myedegrees[k] = myedegrees[--myrinfo->ndegrees];
       else
         myedegrees[k].pid = from;
@@ -454,7 +454,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
 
 
         /* Update the queue */
-        if (me == to || me == from) { 
+        if (me == to || me == from) {
           gain = myrinfo->ed-myrinfo->id;
           if (moved[ii] == 2) {
             if (myrinfo->ed > 0)
@@ -468,7 +468,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
             PQueueInsert(&queue, ii, gain);
             moved[ii] = 2;
           }
-        } 
+        }
 
         ASSERT(myrinfo->ndegrees <= xadj[ii+1]-xadj[ii]);
         ASSERT(CheckRInfo(myrinfo));
@@ -480,7 +480,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
 
     if (ctrl->dbglvl&DBG_REFINE) {
       printf("\t [%5.4f %5.4f], Nb: %6d, Nmoves: %5d, Cut: %6d, LB: ",
-              npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)], 
+              npwgts[samin(ncon*nparts, npwgts)], npwgts[samax(ncon*nparts, npwgts)],
               nbnd, nmoves, graph->mincut);
       ComputeHKWayLoadImbalance(ncon, nparts, npwgts, tvec);
       for (i=0; i<ncon; i++)
@@ -506,7 +506,7 @@ void MCGreedy_KWayEdgeBalanceHorizontal(CtrlType *ctrl, GraphType *graph, int np
 
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are below 
+* This function checks if the vertex weights of two vertices are below
 * a given set of values
 **************************************************************************/
 int AreAllHVwgtsBelow(int ncon, float alpha, float *vwgt1, float beta, float *vwgt2, float *limit)
@@ -523,7 +523,7 @@ int AreAllHVwgtsBelow(int ncon, float alpha, float *vwgt1, float beta, float *vw
 
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are above 
+* This function checks if the vertex weights of two vertices are above
 * a given set of values
 **************************************************************************/
 int AreAllHVwgtsAbove(int ncon, float alpha, float *vwgt1, float beta, float *vwgt2, float *limit)
@@ -541,7 +541,7 @@ int AreAllHVwgtsAbove(int ncon, float alpha, float *vwgt1, float beta, float *vw
 /*************************************************************************
 * This function computes the load imbalance over all the constrains
 * For now assume that we just want balanced partitionings
-**************************************************************************/ 
+**************************************************************************/
 void ComputeHKWayLoadImbalance(int ncon, int nparts, float *npwgts, float *lbvec)
 {
   int i, j;
@@ -586,7 +586,7 @@ int MocIsHBalanced(int ncon, int nparts, float *npwgts, float *ubvec)
 
 
 /*************************************************************************
-* This function checks if the pairwise balance of the between the two 
+* This function checks if the pairwise balance of the between the two
 * partitions will improve by moving the vertex v from pfrom to pto,
 * subject to the target partition weights of tfrom, and tto respectively
 **************************************************************************/
@@ -625,7 +625,7 @@ int IsHBalanceBetterFT(int ncon, int nparts, float *pfrom, float *pto, float *vw
     return 1;
   if (blb2 < alb2)
     return 0;
-  
+
   return salb < sblb;
 
 }
@@ -672,6 +672,5 @@ int IsHBalanceBetterTT(int ncon, int nparts, float *pt1, float *pt2, float *vwgt
   if (m22 > m12)
     return 0;
 
-  return sm2 < sm1;  
+  return sm2 < sm1;
 }
-

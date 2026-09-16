@@ -242,4 +242,4 @@ The following is a simple example of a fort.15 file:
    5.0              ! RNDAY
    43200.0          ! DRAMP
    0.0 0.0 0.0      ! A00, B00, C00
-   0.1              ! H0 
+   0.1              ! H0

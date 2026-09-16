@@ -2,13 +2,13 @@
  * Copyright 1997, Regents of the University of Minnesota
  *
  * myqsort.c
- * 
+ *
  * This file contains a fast idxtype increasing qsort algorithm.
  * Addopted from TeX
- * 
+ *
  * Started 10/18/96
  * George
- * 
+ *
  * $Id: myqsort.c,v 1.1.1.1 2003/01/23 17:21:06 estrade Exp $
  */
 
@@ -48,7 +48,7 @@ void iidxsort(int n, idxtype *base)
     siqst(base, max);
     hi = base + THRESH;
   }
-  else 
+  else
     hi = max;
 
   for (j = lo = base; lo++ < hi;) {
@@ -98,7 +98,7 @@ static void siqst(idxtype *base, idxtype *max)
           j = tmp;
       }
 
-      if (j != mid) {  /* SWAP */ 
+      if (j != mid) {  /* SWAP */
         c = *mid;
         *mid = *j;
         *j = c;
@@ -122,7 +122,7 @@ static void siqst(idxtype *base, idxtype *max)
         goto swap;
       }
 
-      if (i == mid) 
+      if (i == mid)
 	break;
       else {		/* i <-> mid, new mid is i */
         jj = mid;
@@ -177,7 +177,7 @@ void iintsort(int n, int *base)
     iiqst(base, max);
     hi = base + THRESH;
   }
-  else 
+  else
     hi = max;
 
   for (j = lo = base; lo++ < hi;) {
@@ -228,7 +228,7 @@ static void iiqst(int *base, int *max)
           j = tmp;
       }
 
-      if (j != mid) {  /* SWAP */ 
+      if (j != mid) {  /* SWAP */
         c = *mid;
         *mid = *j;
         *j = c;
@@ -252,7 +252,7 @@ static void iiqst(int *base, int *max)
         goto swap;
       }
 
-      if (i == mid) 
+      if (i == mid)
 	break;
       else {		/* i <-> mid, new mid is i */
         jj = mid;
@@ -307,7 +307,7 @@ void ikeysort(int n, KeyValueType *base)
     keyiqst(base, max);
     hi = base + THRESH;
   }
-  else 
+  else
     hi = max;
 
   for (j = lo = base; lo++ < hi;) {
@@ -333,7 +333,7 @@ void ikeysort(int n, KeyValueType *base)
   }
 
   /* Sanity check */
-  { 
+  {
     int i;
     for (i=0; i<n-1; i++)
       if (base[i].key > base[i+1].key)
@@ -365,7 +365,7 @@ static void keyiqst(KeyValueType *base, KeyValueType *max)
           j = tmp;
       }
 
-      if (j != mid) {  /* SWAP */ 
+      if (j != mid) {  /* SWAP */
         c = *mid;
         *mid = *j;
         *j = c;
@@ -389,7 +389,7 @@ static void keyiqst(KeyValueType *base, KeyValueType *max)
         goto swap;
       }
 
-      if (i == mid) 
+      if (i == mid)
 	break;
       else {		/* i <-> mid, new mid is i */
         jj = mid;
@@ -443,7 +443,7 @@ void ikeyvalsort(int n, KeyValueType *base)
     keyvaliqst(base, max);
     hi = base + THRESH;
   }
-  else 
+  else
     hi = max;
 
   for (j = lo = base; lo++ < hi;) {
@@ -493,7 +493,7 @@ static void keyvaliqst(KeyValueType *base, KeyValueType *max)
           j = tmp;
       }
 
-      if (j != mid) {  /* SWAP */ 
+      if (j != mid) {  /* SWAP */
         c = *mid;
         *mid = *j;
         *j = c;
@@ -517,7 +517,7 @@ static void keyvaliqst(KeyValueType *base, KeyValueType *max)
         goto swap;
       }
 
-      if (i == mid) 
+      if (i == mid)
 	break;
       else {		/* i <-> mid, new mid is i */
         jj = mid;

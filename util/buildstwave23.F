@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -99,7 +99,7 @@
       read(1,*) geoGridFile
       read(1,*) ns
 
-      write(2,'(i1,a)') type, 
+      write(2,'(i1,a)') type,
      &' ! 1: rad vecs included; 2: rad vecs not included'
       write(2,'(i1,a)') ns, ' ! number of stwave grids'
 
@@ -138,7 +138,7 @@
 
       print *, ' grid id = ', trim(title)
       print *, ' np = ',np,', ne = ',ne
-    
+
       allocate(xy(2,np),nm(3,ne))
 
       do i=1,np
@@ -220,9 +220,9 @@
 
          print *, ' grid id = ', trim(title)
          print *, ' np = ',np,', ne = ',ne
-    
+
          allocate(spxy(2,np),spnm(3,ne))
-         
+
          do i=1,np
             read(14,*) idum, spxy(1,i), spxy(2,i), rdum
          enddo
@@ -232,7 +232,7 @@
          enddo
 
          close(14)
-    
+
 
          if(spnp.ne.np) then
             print *, ''
@@ -469,17 +469,17 @@
          if(type.eq.2) then
             write(2,'(a)') trim(simfiles(s))
             write(2,'(a)') trim(radfiles(s))
-            write(2,'(i2,1x,a)') nbs(s), 
+            write(2,'(i2,1x,a)') nbs(s),
      &      ' ! number of blank snaps to be inserted at the beginning'
-            write(2,'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)), 
+            write(2,'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)),
      &      real(azimuths(s)),'  !x0 y0 azimuths'
          endif
 
-         write(2,'(i2,1x,a)') 
+         write(2,'(i2,1x,a)')
      &     fullplanes(s), ' ! 0: half plane 1: full plane'
 
          if(fullplanes(s).eq.1) then
-            write(2,100) nis(s), njs(s), real(dxincs(s)), 
+            write(2,100) nis(s), njs(s), real(dxincs(s)),
      &                   real(dyincs(s)),'  !ni nj dxinc dyinc'
          else
             write(2,101) nis(s), njs(s), real(dxincs(s)),' !ni nj dxinc'
@@ -535,11 +535,11 @@
                write(2,*) 0,'  !this snap is 0: inactive, 1: active'
                cycle
             endif
-               
+
             write(2,*) 1,'  !this snap is 0: inactive, 1: active'
 
             print *, '  spectrum id = ', spectrum_id, '(grid ',s,')'
-            
+
             ni = nis(s)
             nj = njs(s)
 
@@ -627,7 +627,7 @@
          y2 = spxy(2,n2)
          y3 = spxy(2,n3)
          w1 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-         
+
          x1 = spxy(1,n1)
          x2 = x
          x3 = spxy(1,n3)
@@ -635,7 +635,7 @@
          y2 = y
          y3 = spxy(2,n3)
          w2 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-         
+
          x1 = spxy(1,n1)
          x2 = spxy(1,n2)
          x3 = x
@@ -689,9 +689,9 @@
       stwmaxx = stwxy(1,ni,nj)
       stwmaxy = stwxy(2,ni,nj)
 
-      print *, '  stwave grid min x = ',real(stwminx),' max '// 
+      print *, '  stwave grid min x = ',real(stwminx),' max '//
      &' x = ',real(stwmaxx)
-      print *, '  stwave grid min y = ',real(stwminy),' max '// 
+      print *, '  stwave grid min y = ',real(stwminy),' max '//
      &' y = ',real(stwmaxy)
 
       numElemInside = 0

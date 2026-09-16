@@ -1,7 +1,7 @@
 
 
 default:
-	(cd Lib ; make ) 
+	(cd Lib ; make )
 
 clean:
 	(cd Lib ; make clean )

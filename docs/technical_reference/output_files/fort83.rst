@@ -1,7 +1,7 @@
 Fort.83: Scalar Concentration Time Series at All Nodes
 ======================================================
 
-This file contains scalar concentration time series data at all nodes in the model grid as specified in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`. 
+This file contains scalar concentration time series data at all nodes in the model grid as specified in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`.
 
 .. note::
    This feature is currently not supported in ADCIRC.
@@ -30,4 +30,4 @@ Notes
 * For binary output, the node number (k) is not included in the output
 * Time series data is recorded for every node in the model grid
 * The output frequency is controlled by :ref:`NSPOOLGC <NSPOOLGC>` parameter
-* This feature is currently under development and not yet supported in ADCIRC 
+* This feature is currently under development and not yet supported in ADCIRC

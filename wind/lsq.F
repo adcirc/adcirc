@@ -96,7 +96,7 @@
 
       INTEGER, SAVE                :: nobs, ncol, r_dim
       INTEGER, ALLOCATABLE, SAVE   :: vorder(:), row_ptr(:)
-      LOGICAL, SAVE                :: initialized = .false., 
+      LOGICAL, SAVE                :: initialized = .false.,
      &                                tol_set = .false.,
      &                                rss_set = .false.
 
@@ -115,7 +115,7 @@
 
       PUBLIC                       :: dp, nobs, ncol, r_dim, vorder,
      &                                row_ptr, initialized,
-     &                                tol_set, rss_set,         
+     &                                tol_set, rss_set,
      &                                d, rhs, r, tol, rss, sserr
       PRIVATE                      :: zero, one, vsmall
 

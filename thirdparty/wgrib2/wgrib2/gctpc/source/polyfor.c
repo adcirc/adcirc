@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                             POLYCONIC 
+NAME                             POLYCONIC
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Polyconic projection.  The
@@ -38,7 +38,7 @@ static double false_easting;	/* x offset in meters			*/
   ----------------------------------*/
 long polyforint(double r_maj, double r_min, double center_lon,
         double center_lat, double false_east, double false_north) {
-//long polyforint(r_maj,r_min,center_lon,center_lat,false_east,false_north) 
+//long polyforint(r_maj,r_min,center_lon,center_lat,false_east,false_north)
 //
 //double r_maj;			/* major axis			*/
 //double r_min;			/* minor axis			*/
@@ -69,14 +69,14 @@ ml0 = mlfn(e0, e1, e2, e3, lat_origin);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("POLYCONIC"); 
+ptitle("POLYCONIC");
 radius2(r_major, r_minor);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Polyconic forward equations--mapping lat,long to x,y
   ---------------------------------------------------*/

@@ -168,12 +168,12 @@ int f_wind_uv(ARG1) {
 
             GB2_ParmNum(save->clone_sec_dir) = 2;		// set id to U
 	    undo_output_order(save->dir, data_tmp, ndata);
-            grib_wrt(save->clone_sec_dir, data_tmp, ndata, nx_, ny_, save->use_scale, save->dec_scale, 
+            grib_wrt(save->clone_sec_dir, data_tmp, ndata, nx_, ny_, save->use_scale, save->dec_scale,
 		save->bin_scale, save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
             GB2_ParmNum(save->clone_sec_dir) = 3;		// set id to V
 	    undo_output_order(save->speed, data_tmp, ndata);
-            grib_wrt(save->clone_sec_dir, data_tmp, ndata, nx_, ny_, save->use_scale, save->dec_scale, 
+            grib_wrt(save->clone_sec_dir, data_tmp, ndata, nx_, ny_, save->use_scale, save->dec_scale,
 		save->bin_scale, save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
             if (flush_mode) fflush_file(&(save->out));

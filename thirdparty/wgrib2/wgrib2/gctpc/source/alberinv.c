@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                     ALBERS CONICAL EQUAL-AREA 
+NAME                     ALBERS CONICAL EQUAL-AREA
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Albers Conical Equal Area projection.  The
@@ -110,7 +110,7 @@ offsetp(false_easting,false_northing);
 
 return(OK);
 }
-
+
 /* Albers Conical Equal Area inverse equations--mapping x,y to lat/long
   -------------------------------------------------------------------*/
 long alberinv( double x, double y, double *lon, double *lat) {

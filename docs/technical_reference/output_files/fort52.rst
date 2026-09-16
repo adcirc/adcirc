@@ -25,4 +25,4 @@ The basic file structure is shown below. Each line of output is represented by a
 Note
 ----
 
-* Output format is ascii 
+* Output format is ascii

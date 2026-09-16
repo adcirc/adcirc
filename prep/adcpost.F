@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -27,17 +27,17 @@ C----------------------------------------------------------------------------
 C
 C
 C                      Serial Version 1.1 ( vjp 5/04/99 )
-C                      Serial Version 1.3 ( meb 4/01/04 ) 
-C                      Serial Version 1.4 ( jgf 11/08/2005 ) 
-C                      Serial Version 1.5 ( jgf 02/02/2006 ) 
+C                      Serial Version 1.3 ( meb 4/01/04 )
+C                      Serial Version 1.4 ( jgf 11/08/2005 )
+C                      Serial Version 1.5 ( jgf 02/02/2006 )
 C
 C  Program Development History
 C  ---------------------------
 C   Written for ADCIRC_v24.05   ( S. Chippada 1996 )
 C   Updated for ADCIRC_v24.05   ( M. Martinez 1997 )
-C   Hilbert Space Filling Curve ( C. Edwards 1997 ) 
-C   Updated for ADCIRC_v33.04   ( V. Parr 1998 ) 
-C   Updated for ADCIRC_v34.08   ( V. Parr 1999 ) 
+C   Hilbert Space Filling Curve ( C. Edwards 1997 )
+C   Updated for ADCIRC_v33.04   ( V. Parr 1998 )
+C   Updated for ADCIRC_v34.08   ( V. Parr 1999 )
 C   Updated to gather hotstart files    ( R. Luettich 10/01)
 C   Added processing of ind. files   ( M. Brown    04/04 )
 C   Updated for ADCIRC v45.07   ( J. Fleming 11/05 )
@@ -62,12 +62,12 @@ C  -------
 C  Compares global output files from two different directories using
 C  a user supplied tolerance. A log of the differences for Unit xx is
 C  written to the current directory in file "diffs.xx".   This utility
-C  is useful for validation of PADCIRC on a new computer platform, 
+C  is useful for validation of PADCIRC on a new computer platform,
 C  or comparing the results from a serial and a parallel run.
 C
 C  Diffmerge
 C  ---------
-C  Computes the scaled difference of fort.63 and fort.64 from two different 
+C  Computes the scaled difference of fort.63 and fort.64 from two different
 C  directories and writes the difference in the same format as those
 C  files and calls them diffmerge.63 and diffmerge.64, respectively.
 C  The scale factor is supplied by the user.
@@ -78,7 +78,7 @@ C
       USE POST_GLOBAL
 C
       INTEGER UNIT   ! user input for file to post-process
-      CHARACTER DUM  ! variable used in waiting for menu choice  
+      CHARACTER DUM  ! variable used in waiting for menu choice
       INTEGER I,PE,PRECIS,ISP,NWTYPE
 
       REAL(8) TOL,SCALEVAL
@@ -89,7 +89,7 @@ C
       integer :: argcount ! number of command line arguments
       integer :: iargc    ! function to return command line arguments
       character(len=2048) :: cmdlinearg ! content of cmd line arg
-      character(len=2048) :: filename   ! e.g. "fort.63" 
+      character(len=2048) :: filename   ! e.g. "fort.63"
 C
 C--Initialize constants for case ICS = 2 inputs
 C
@@ -113,7 +113,7 @@ C
                call GET_COMMAND_ARGUMENT(i,filename)
                write(6,'(a)') 'INFO: Processing "'//trim(cmdlinearg)//
      &           ' '//trim(filename)//'".'
-               call mergeSubdomainFiles(filename) 
+               call mergeSubdomainFiles(filename)
             case default
                write(*,*) 'WARNING: The command line option "',
      &         trim(cmdlinearg),'" is not valid and will be ignored.'
@@ -148,7 +148,7 @@ C---------------------------------------------------------------------------
 C
       UNIT = 0
  100  IF (PHASE(1:4).EQ.'post') THEN
-C     jgf45.06 BEGIN block of code written by MEB04/01/04 - - - - - - - - - 
+C     jgf45.06 BEGIN block of code written by MEB04/01/04 - - - - - - - - -
 C         call ISHELL("clear")
          print*, ""
          print*, "-----------------------"
@@ -161,7 +161,7 @@ C         call ISHELL("clear")
          print*, "Enter 555 to see list of Unit Numbers"
          print*, "Enter 999 to End Processing"
          read*, UNIT
-C     
+C
          if (UNIT == 555) then
             print*,'-------------------------------------------------'
             print*,'                 2D output files'
@@ -193,54 +193,54 @@ C
                CALL POST51()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 52)) then
             IF (NHASV.NE.0) THEN
                print *, "Post-Processing Unit 52"
                CALL POST52()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 53)) then
             IF (NHAGE.NE.0) THEN
                print *, "Post-Processing Unit 53"
                CALL POST53()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 54)) then
             IF (NHAGV.NE.0) THEN
                print *, "Post-Processing Unit 54"
                CALL POST54()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 55)) then
             print *, "Post-Processing Unit 55"
             CALL POST55()
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 61)) then
             IF (NOUTE.NE.0) THEN
                print *, "Post-Processing Unit 61"
                CALL POST61()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 62)) then
             IF (NOUTV.NE.0) THEN
                print *, "Post-Processing Unit 62"
                CALL POST62()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 63)) then
             IF (NOUTGE.NE.0) THEN
                print *, "Post-Processing Unit 63"
                CALL POST63()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 64)) then
             IF (NOUTGV.NE.0) THEN
                print *, "Post-Processing Unit 64"
@@ -268,14 +268,14 @@ C
                CALL POST73()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 74)) then
             IF (NOUTGW.NE.0) THEN
                print *, "Post-Processing Unit 74"
                CALL POST74()
             ENDIF
          endif
-C     
+C
 C
 !         if ((UNIT == 100) .or. (UNIT == 91)) then
          IF (UNIT == 91) THEN
@@ -301,48 +301,48 @@ C
                CALL POST41()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 42)) then
             IF (I3DSV.NE.0) THEN
                print *, "Post-Processing Unit 42"
                CALL POST42()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 43)) then
             IF (I3DST.NE.0) THEN
                print *, "Post-Processing Unit 43"
                CALL POST43()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 44)) then
             IF (I3DGD.NE.0) THEN
                print *, "Post-Processing Unit 44"
                CALL POST44()
-               IF ((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN 
+               IF ((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                   print *, "Post-Processing Unit 47"
                   CALL POST47()
-               END IF 
+               END IF
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 45)) then
             IF (I3DGV.NE.0) THEN
                print *, "Post-Processing Unit 45"
                CALL POST45()
             ENDIF
          endif
-C     
+C
          if ((UNIT == 100) .or. (UNIT == 46)) then
             IF (I3DGT.NE.0) THEN
                print *, "Post-Processing Unit 46"
                CALL POST46()
             ENDIF
          endif
-         
+
          if ((UNIT .NE. 100) .and. (UNIT .NE. 999)) goto 100
-C     jgf45.06 END block of code written by MEB04/01/04 - - - - - - - - - 
+C     jgf45.06 END block of code written by MEB04/01/04 - - - - - - - - -
          PRINT *,"Do you want to Post-Process hotstart files? ( Y/N )"
          READ(*,'(A1)') HOTANS
          IF((HOTANS.EQ.'Y').OR.(HOTANS.EQ.'y')) THEN
@@ -365,55 +365,55 @@ C
          READ(*,'(A80)') DIR2
          print *, "enter error tolerance"
          READ(*,*) TOL
-C     
+C
         IF (NHASE.NE.0) THEN
            print *, "Comparing Unit 51 files"
            CALL COMPARE51(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NHASV.NE.0) THEN
            print *, "Comparing Unit 52 files"
            CALL COMPARE52(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NHAGE.NE.0) THEN
            print *, "Comparing Unit 53 files"
            CALL COMPARE53(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NHAGV.NE.0) THEN
            print *, "Comparing Unit 54 files"
            CALL COMPARE54(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         print *, "Comparing Unit 55 files"
         CALL COMPARE55(DIR1,DIR2,TOL)
-C     
+C
         IF (NOUTE.NE.0) THEN
            print *, "Comparing Unit 61 files"
            CALL COMPARE61(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NOUTV.NE.0) THEN
            print *, "Comparing Unit 62 files"
            CALL COMPARE62(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NOUTGE.NE.0) THEN
            print *, "Comparing Unit 63 files"
            CALL COMPARE63(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NOUTGV.NE.0) THEN
            print *, "Comparing Unit 64 files"
            CALL COMPARE64(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         IF (NOUTGW.NE.0) THEN
            print *, "Comparing Unit 74 files"
            CALL COMPARE74(DIR1,DIR2,TOL)
         ENDIF
-C     
+C
         GO TO 99
 C
 C
@@ -422,40 +422,40 @@ C  Parallel ADCIRC DIFFMERGE Starts here
 C---------------------------------------------------------------------------
 C
       ELSEIF (PHASE(1:4).EQ.'diff') THEN
-C     
+C
          print *, "enter pathame of first directory"
          READ(*,'(A80)') DIR1
          print *, "enter pathame of second directory"
          READ(*,'(A80)') DIR2
-         print *, "enter scale factor"    
+         print *, "enter scale factor"
          READ(*,*) SCALEVAL
-C     
+C
          IF (NOUTGE.NE.0) THEN
             print *, "DiffMerge of Unit 63 files"
             CALL DIFFMERGE63(DIR1,DIR2,SCALEVAL)
          ENDIF
-C     
+C
          IF (NOUTGV.NE.0) THEN
             print *, "DiffMerge of Unit 64 files"
             CALL DIFFMERGE64(DIR1,DIR2,SCALEVAL)
          ENDIF
-C     
+C
          GO TO 99
-C     
+C
       ELSEIF (PHASE(1:4).EQ.'quit') THEN
-C     
+C
          CALL EXIT(1)
-C     
+C
       ELSE
-C     
+C
          print *, "Not a Valid Operation ( Try Again )"
          GO TO 99
-C     
+C
       ENDIF
-C     
+C
       END
-      
-      
+
+
       SUBROUTINE GETMSG( STRING, MSG )
       INTEGER I, I1
       CHARACTER  STRING*(*),MSG*(*), TARGET
@@ -471,14 +471,14 @@ c
             EXIT
          ENDIF
       ENDDO
-c     
+c
 c--   Copy message to ouput string
-c     
+c
       DO I=1, I1-1
          MSG(I:I) = " "
       ENDDO
       MSG(I1:80)  = STRING(I1:80)
-c     
+c
       RETURN
       END
 
@@ -502,38 +502,38 @@ c
             EXIT
          ENDIF
       ENDDO
-c     
+c
 c--   Find next blank character of String
-c     
+c
       DO I=I1+1,80
          IF (ISTRING(I:I).EQ.TARGET) THEN
             I2 = I
             EXIT
          ENDIF
       ENDDO
-c     
+c
 c--   Create a temporary string containing new index
-c     
+c
       WRITE(TEMP1(1:80),'(I8)') INDX
-c     
+c
 c--   Find first non-blank character of String
-c     
+c
       DO I=1, 80
          IF (TEMP1(I:I).NE.TARGET) THEN
             I3 = I
             EXIT
          ENDIF
       ENDDO
-c     
+c
 c--   Find next blank character of String
-c     
+c
       DO I=I3+1,80
          IF (TEMP1(I:I).EQ.TARGET) THEN
             I4 = I
             EXIT
          ENDIF
       ENDDO
-c     
+c
 Cdebug print *, "i1 i2 i3 i4 ",I1, I2, I3 , I4
       TEMP2(1:100) = TEMP1(I3-1:I4-1)//ISTRING(I2:80)
 c

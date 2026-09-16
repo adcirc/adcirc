@@ -58,4 +58,3 @@ Options/Features Tested
 -  :ref:`quadratic_friction_coefficient_at_sea_floor <quadratic_friction_coefficient_at_sea_floor>`:
    Spatially varying quadratic bottom friction :ref:`fort.13 file <fort13>`
    attribute.
-

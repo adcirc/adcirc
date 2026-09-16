@@ -20,7 +20,7 @@ int SelectQueueOneWay(int ncon, float *npwgts, float *tpwgts, int from, PQueueTy
 /*************************************************************************
 * This function computes the initial bisection of the coarsest graph
 **************************************************************************/
-void MocInit2WayPartition(CtrlType *ctrl, GraphType *graph, float *tpwgts, float ubfactor) 
+void MocInit2WayPartition(CtrlType *ctrl, GraphType *graph, float *tpwgts, float ubfactor)
 {
   int i, dbglvl;
 
@@ -68,7 +68,7 @@ void MocGrowBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, float ubf
 
   bestwhere = idxmalloc(nvtxs, "BisectGraph: bestwhere");
   nbfs = 2*(nvtxs <= ctrl->CoarsenTo ? SMALLNIPARTS : LARGENIPARTS);
-  bestcut = idxsum(graph->nedges, graph->adjwgt);  
+  bestcut = idxsum(graph->nedges, graph->adjwgt);
 
   for (; nbfs>0; nbfs--) {
     idxset(nvtxs, 1, where);
@@ -78,10 +78,10 @@ void MocGrowBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, float ubf
 
     MocInit2WayBalance(ctrl, graph, tpwgts);
 
-    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 4); 
+    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 4);
 
     MocBalance2Way(ctrl, graph, tpwgts, 1.02);
-    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 4); 
+    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 4);
 
     if (bestcut >= graph->mincut) {
       bestcut = graph->mincut;
@@ -120,7 +120,7 @@ void MocRandomBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, float u
 
   bestwhere = idxmalloc(nvtxs, "BisectGraph: bestwhere");
   nbfs = 2*(nvtxs <= ctrl->CoarsenTo ? SMALLNIPARTS : LARGENIPARTS);
-  bestcut = idxsum(graph->nedges, graph->adjwgt);  
+  bestcut = idxsum(graph->nedges, graph->adjwgt);
   perm = idxmalloc(nvtxs, "BisectGraph: perm");
 
   for (; nbfs>0; nbfs--) {
@@ -139,11 +139,11 @@ void MocRandomBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, float u
 
     MocCompute2WayPartitionParams(ctrl, graph);
 
-    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 6); 
+    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 6);
     MocBalance2Way(ctrl, graph, tpwgts, 1.02);
-    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 6); 
+    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 6);
     MocBalance2Way(ctrl, graph, tpwgts, 1.02);
-    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 6); 
+    MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 6);
 
     /*
     printf("Edgecut: %6d, NPwgts: [", graph->mincut);
@@ -170,11 +170,11 @@ void MocRandomBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, float u
 
 
 /*************************************************************************
-* This function balances two partitions by moving the highest gain 
+* This function balances two partitions by moving the highest gain
 * (including negative gain) vertices to the other domain.
 * It is used only when tha unbalance is due to non contigous
 * subdomains. That is, the are no boundary vertices.
-* It moves vertices from the domain that is overweight to the one that 
+* It moves vertices from the domain that is overweight to the one that
 * is underweight.
 **************************************************************************/
 void MocInit2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts)
@@ -210,8 +210,8 @@ void MocInit2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts)
     printf("Parts: [");
     for (l=0; l<ncon; l++)
       printf("(%.3f, %.3f) ", npwgts[l], npwgts[ncon+l]);
-    printf("] T[%.3f %.3f], Nv-Nb[%5d, %5d]. ICut: %6d, LB: %.3f [B]\n", tpwgts[0], tpwgts[1], 
-           graph->nvtxs, graph->nbnd, graph->mincut, 
+    printf("] T[%.3f %.3f], Nv-Nb[%5d, %5d]. ICut: %6d, LB: %.3f [B]\n", tpwgts[0], tpwgts[1],
+           graph->nvtxs, graph->nbnd, graph->mincut,
            Compute2WayHLoadImbalance(ncon, npwgts, tpwgts));
   }
 
@@ -261,7 +261,7 @@ void MocInit2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts)
 
     if (ctrl->dbglvl&DBG_MOVEINFO) {
       printf("Moved %6d from %d(%d). [%5d] %5d, NPwgts: ", higain, from, cnum, ed[higain]-id[higain], mincut);
-      for (l=0; l<ncon; l++) 
+      for (l=0; l<ncon; l++)
         printf("(%.3f, %.3f) ", npwgts[l], npwgts[ncon+l]);
       printf(", LB: %.3f\n", Compute2WayHLoadImbalance(ncon, npwgts, tpwgts));
       if (ed[higain] == 0 && id[higain] > 0)
@@ -273,7 +273,7 @@ void MocInit2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts)
     * Update the id[i]/ed[i] values of the affected nodes
     ***************************************************************/
     SWAP(id[higain], ed[higain], tmp);
-    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1]) 
+    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1])
       BNDDelete(nbnd, bndind,  bndptr, higain);
     if (ed[higain] > 0 && bndptr[higain] == -1)
       BNDInsert(nbnd, bndind,  bndptr, higain);
@@ -299,9 +299,9 @@ void MocInit2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts)
       }
 
       /* Update its boundary information */
-      if (ed[k] == 0 && bndptr[k] != -1) 
+      if (ed[k] == 0 && bndptr[k] != -1)
         BNDDelete(nbnd, bndind, bndptr, k);
-      else if (ed[k] > 0 && bndptr[k] == -1)  
+      else if (ed[k] > 0 && bndptr[k] == -1)
         BNDInsert(nbnd, bndind, bndptr, k);
     }
 
@@ -337,14 +337,14 @@ void MocInit2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts)
 /*************************************************************************
 * This function selects the partition number and the queue from which
 * we will move vertices out
-**************************************************************************/ 
+**************************************************************************/
 int SelectQueueOneWay(int ncon, float *npwgts, float *tpwgts, int from, PQueueType queues[MAXNCON][2])
 {
   int i, cnum=-1;
   float max=0.0;
 
   for (i=0; i<ncon; i++) {
-    if (npwgts[from*ncon+i]-tpwgts[from] >= max && 
+    if (npwgts[from*ncon+i]-tpwgts[from] >= max &&
         PQueueGetSize(&queues[i][0]) + PQueueGetSize(&queues[i][1]) > 0) {
       max = npwgts[from*ncon+i]-tpwgts[0];
       cnum = i;
@@ -353,5 +353,3 @@ int SelectQueueOneWay(int ncon, float *npwgts, float *tpwgts, int from, PQueueTy
 
   return cnum;
 }
-
-

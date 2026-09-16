@@ -34,7 +34,7 @@ static double false_northing;	/* y offset in meters			*/
   ------------------------------------*/
 long molwinvint(double r, double center_long, double false_east,
         double false_north) {
-//long molwinvint(r, center_long, false_east, false_north) 
+//long molwinvint(r, center_long, false_east, false_north)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //double center_long;		/* (I) Center longitude */
 //double false_east;		/* x offset in meters			*/
@@ -49,14 +49,14 @@ lon_center = center_long;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("MOLLWEIDE"); 
+ptitle("MOLLWEIDE");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
-/* Mollweide inverse equations--mapping x,y to lat,long 
+
+/* Mollweide inverse equations--mapping x,y to lat,long
   ----------------------------------------------------*/
 long molwinv(double x, double y, double *lon, double *lat) {
 //long molwinv(x, y, lon, lat)

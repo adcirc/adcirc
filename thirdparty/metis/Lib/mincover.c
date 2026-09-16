@@ -75,7 +75,7 @@ void MinCover(idxtype *xadj, idxtype *adjncy, int asize, int bsize, idxtype *cov
     maxlevel = bsize;
 
     /* Insert free nodes into the queue */
-    for (i=0; i<asize; i++) 
+    for (i=0; i<asize; i++)
       if (mate[i] == -1) {
         queue[rptr++] = i;
         level[i] = 0;
@@ -95,14 +95,14 @@ void MinCover(idxtype *xadj, idxtype *adjncy, int asize, int bsize, idxtype *cov
               lst[lstptr++] = col;
             }
             else { /* This column node is matched */
-              if (flag[mate[col]]) 
+              if (flag[mate[col]])
                 printf("\nSomething wrong, flag[%d] is 1",mate[col]);
               queue[rptr++] = mate[col];
               level[mate[col]] = level[row] + 1;
             }
           }
         }
-      } 
+      }
     }
 
     if (lstptr == 0)
@@ -156,7 +156,7 @@ int MinCover_Augment(idxtype *xadj, idxtype *adjncy, int col, idxtype *mate, idx
 
 
 /*************************************************************************
-* This function performs a coarse decomposition and determines the 
+* This function performs a coarse decomposition and determines the
 * min-cover.
 * REF: Pothen ACMTrans. on Amth Software
 **************************************************************************/
@@ -175,26 +175,26 @@ void MinCover_Decompose(idxtype *xadj, idxtype *adjncy, int asize, int bsize, id
   for (; i<bsize; i++)
     where[i] = SR;
 
-  for (i=0; i<asize; i++) 
-    if (mate[i] == -1)  
+  for (i=0; i<asize; i++)
+    if (mate[i] == -1)
       MinCover_ColDFS(xadj, adjncy, i, mate, where, INCOL);
-  for (; i<bsize; i++) 
-    if (mate[i] == -1)  
+  for (; i<bsize; i++)
+    if (mate[i] == -1)
       MinCover_RowDFS(xadj, adjncy, i, mate, where, INROW);
 
-  for (i=0; i<bsize; i++) 
+  for (i=0; i<bsize; i++)
     card[where[i]]++;
 
   k = 0;
   if (abs(card[VC]+card[SC]-card[HR]) < abs(card[VC]-card[SR]-card[HR])) {  /* S = VC+SC+HR */
     /* printf("%d %d ",vc+sc, hr); */
-    for (i=0; i<bsize; i++) 
+    for (i=0; i<bsize; i++)
       if (where[i] == VC || where[i] == SC || where[i] == HR)
         cover[k++] = i;
   }
   else {  /* S = VC+SR+HR */
     /* printf("%d %d ",vc, hr+sr); */
-    for (i=0; i<bsize; i++) 
+    for (i=0; i<bsize; i++)
       if (where[i] == VC || where[i] == SR || where[i] == HR)
         cover[k++] = i;
   }
@@ -217,7 +217,7 @@ void MinCover_ColDFS(idxtype *xadj, idxtype *adjncy, int root, idxtype *mate, id
     if (where[root] == HC)
       return;
     where[root] = HC;
-    for (i=xadj[root]; i<xadj[root+1]; i++) 
+    for (i=xadj[root]; i<xadj[root+1]; i++)
       MinCover_ColDFS(xadj, adjncy, adjncy[i], mate, where, INROW);
   }
   else {
@@ -242,7 +242,7 @@ void MinCover_RowDFS(idxtype *xadj, idxtype *adjncy, int root, idxtype *mate, id
     if (where[root] == VR)
       return;
     where[root] = VR;
-    for (i=xadj[root]; i<xadj[root+1]; i++) 
+    for (i=xadj[root]; i<xadj[root+1]; i++)
       MinCover_RowDFS(xadj, adjncy, adjncy[i], mate, where, INCOL);
   }
   else {
@@ -254,6 +254,3 @@ void MinCover_RowDFS(idxtype *xadj, idxtype *adjncy, int root, idxtype *mate, id
   }
 
 }
-
-
-

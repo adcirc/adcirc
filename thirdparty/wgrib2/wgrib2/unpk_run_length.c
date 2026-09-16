@@ -45,7 +45,7 @@ int unpk_run_length(unsigned char **sec, float *data, unsigned int ndata) {
     if (mv > mvl) fatal_error_ii("Run-length decoding: mv %d > mvl %d", mv, mvl);
 
 #ifdef DEBUG
-    printf(" n_bits=%d mv=%d mvl=%d decimal_scale=%d\n", n_bits, mv, 
+    printf(" n_bits=%d mv=%d mvl=%d decimal_scale=%d\n", n_bits, mv,
 		mvl, decimal_scale);
 #endif
 
@@ -91,7 +91,7 @@ int unpk_run_length(unsigned char **sec, float *data, unsigned int ndata) {
     mask_pointer = sec[6] + 6;
     bitmap_flag = code_table_6_0(sec);
     if (bitmap_flag == 254) bitmap_flag = 0;
-    if (bitmap_flag != 0 && bitmap_flag != 255) 
+    if (bitmap_flag != 0 && bitmap_flag != 255)
 	fatal_error("unpk_running_length: unsupported bitmap","");
 
     while (i < nvals) {

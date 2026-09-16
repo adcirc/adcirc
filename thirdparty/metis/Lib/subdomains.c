@@ -21,7 +21,7 @@
 **************************************************************************/
 void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, float *tpwgts, float ubfactor, int npasses, int ffactor)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, nmoves, nbnd, tvwgt, myndegrees; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, nmoves, nbnd, tvwgt, myndegrees;
   int from, me, to, oldcut, vwgt, gain;
   int maxndoms, nadd;
   idxtype *xadj, *adjncy, *adjwgt;
@@ -64,7 +64,7 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
 
   IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d]-[%6d %6d], Balance: %5.3f, Nv-Nb[%6d %6d]. Cut: %6d\n",
-             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0], 
+             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0],
              1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nvtxs, graph->nbnd,
              graph->mincut));
 
@@ -89,7 +89,7 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
         from = where[i];
         vwgt = graph->vwgt[i];
 
-        if (myrinfo->id > 0 && pwgts[from]-vwgt < minwgt[from]) 
+        if (myrinfo->id > 0 && pwgts[from]-vwgt < minwgt[from])
           continue;   /* This cannot be moved! */
 
         myedegrees = myrinfo->edegrees;
@@ -126,8 +126,8 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
           to = myedegrees[k].pid;
           if (!phtable[to])
             continue;
-          gain = myedegrees[k].ed-j; /* j = myrinfo->id. Allow good nodes to move */ 
-          if (pwgts[to]+vwgt <= maxwgt[to]+ffactor*gain && gain >= 0)  
+          gain = myedegrees[k].ed-j; /* j = myrinfo->id. Allow good nodes to move */
+          if (pwgts[to]+vwgt <= maxwgt[to]+ffactor*gain && gain >= 0)
             break;
         }
         if (k == myndegrees)
@@ -138,7 +138,7 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
           if (!phtable[to])
             continue;
           if ((myedegrees[j].ed > myedegrees[k].ed && pwgts[to]+vwgt <= maxwgt[to]) ||
-              (myedegrees[j].ed == myedegrees[k].ed && 
+              (myedegrees[j].ed == myedegrees[k].ed &&
                itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid]))
             k = j;
         }
@@ -154,9 +154,9 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
         }
         if (j == 0)
           continue;
-          
+
         /*=====================================================================
-        * If we got here, we can now move the vertex from 'from' to 'to' 
+        * If we got here, we can now move the vertex from 'from' to 'to'
         *======================================================================*/
         graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -181,7 +181,7 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
         INC_DEC(pwgts[to], pwgts[from], vwgt);
         myrinfo->ed += myrinfo->id-myedegrees[k].ed;
         SWAP(myrinfo->id, myedegrees[k].ed, j);
-        if (myedegrees[k].ed == 0) 
+        if (myedegrees[k].ed == 0)
           myedegrees[k] = myedegrees[--myrinfo->ndegrees];
         else
           myedegrees[k].pid = from;
@@ -289,7 +289,7 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
     IFSET(ctrl->dbglvl, DBG_REFINE,
        printf("\t[%6d %6d], Balance: %5.3f, Nb: %6d. Nmoves: %5d, Cut: %5d, Vol: %5d, %d\n",
                pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)],
-               1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nbnd, nmoves, 
+               1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nbnd, nmoves,
                graph->mincut, ComputeVolume(graph, where), idxsum(nparts, ndoms)));
 
     if (graph->mincut == oldcut)
@@ -311,7 +311,7 @@ void Random_KWayEdgeRefineMConn(CtrlType *ctrl, GraphType *graph, int nparts, fl
 **************************************************************************/
 void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, float *tpwgts, float ubfactor, int npasses)
 {
-  int i, ii, iii, j, jj, k, l, pass, nvtxs, nbnd, tvwgt, myndegrees, oldgain, gain, nmoves; 
+  int i, ii, iii, j, jj, k, l, pass, nvtxs, nbnd, tvwgt, myndegrees, oldgain, gain, nmoves;
   int from, me, to, oldcut, vwgt, maxndoms, nadd;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *pwgts, *perm, *bndptr, *bndind, *minwgt, *maxwgt, *moved, *itpwgts;
@@ -330,7 +330,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
 
   where = graph->where;
   pwgts = graph->pwgts;
-  
+
   pmat = ctrl->wspace.pmat;
   phtable = idxwspacemalloc(ctrl, nparts);
   ndoms = idxwspacemalloc(ctrl, nparts);
@@ -358,7 +358,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
 
   IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d]-[%6d %6d], Balance: %5.3f, Nv-Nb[%6d %6d]. Cut: %6d [B]\n",
-             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0], 
+             pwgts[idxamin(nparts, pwgts)], pwgts[idxamax(nparts, pwgts)], minwgt[0], maxwgt[0],
              1.0*nparts*pwgts[idxamax(nparts, pwgts)]/tvwgt, graph->nvtxs, graph->nbnd,
              graph->mincut));
 
@@ -389,7 +389,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
     maxndoms = ndoms[idxamax(nparts, ndoms)];
 
     for (nmoves=0;;) {
-      if ((i = PQueueGetMax(&queue)) == -1) 
+      if ((i = PQueueGetMax(&queue)) == -1)
         break;
       moved[i] = 1;
 
@@ -397,7 +397,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
       from = where[i];
       vwgt = graph->vwgt[i];
 
-      if (pwgts[from]-vwgt < minwgt[from]) 
+      if (pwgts[from]-vwgt < minwgt[from])
         continue;   /* This cannot be moved! */
 
       myedegrees = myrinfo->edegrees;
@@ -430,7 +430,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
         to = myedegrees[k].pid;
         if (!phtable[to])
           continue;
-        if (pwgts[to]+vwgt <= maxwgt[to] || itpwgts[from]*(pwgts[to]+vwgt) <= itpwgts[to]*pwgts[from]) 
+        if (pwgts[to]+vwgt <= maxwgt[to] || itpwgts[from]*(pwgts[to]+vwgt) <= itpwgts[to]*pwgts[from])
           break;
       }
       if (k == myndegrees)
@@ -440,17 +440,17 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
         to = myedegrees[j].pid;
         if (!phtable[to])
           continue;
-        if (itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid]) 
+        if (itpwgts[myedegrees[k].pid]*pwgts[to] < itpwgts[to]*pwgts[myedegrees[k].pid])
           k = j;
       }
 
       to = myedegrees[k].pid;
 
-      if (pwgts[from] < maxwgt[from] && pwgts[to] > minwgt[to] && myedegrees[k].ed-myrinfo->id < 0) 
+      if (pwgts[from] < maxwgt[from] && pwgts[to] > minwgt[to] && myedegrees[k].ed-myrinfo->id < 0)
         continue;
 
       /*=====================================================================
-      * If we got here, we can now move the vertex from 'from' to 'to' 
+      * If we got here, we can now move the vertex from 'from' to 'to'
       *======================================================================*/
       graph->mincut -= myedegrees[k].ed-myrinfo->id;
 
@@ -476,7 +476,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
       INC_DEC(pwgts[to], pwgts[from], vwgt);
       myrinfo->ed += myrinfo->id-myedegrees[k].ed;
       SWAP(myrinfo->id, myedegrees[k].ed, j);
-      if (myedegrees[k].ed == 0) 
+      if (myedegrees[k].ed == 0)
         myedegrees[k] = myedegrees[--myrinfo->ndegrees];
       else
         myedegrees[k].pid = from;
@@ -574,7 +574,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
         }
 
         /* Update the queue */
-        if (me == to || me == from) { 
+        if (me == to || me == from) {
           gain = myrinfo->ed-myrinfo->id;
           if (moved[ii] == 2) {
             if (myrinfo->ed > 0)
@@ -588,7 +588,7 @@ void Greedy_KWayEdgeBalanceMConn(CtrlType *ctrl, GraphType *graph, int nparts, f
             PQueueInsert(&queue, ii, gain);
             moved[ii] = 2;
           }
-        } 
+        }
 
         ASSERT(myrinfo->ndegrees <= xadj[ii+1]-xadj[ii]);
         ASSERT(CheckRInfo(myrinfo));
@@ -638,7 +638,7 @@ void PrintSubDomainGraph(GraphType *graph, int nparts, idxtype *where)
     me = where[i];
     for (j=xadj[i]; j<xadj[i+1]; j++) {
       k = adjncy[j];
-      if (where[k] != me) 
+      if (where[k] != me)
         pmat[me*nparts+where[k]] += adjwgt[j];
     }
   }
@@ -696,7 +696,7 @@ void ComputeSubDomainGraph(GraphType *graph, int nparts, idxtype *pmat, idxtype 
       edegrees = rinfo[i].edegrees;
 
       k = me*nparts;
-      for (j=0; j<ndegrees; j++) 
+      for (j=0; j<ndegrees; j++)
         pmat[k+edegrees[j].pid] += edegrees[j].ed;
     }
   }
@@ -781,7 +781,7 @@ void EliminateSubDomainEdges(CtrlType *ctrl, GraphType *graph, int nparts, float
 
     move = 0;
     for (min=0; min<ncand2; min++) {
-      if (cand2[min].key > totalout/(2*ndoms[me])) 
+      if (cand2[min].key > totalout/(2*ndoms[me]))
         break;
 
       other = cand2[min].val;
@@ -807,7 +807,7 @@ void EliminateSubDomainEdges(CtrlType *ctrl, GraphType *graph, int nparts, float
         i = ind[ii];
         cpwgt += vwgt[i];
 
-        for (j=xadj[i]; j<xadj[i+1]; j++) 
+        for (j=xadj[i]; j<xadj[i+1]; j++)
           otherpmat[where[adjncy[j]]] += adjwgt[j];
       }
       otherpmat[other] = 0;
@@ -820,7 +820,7 @@ void EliminateSubDomainEdges(CtrlType *ctrl, GraphType *graph, int nparts, float
       }
       ikeysort(ncand, cand);
 
-      /* 
+      /*
        * Go through and the select the first domain that is common with 'me', and
        * does not increase the ndoms[target] higher than my ndoms, subject to the
        * maxpwgt constraint. Traversal is done from the mostly connected to the least.
@@ -892,7 +892,7 @@ void EliminateSubDomainEdges(CtrlType *ctrl, GraphType *graph, int nparts, float
 void MoveGroupMConn(CtrlType *ctrl, GraphType *graph, idxtype *ndoms, idxtype *pmat,
                     int nparts, int to, int nind, idxtype *ind)
 {
-  int i, ii, iii, j, jj, k, l, nvtxs, nbnd, myndegrees; 
+  int i, ii, iii, j, jj, k, l, nvtxs, nbnd, myndegrees;
   int from, me;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *bndptr, *bndind;
@@ -938,16 +938,16 @@ void MoveGroupMConn(CtrlType *ctrl, GraphType *graph, idxtype *ndoms, idxtype *p
     /* Update pmat to reflect the move of 'i' */
     pmat[from*nparts+to] += (myrinfo->id-myedegrees[k].ed);
     pmat[to*nparts+from] += (myrinfo->id-myedegrees[k].ed);
-    if (pmat[from*nparts+to] == 0) 
+    if (pmat[from*nparts+to] == 0)
       ndoms[from]--;
-    if (pmat[to*nparts+from] == 0) 
+    if (pmat[to*nparts+from] == 0)
       ndoms[to]--;
 
     /* Update where, weight, and ID/ED information of the vertex you moved */
     where[i] = to;
     myrinfo->ed += myrinfo->id-myedegrees[k].ed;
     SWAP(myrinfo->id, myedegrees[k].ed, j);
-    if (myedegrees[k].ed == 0) 
+    if (myedegrees[k].ed == 0)
       myedegrees[k] = myedegrees[--myrinfo->ndegrees];
     else
       myedegrees[k].pid = from;
@@ -1013,14 +1013,14 @@ void MoveGroupMConn(CtrlType *ctrl, GraphType *graph, idxtype *ndoms, idxtype *p
       if (me != from && me != to) {
         pmat[me*nparts+from] -= adjwgt[j];
         pmat[from*nparts+me] -= adjwgt[j];
-        if (pmat[me*nparts+from] == 0) 
+        if (pmat[me*nparts+from] == 0)
           ndoms[me]--;
-        if (pmat[from*nparts+me] == 0) 
+        if (pmat[from*nparts+me] == 0)
           ndoms[from]--;
 
-        if (pmat[me*nparts+to] == 0) 
+        if (pmat[me*nparts+to] == 0)
           ndoms[me]++;
-        if (pmat[to*nparts+me] == 0) 
+        if (pmat[to*nparts+me] == 0)
           ndoms[to]++;
 
         pmat[me*nparts+to] += adjwgt[j];
@@ -1041,8 +1041,8 @@ void MoveGroupMConn(CtrlType *ctrl, GraphType *graph, idxtype *ndoms, idxtype *p
 
 
 /*************************************************************************
-* This function finds all the connected components induced by the 
-* partitioning vector in wgraph->where and tries to push them around to 
+* This function finds all the connected components induced by the
+* partitioning vector in wgraph->where and tries to push them around to
 * remove some of them
 **************************************************************************/
 void EliminateComponents(CtrlType *ctrl, GraphType *graph, int nparts, float *tpwgts, float ubfactor)
@@ -1069,7 +1069,7 @@ void EliminateComponents(CtrlType *ctrl, GraphType *graph, int nparts, float *tp
   cpvec = idxwspacemalloc(ctrl, nparts);
   npcmps = idxset(nparts, 0, idxwspacemalloc(ctrl, nparts));
 
-  for (i=0; i<nvtxs; i++) 
+  for (i=0; i<nvtxs; i++)
     perm[i] = todo[i] = i;
 
   /* Find the connected componends induced by the partition */
@@ -1120,7 +1120,7 @@ void EliminateComponents(CtrlType *ctrl, GraphType *graph, int nparts, float *tp
       /*printf("Trying to move %d from %d\n", i, me); */
 
       /* Determine the weight of the block to be moved and abort if too high */
-      for (cwgt=0, j=cptr[i]; j<cptr[i+1]; j++) 
+      for (cwgt=0, j=cptr[i]; j<cptr[i+1]; j++)
         cwgt += vwgt[cind[j]];
 
       if (cwgt > .30*pwgts[me])
@@ -1130,7 +1130,7 @@ void EliminateComponents(CtrlType *ctrl, GraphType *graph, int nparts, float *tp
       idxset(nparts, 0, cpvec);
       for (j=cptr[i]; j<cptr[i+1]; j++) {
         ii = cind[j];
-        for (jj=xadj[ii]; jj<xadj[ii+1]; jj++) 
+        for (jj=xadj[ii]; jj<xadj[ii+1]; jj++)
           cpvec[where[adjncy[jj]]] += adjwgt[jj];
       }
       cpvec[me] = 0;
@@ -1173,7 +1173,7 @@ void EliminateComponents(CtrlType *ctrl, GraphType *graph, int nparts, float *tp
 **************************************************************************/
 void MoveGroup(CtrlType *ctrl, GraphType *graph, int nparts, int to, int gid, idxtype *ptr, idxtype *ind)
 {
-  int i, ii, iii, j, jj, k, l, nvtxs, nbnd, myndegrees; 
+  int i, ii, iii, j, jj, k, l, nvtxs, nbnd, myndegrees;
   int from, me;
   idxtype *xadj, *adjncy, *adjwgt;
   idxtype *where, *bndptr, *bndind;
@@ -1221,7 +1221,7 @@ void MoveGroup(CtrlType *ctrl, GraphType *graph, int nparts, int to, int gid, id
     where[i] = to;
     myrinfo->ed += myrinfo->id-myedegrees[k].ed;
     SWAP(myrinfo->id, myedegrees[k].ed, j);
-    if (myedegrees[k].ed == 0) 
+    if (myedegrees[k].ed == 0)
       myedegrees[k] = myedegrees[--myrinfo->ndegrees];
     else
       myedegrees[k].pid = from;
@@ -1292,4 +1292,3 @@ void MoveGroup(CtrlType *ctrl, GraphType *graph, int nparts, int to, int gid, id
   graph->nbnd = nbnd;
 
 }
-

@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                            HAMMER 
+NAME                            HAMMER
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Hammer projection.  The
 		Easting and Northing must be in meters.  The longitude
 		and latitude values will be returned in radians.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		March, 1993
 
 This function was adapted from the Hammer projection code (FORTRAN) in
 the General Cartographic Transformation Package software which is
 available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -39,7 +39,7 @@ static double false_northing;	/* y offset in meters			*/
   -------------------------------*/
 long haminvint(double r, double center_long, double false_east,
         double false_north) {
-//long haminvint(r, center_long,false_east,false_north) 
+//long haminvint(r, center_long,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
@@ -56,13 +56,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("HAMMER"); 
+ptitle("HAMMER");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* HAMMER inverse equations--mapping x,y to lat/long
   ------------------------------------------------*/
 long haminv(double x, double y, double *lon, double *lat) {
@@ -80,7 +80,7 @@ double fac;
 x -= false_easting;
 y -= false_northing;
 fac = sqrt(4.0 * R * R - (x * x)/ 4.0 - y * y) / 2.0;
-*lon = adjust_lon(lon_center + 2.0 * 
+*lon = adjust_lon(lon_center + 2.0 *
                   atan2((x * fac), (2.0 * R * R - x * x/4 - y * y)));
 *lat = asinz(y * fac / R / R);
 return(OK);

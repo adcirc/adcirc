@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -45,12 +45,12 @@ C     necessarily have the wrong number of data sets in the header.
 
 
 C---------------------------------------------------------------------------
-C                S U B R O U T I N E   P O S T _ I N I T 
+C                S U B R O U T I N E   P O S T _ I N I T
 C---------------------------------------------------------------------------
-C                     (  Serial Version  3/28/98  )                          
-C  This routine reads the domain decomposition information from file,       
-C  "fort.80", which was written by the ADCIRC pre-processor ADCPREP.        
-C                                                                           
+C                     (  Serial Version  3/28/98  )
+C  This routine reads the domain decomposition information from file,
+C  "fort.80", which was written by the ADCIRC pre-processor ADCPREP.
+C
 C     jgf45.11 Updated to handle IDEN and 3D recording stations defined by
 C     coordinates rather than node numbers.
 C
@@ -64,7 +64,7 @@ C
 C--Read the domain-decomposition information file created
 C  by the Pre-processor
 C
-      OPEN(UNIT=80,FILE='fort.80')        
+      OPEN(UNIT=80,FILE='fort.80')
 C
       READ(80,80) RUNDES
       READ(80,80) RUNID
@@ -85,19 +85,19 @@ C
          READ(80,*) NSTAM  !jgf46.02 for post processing wind sta. files
          MNSTAM = NSTAM
       ENDIF
-      READ(80,*) MNHARF   
+      READ(80,*) MNHARF
       READ(80,*) MNWLAT,MNWLON
       MNSTAE = NSTAE
       MNSTAV = NSTAV
       MNP = NNODG
       MNE = NELG
       MNPROC = NPROC
-C 
+C
 C  Allocate all global variables
       CALL ALLOC_MAIN1()
 Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
-         READ(80,*) J, NNODP(I), NOD_RES_TOT(I) 
+         READ(80,*) J, NNODP(I), NOD_RES_TOT(I)
          READ(80,'(9I12)') (IMAP_NOD_LG(K,I),K=1,NNODP(I))
       ENDDO
 C
@@ -115,7 +115,7 @@ Casey 100301: Changed I8 to I12.
          READ(80,'(9I12)') (IMAP_EL_LG(K,I),K=1,NELP(I))
       ENDDO
 
-      READ(80,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE 
+      READ(80,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
 C
 C     jgf48.04 Added absolute value to station mappings.
       DO I = 1,NPROC
@@ -157,7 +157,7 @@ C
             ENDDO
          ENDDO
       ENDIF
-C     
+C
       READ(80,*) NOUTGE, TOUTSGE,TOUTFGE,NSPOOLGE
       READ(80,*) NOUTGV, TOUTSGV,TOUTFGV,NSPOOLGV
       READ(80,*) NOUTGC, TOUTSGC,TOUTFGC,NSPOOLGC
@@ -165,9 +165,9 @@ C
 C
       READ(80,*) NHASE,NHASV,NHAGE,NHAGV
 C     -------------------------------------------------------------
-C     
-C     S T A R T   3 D   D A T A 
-C     
+C
+C     S T A R T   3 D   D A T A
+C
 C     -------------------------------------------------------------
 
       READ(80,*) IDEN !jgf45.11 needed to post process the fort.44 file
@@ -238,7 +238,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE POST61()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the elevation data at the elevation stations from the local    C
 C  fort.61 files.                                                           C
 C  This version is compatible with ADCIRC version 34.03                     C
@@ -295,7 +295,7 @@ C
          READ(LOC2(IPROC),3645) NTRSPE,NUMSTNS,DTE,NSTEMP,ITEMPE
          IF (NUMSTNS.NE.NSTAEP(IPROC)) THEN
             write(*,*) 'Inconsistency in Number of Elevation Stations'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C
@@ -320,17 +320,17 @@ C
                  ETASC(IMAP_STAE_LG(K,IPROC)) = ETASCP(K)
               ENDDO
             ENDIF
-         ENDDO            
+         ENDDO
 C
          WRITE(61,2120) TIMEOUTSE,ITSE
          DO I=1, NSTAE
             CALL NEWINDEX(ETASC(I),OUTMSG,I)
-            WRITE(61,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+            WRITE(61,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open All Local and the Global Direct Access Binary fort.61 file
@@ -422,9 +422,9 @@ C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
          READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPE
-         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS        
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
          READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTE
-         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP 
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
          READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPE
          IREC(IPROC) = IREC(IPROC)+5
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
@@ -461,7 +461,7 @@ C
               ENDDO
               IREC(IPROC) = IREC(IPROC) + NSTAEP(IPROC)
             ENDIF
-         ENDDO            
+         ENDDO
 C
          WRITE(61,REC=OREC+1) TIMEOUTSE
          WRITE(61,REC=OREC+2) ITSE
@@ -471,7 +471,7 @@ C
          ENDDO
          OREC = OREC + NSTAE
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close the Global and Local fort.61 Files
 C
@@ -492,7 +492,7 @@ C
       SUBROUTINE POST62()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the elevation data at the velocity stations from the local     C
 C  fort.62 files.                                                           C
 C  This version is compatible with ADCIRC version 34.03                     C
@@ -504,7 +504,7 @@ C
       INTEGER NTRSPV,NSTEMP,ITSV,ITEMPV,NUMSTNS
       INTEGER OREC
       REAL(8) DTV
-      REAL(8) TIMEOUTSV 
+      REAL(8) TIMEOUTSV
       CHARACTER*80 OUTMSG
       CHARACTER*85  INLINE
       CHARACTER*4 RDES4(8),RID4(6),AID4(6)
@@ -548,7 +548,7 @@ C
          READ(LOC2(IPROC),3645) NTRSPV,NUMSTNS,DTV,NSTEMP,ITEMPV
          IF (NUMSTNS.NE.NSTAVP(IPROC)) THEN
             write(*,*) 'Inconsistency in Number of Velocity Stations'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C
@@ -574,17 +574,17 @@ C
                  UUASC(IMAP_STAV_LG(K,IPROC)) = UUASCP(K)
               ENDDO
             ENDIF
-         ENDDO            
+         ENDDO
 C
          WRITE(62,2120) TIMEOUTSV,ITSV
          DO I=1, NSTAV
             CALL NEWINDEX(UUASC(I),OUTMSG,I)
-            WRITE(62,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+            WRITE(62,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open All Local and the Global Direct Access Binary fort.62 file
@@ -683,7 +683,7 @@ C
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NUMSTNS.NE.NSTAVP(IPROC)) THEN
             write(*,*) 'Inconsistency in Number of Velocity Stations'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
@@ -750,7 +750,7 @@ C
       SUBROUTINE POST63()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the elevation data at all nodes from the local fort.63 files.  C
 C  This version is compatible with ADCIRC version 34.03                     C
 C---------------------------------------------------------------------------C
@@ -762,7 +762,7 @@ C
       INTEGER OREC
       REAL(8) DTE
       REAL(8) ETA
-      REAL(8) TIMEOUTE 
+      REAL(8) TIMEOUTE
       CHARACTER*80 OUTMSG
       CHARACTER*85 INLINE
       CHARACTER*4 RDES4(8),RID4(6),AID4(6)
@@ -808,7 +808,7 @@ C
          IF (NP.NE.NNODP(IPROC)) THEN
            print *, "NP = ",NP," NNODP = ",NNODP(IPROC)
            write(*,*) 'Inconsistency in number of local nodes'
-           CALL EXIT(1) 
+           CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=63,FILE='fort.63')
@@ -831,17 +831,17 @@ C
                IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                  ETASC(INDX) = ETASCP(K)
                 ENDIF
-            ENDDO  
-         ENDDO 
+            ENDDO
+         ENDDO
 c        DO I = 1,NNODG
 c           READ(ETASC(I),*) IDUM, ETA
 c           WRITE(63,2453) I, ETA
 c        ENDDO
          DO I = 1,NNODG
             CALL NEWINDEX(ETASC(I),OUTMSG,I)
-            WRITE(63,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
-         ENDDO 
-C              
+            WRITE(63,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
+         ENDDO
+C
       ENDDO
       GO TO 9999
 C
@@ -935,7 +935,7 @@ C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
          READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETGE
-         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM
          READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTE
          READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
          READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPE
@@ -982,7 +982,7 @@ C
          OREC = OREC + NNODG
 C
       ENDDO
-C 
+C
  9999 CONTINUE
 C
 C--Close the Global and Local fort.63 Files
@@ -1003,7 +1003,7 @@ C
       SUBROUTINE POST64()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the Velocity Data at all nodes from the local fort.64 files.   C
 C  This version is compatible with ADCIRC version 34.03                     C
 C---------------------------------------------------------------------------C
@@ -1062,7 +1062,7 @@ C
          READ(LOC2(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
          IF (NP.NE.NNODP(IPROC)) THEN
            write(*,*) 'Inconsistency in number of local nodes'
-           CALL EXIT(1) 
+           CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=64,FILE='fort.64')
@@ -1086,7 +1086,7 @@ C
                 UU(INDX) = UUP(K)
                ENDIF
             ENDDO
-         ENDDO 
+         ENDDO
 c        DO I = 1,NNODG
 c           CALL NEWINDEX(UU(I),OUTMSG,I)
 c           READ(UU(I),*)  IDUM, U1,V1
@@ -1094,9 +1094,9 @@ c           WRITE(64,2454) I, U1, V1
 c        ENDDO
          DO I = 1,NNODG
             CALL NEWINDEX(UU(I),OUTMSG,I)
-            WRITE(64,*) TRIM(OUTMSG)  !jgf46.00 TRIM to cut down file size 
+            WRITE(64,*) TRIM(OUTMSG)  !jgf46.00 TRIM to cut down file size
          ENDDO
-      ENDDO               
+      ENDDO
       GO TO 9999
 
 C
@@ -1198,7 +1198,7 @@ C
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NP.NE.NNODP(IPROC)) THEN
            write(*,*) 'Inconsistency in number of local nodes'
-           CALL EXIT(1) 
+           CALL EXIT(1)
          ENDIF
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
@@ -1262,7 +1262,7 @@ C
       SUBROUTINE POST51()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the harmonic data at the elevation stations from the local     C
 C  fort.51 files.                                                           C
 C  This version is compatible with ADCIRC version 34.03                     C
@@ -1307,14 +1307,14 @@ C
 C
 C   This is a DASD scratch file to save on memory.
 C
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80) 
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80)
 C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ
            WRITE(51,'(A80)') NFREQMSG
-           DO I=1, NFREQ  
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(51,*) trim(HEADER(I))
            ENDDO
@@ -1323,7 +1323,7 @@ C
          ELSE
            READ(LOC2(IPROC),'(A80)')  INLINE
            READ(INLINE,*) IDUM
-           DO I=1, NFREQ  
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
            READ(LOC2(IPROC),*) IDUM
@@ -1347,7 +1347,7 @@ C
 C   Close the DASD file to flush the write buffer and re-open.
 C
       CLOSE(8,STATUS='KEEP')
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80) 
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80)
 C
       DO J=1, NSTAE
           WRITE(51,*) J
@@ -1356,7 +1356,7 @@ C
              READ(8,REC=IREC) HARDAT(IFREQ)
              WRITE(51,*) trim(HARDAT(IFREQ))
           ENDDO
-      ENDDO        
+      ENDDO
 C
 C--Close the Global and Local fort.51 Files
 C
@@ -1375,7 +1375,7 @@ C
       SUBROUTINE POST52()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the harmonic data at the velocity stations from the local      C
 C  fort.52 files.                                                           C
 C  This version is compatible with ADCIRC version 34.03                     C
@@ -1428,7 +1428,7 @@ C
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ
            WRITE(52,'(A80)') NFREQMSG
-           DO I=1, NFREQ  
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(52,'(A80)') HEADER(I)
            ENDDO
@@ -1437,7 +1437,7 @@ C
          ELSE
            READ(LOC2(IPROC),'(A80)')  INLINE
            READ(INLINE,*) IDUM
-           DO I=1, NFREQ  
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
            READ(LOC2(IPROC),*) IDUM
@@ -1461,7 +1461,7 @@ C
 C   Close the DASD file to flush the write buffer and re-open.
 C
       CLOSE(8,STATUS='KEEP')
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80) 
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80)
 C
       DO J=1, NSTAV
           WRITE(52,*) J
@@ -1470,7 +1470,7 @@ C
              READ(8,REC=IREC) HARDAT(IFREQ)
              WRITE(52,'(A80)') HARDAT(IFREQ)
           ENDDO
-      ENDDO              
+      ENDDO
 C
 C--Close the Global and Local fort.52 Files
 C
@@ -1489,7 +1489,7 @@ C
       SUBROUTINE POST53()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the harmonic constituent elevations at all nodes from the      C
 C  local fort.53 files.                                                     C
 C  This version is compatible with ADCIRC version 34.03                     C
@@ -1539,9 +1539,9 @@ C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
-           READ(NFREQMSG,*) NFREQ 
+           READ(NFREQMSG,*) NFREQ
            WRITE(53,*) trim(NFREQMSG)
-           DO I=1, NFREQ  
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(53,*) trim(HEADER(I))
            ENDDO
@@ -1549,8 +1549,8 @@ C
            WRITE(53,*) NNODG
          ELSE
            READ(LOC2(IPROC),'(A80)')  INLINE
-           READ(INLINE,*) IDUM 
-           DO I=1, NFREQ  
+           READ(INLINE,*) IDUM
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
            READ(LOC2(IPROC),*) NP1
@@ -1562,13 +1562,13 @@ C
             READ(LOC2(IPROC),*) IDUM
             INDX = IMAP_NOD_LG(J,IPROC)
             IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
-              DO IFREQ=1, NFREQ 
+              DO IFREQ=1, NFREQ
                  READ(LOC2(IPROC),'(A80)') HARDAT(IFREQ)
                  IREC = IFREQ + (INDX-1)*NFREQ
-                 WRITE(8,REC=IREC) HARDAT(IFREQ) 
+                 WRITE(8,REC=IREC) HARDAT(IFREQ)
               ENDDO
             ELSE
-              DO I=1, NFREQ 
+              DO I=1, NFREQ
                  READ(LOC2(IPROC),'(A80)') INLINE
               ENDDO
             ENDIF
@@ -1578,16 +1578,16 @@ C
 C   Close the DASD file to flush the write buffer and re-open.
 C
       CLOSE(8,STATUS='KEEP')
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80) 
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80)
 C
       DO J=1, NNODG
          WRITE(53,*) J
-         DO IFREQ=1, NFREQ 
+         DO IFREQ=1, NFREQ
             IREC = IFREQ + (J-1)*NFREQ
-            READ(8,REC=IREC) HARDAT(IFREQ)    
+            READ(8,REC=IREC) HARDAT(IFREQ)
             WRITE(53,*) trim(HARDAT(IFREQ))
          ENDDO
-      ENDDO        
+      ENDDO
 C
 C--Close the Global and Local fort.53 Files
 C
@@ -1606,7 +1606,7 @@ C
       SUBROUTINE POST54()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the harmonic constituent velocities at all nodes from the      C
 C  local fort.54 files.                                                     C
 C  This version is compatible with ADCIRC version 34.03                     C
@@ -1655,9 +1655,9 @@ C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
-           READ(NFREQMSG,*) NFREQ 
+           READ(NFREQMSG,*) NFREQ
            WRITE(54,*) trim(NFREQMSG)
-           DO I=1, NFREQ  
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(54,*) trim(HEADER(I))
            ENDDO
@@ -1665,8 +1665,8 @@ C
            WRITE(54,*) NNODG
          ELSE
            READ(LOC2(IPROC),'(A80)')  INLINE
-           READ(INLINE,*) IDUM 
-           DO I=1, NFREQ  
+           READ(INLINE,*) IDUM
+           DO I=1, NFREQ
              READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
            READ(LOC2(IPROC),*) NP1
@@ -1678,13 +1678,13 @@ C
             READ(LOC2(IPROC),*) IDUM
             INDX = IMAP_NOD_LG(J,IPROC)
             IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
-              DO IFREQ=1, NFREQ 
+              DO IFREQ=1, NFREQ
                  READ(LOC2(IPROC),'(A80)') HARDAT(IFREQ)
                  IREC = IFREQ + (INDX-1)*NFREQ
-                 WRITE(8,REC=IREC) HARDAT(IFREQ) 
+                 WRITE(8,REC=IREC) HARDAT(IFREQ)
               ENDDO
             ELSE
-              DO I=1, NFREQ 
+              DO I=1, NFREQ
                  READ(LOC2(IPROC),'(A80)') INLINE
               ENDDO
             ENDIF
@@ -1694,16 +1694,16 @@ C
 C   Close the DASD file to flush the write buffer and re-open.
 C
       CLOSE(8,STATUS='KEEP')
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80) 
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=80)
 C
       DO J=1, NNODG
          WRITE(54,*) J
-         DO IFREQ=1, NFREQ 
+         DO IFREQ=1, NFREQ
             IREC = IFREQ + (J-1)*NFREQ
-            READ(8,REC=IREC) HARDAT(IFREQ)    
+            READ(8,REC=IREC) HARDAT(IFREQ)
             WRITE(54,*) trim(HARDAT(IFREQ))
          ENDDO
-      ENDDO        
+      ENDDO
 C
 C--Close the Global and Local fort.54 Files
 C
@@ -1763,7 +1763,7 @@ C
 C
 C   This is a DASD scratch file to save on memory.
 C
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)       
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)
 C
 C
       DO IPROC = 1,NPROC
@@ -1789,7 +1789,7 @@ C
 C   Close the DASD scratch file to flush the write buffer and re-open.
 C
       CLOSE(8,STATUS='KEEP')
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)       
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)
 C
       DO J=1, NNODG
           WRITE(55,*) J
@@ -1798,8 +1798,8 @@ C
       ENDDO
       CLOSE(8,STATUS='DELETE')
 C
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)    
-      OPEN(UNIT=9,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)    
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)
+      OPEN(UNIT=9,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)
 C
       DO IPROC = 1,NPROC
          DO J=1,NNODP(IPROC)
@@ -1818,8 +1818,8 @@ C   Close both DASD scratch files to flush the write buffers and re-open.
 C
       CLOSE(8,STATUS='KEEP')
       CLOSE(9,STATUS='KEEP')
-      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)    
-      OPEN(UNIT=9,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)    
+      OPEN(UNIT=8,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)
+      OPEN(UNIT=9,ACCESS='DIRECT',FORM='UNFORMATTED',RECL=114)
 C
       DO J=1, NNODG
           WRITE(55,*) J
@@ -1843,7 +1843,7 @@ C
       END
 
 C---------------------------------------------------------------------------
-C                  S U B R O U T I N E   P O S T 7 1 
+C                  S U B R O U T I N E   P O S T 7 1
 C---------------------------------------------------------------------------
 C     Merge the file containing atmospheric pressure data at the
 C     atmospheric pressure stations (fort.71 file) from each subdomain
@@ -1859,21 +1859,21 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
 c     counters
-      INTEGER I,J,K,L ! loop counters 
+      INTEGER I,J,K,L ! loop counters
       INTEGER IPROC   ! subdomain counter
       INTEGER OREC    ! record counter in binary output file
       INTEGER,ALLOCATABLE :: IREC(:) ! input record counters for binary files
 c     containers
       INTEGER IDUM                         ! to read number of nodes in binary
-      CHARACTER*80  OUTMSG                 ! text line of full domain data 
+      CHARACTER*80  OUTMSG                 ! text line of full domain data
       CHARACTER*85  INLINE                 ! hold RUNDES, RUNID, AGRID in text
       CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
-c     file stuff 
+c     file stuff
       LOGICAL FOUND                        ! TRUE if the file exists
       INTEGER,ALLOCATABLE::LOC2(:)          ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
-c     actual data 
+c     actual data
       INTEGER NTRSPM  ! number of data sets to be written to fort.71
       INTEGER NUMSTNS ! number of subdomain meteorlogical recording stations
       INTEGER NSTEMP  ! time step interval at which fort.71 is written
@@ -1894,7 +1894,7 @@ C
 C     Determine whether Unit 71 is Sequential Formatted or Direct Access Binary
 C
       SELECT CASE(ABS(NOUTM))
-C     -------      
+C     -------
       CASE(1)                   ! text (sequential formatted)
 C     -------
 C     Open All Local Sequential Formatted fort.71 files
@@ -1916,31 +1916,31 @@ C     Open All Local Sequential Formatted fort.71 files
               CALL EXIT(1)
             ENDIF
          ENDDO
-C     
+C
 C     Open Global Sequential Formatted fort.71 file
          OPEN(UNIT=71,FILE='fort.71')
-C     
+C
          WRITE(71,'(A85)') INLINE
          WRITE(71,3645) NTRSPM,NUMSTNS,DTM,NSPOOLM,ITEMPM
-C     
+C
          DO                     ! loop infinitely over data sets
-C     
+C
             DO IPROC=1,NPROC
                READ(LOC2(IPROC),2120,END=9999) TIMEOUTSM,ITSM
                IF (NSTAMP(IPROC).GT.0) THEN
-                  READ(LOC2(IPROC),80,END=9999) 
+                  READ(LOC2(IPROC),80,END=9999)
      &                 (AtmPresASC(IMAP_STAM_LG(K,IPROC)),
      &                 K=1,NSTAMP(IPROC))
                ENDIF
-            ENDDO            
-C     
+            ENDDO
+C
             WRITE(71,2120) TIMEOUTSM,ITSM
             DO I=1, NSTAM
                CALL NEWINDEX(AtmPresASC(I),OUTMSG,I)
-               WRITE(71,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+               WRITE(71,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
             ENDDO
-C     
-         ENDDO                 
+C
+         ENDDO
 C     -------
       CASE(2)                   ! binary
 C     -------
@@ -1959,10 +1959,10 @@ C     Open All Local and the Global Direct Access Binary fort.71 files
             ENDIF
          ENDDO
          OPEN(71,FILE='fort.71',ACCESS='DIRECT',RECL=NBYTE)
-C     
-C     
+C
+C
 C--   Read RUNDES RUNID and AGRID from each subdomain file
-C     
+C
          DO IPROC = 1,NPROC
             IREC(IPROC) = 0
             IF (NBYTE.EQ.4) THEN
@@ -1994,9 +1994,9 @@ C
                IREC(IPROC)=IREC(IPROC)+3
             ENDIF
          ENDDO
-C     
+C
 C--   Write RUNDES RUNID and AGRID to Global File
-C     
+C
          OREC = 0
          IF (NBYTE.EQ.4) THEN
             DO I=1,8
@@ -2026,15 +2026,15 @@ C
             ENDDO
             OREC=OREC+3
          ENDIF
-C     
+C
 C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
 C     and then close files to flush file buffers
-C     
+C
          DO IPROC = 1,NPROC
             READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPM
-            READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS        
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
             READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTM
-            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
+            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSPOOLM
             READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPM
             IREC(IPROC) = IREC(IPROC)+5
             CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
@@ -2045,9 +2045,9 @@ C
             OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
          ENDDO
-C     
+C
 C--   Write same info to full-domain file and close it to flush buffer also
-C     
+C
          WRITE(71,REC=OREC+1) NTRSPM
          WRITE(71,REC=OREC+2) NUMSTNS
          WRITE(71,REC=OREC+3) DTM
@@ -2056,9 +2056,9 @@ C
          OREC = OREC+5
          CLOSE(71)              ! Flush the Write Buffer
          OPEN(71,FILE='fort.71',ACCESS='DIRECT',RECL=NBYTE)
-C     
+C
          DO J=1,NTRSPM
-C     
+C
             DO IPROC=1,NPROC
                READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
                READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSM
@@ -2072,8 +2072,8 @@ C
                   ENDDO
                   IREC(IPROC) = IREC(IPROC) + NSTAMP(IPROC)
                ENDIF
-            ENDDO            
-C     
+            ENDDO
+C
             WRITE(71,REC=OREC+1) TIMEOUTSM
             WRITE(71,REC=OREC+2) ITSM
             OREC = OREC + 2
@@ -2081,15 +2081,15 @@ C
                WRITE(71,REC=OREC+K) AtmPresBIN(K)
             ENDDO
             OREC = OREC + NSTAM
-C     
-         ENDDO                 
+C
+         ENDDO
 C
       CASE DEFAULT
-C     
+C
          WRITE(*,2125) NOUTM
 C
       END SELECT
-C     
+C
 C     Close the full domain and subdomain fort.71 Files
 C
  9999 CONTINUE
@@ -2097,12 +2097,12 @@ C
       DO IPROC = 1,NPROC
          CLOSE(LOC2(IPROC))
       ENDDO
-C     
+C
  80   FORMAT(A40)
  2120 FORMAT(2X,E20.10,5X,I10)
- 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3) 
+ 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
-C     
+C
       RETURN
 C---------------------------------------------------------------------------
       END SUBROUTINE POST71
@@ -2112,7 +2112,7 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C                  S U B R O U T I N E   P O S T 7 2 
+C                  S U B R O U T I N E   P O S T 7 2
 C---------------------------------------------------------------------------
 C     Merge the file containing wind velocity data at the meteorological
 C     recording stations (fort.72 file) from each subdomain into a
@@ -2126,21 +2126,21 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
 c     counters
-      INTEGER I,J,K,L             ! loop counters 
+      INTEGER I,J,K,L             ! loop counters
       INTEGER IPROC               ! subdomain counter
       INTEGER OREC                ! record counter in binary output file
       INTEGER,ALLOCATABLE::IREC(:)! input record counters for binary files
 c     containers
       INTEGER IDUM                ! to read number of nodes in binary
-      CHARACTER*80 OUTMSG         ! text line of full domain data 
+      CHARACTER*80 OUTMSG         ! text line of full domain data
       CHARACTER*85  INLINE        ! hold RUNDES, RUNID, AGRID in text
       CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
-c     file stuff 
+c     file stuff
       LOGICAL FOUND               ! TRUE if the file exists
       INTEGER,ALLOCATABLE::LOC2(:) ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
-c     actual data 
+c     actual data
       REAL(8) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
       REAL(8)TIMEOUTSM! model time
       INTEGER NTRSPM  ! number of data sets to be written to fort.72
@@ -2184,41 +2184,41 @@ C
                CALL EXIT(1)
             ENDIF
          ENDDO
-C     
+C
 C--   Open full domain fort.72 file
-C     
+C
          OPEN(UNIT=72,FILE='fort.72')
-C     
+C
          WRITE(72,'(A85)') INLINE
          WRITE(72,3645) NTRSPM,MNSTAM,DTM,NSTEMP,ITEMPM
-C     
+C
 C     jgf46.00 Made the loop over data sets an infinite loop because the
 C     number of data sets at the top of the file will be wrong if the
 C     run was hot started.
-C     
+C
          DO                     ! loop infinitely over data sets
-C     
+C
             DO IPROC=1,NPROC
                READ(LOC2(IPROC),2120,END=9999) TIMEOUTSM,ITSM
                IF (NSTAMP(IPROC).GT.0) THEN
-                  READ(LOC2(IPROC),80,END=9999) 
+                  READ(LOC2(IPROC),80,END=9999)
      &                 (WindASC(IMAP_STAM_LG(K,IPROC)),
      &                 K=1,NSTAMP(IPROC))
                ENDIF
-            ENDDO            
-C     
+            ENDDO
+C
             WRITE(72,2120) TIMEOUTSM,ITSM
             DO I=1, NSTAM
                CALL NEWINDEX(WindASC(I),OUTMSG,I)
-               WRITE(72,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+               WRITE(72,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
             ENDDO
-C     
-         ENDDO                 
+C
+         ENDDO
 
       CASE(2)
-C     
+C
 C--   Open All subdomain and the full domain Direct Access Binary fort.72 file
-C     
+C
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.72'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
@@ -2233,9 +2233,9 @@ C
             ENDIF
          ENDDO
          OPEN(72,FILE='fort.72',ACCESS='DIRECT',RECL=NBYTE)
-C     
+C
 C--   Read RUNDES RUNID and AGRID from each subdomain file
-C     
+C
          DO IPROC = 1,NPROC
             IREC(IPROC) = 0
             IF (NBYTE.EQ.4) THEN
@@ -2267,9 +2267,9 @@ C
                IREC(IPROC)=IREC(IPROC)+3
             ENDIF
          ENDDO
-C     
+C
 C--   Write RUNDES RUNID and AGRID to full domain File
-C     
+C
          OREC = 0
          IF (NBYTE.EQ.4) THEN
             DO I=1,8
@@ -2299,10 +2299,10 @@ C
             ENDDO
             OREC=OREC+3
          ENDIF
-C     
+C
 C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
 C     and then close files to flush file buffers
-C     
+C
          DO IPROC = 1,NPROC
             READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPM
             READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
@@ -2313,14 +2313,14 @@ C
             CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
                write(*,*) 'ERROR: Inconsistency in number of vel. stations.'
-               CALL EXIT(1) 
+               CALL EXIT(1)
             ENDIF
             OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),
      &           ACCESS='DIRECT',RECL=NBYTE)
          ENDDO
-C     
+C
 C--   Write same info to full domain file and close it to flush buffer also
-C     
+C
          WRITE(72,REC=OREC+1) NTRSPM
          WRITE(72,REC=OREC+2) NSTAM
          WRITE(72,REC=OREC+3) DTM
@@ -2329,9 +2329,9 @@ C
          OREC = OREC+5
          CLOSE(72)              ! Flush the Write Buffer
          OPEN(72,FILE='fort.72',ACCESS='DIRECT',RECL=NBYTE)
-C     
+C
          DO J=1,NTRSPM
-C     
+C
             DO IPROC=1,NPROC
                READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
                READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSM
@@ -2344,15 +2344,15 @@ C
      &                    REC=IREC(IPROC)+2*K) VWindVelBINP(K)
                   ENDDO
                   DO K=1,NSTAMP(IPROC)
-                     UWindVelBIN(IMAP_STAV_LG(K,IPROC)) 
+                     UWindVelBIN(IMAP_STAV_LG(K,IPROC))
      &                    = UWindVelBINP(K)
-                     VWindVelBIN(IMAP_STAV_LG(K,IPROC)) 
+                     VWindVelBIN(IMAP_STAV_LG(K,IPROC))
      &                    = VWindVelBINP(K)
                   ENDDO
                   IREC(IPROC) = IREC(IPROC) + 2*NSTAMP(IPROC)
                ENDIF
             ENDDO
-C     
+C
             WRITE(72,REC=OREC+1) TIMEOUTSM
             WRITE(72,REC=OREC+2) ITSM
             OREC = OREC + 2
@@ -2361,9 +2361,9 @@ C
                WRITE(72,REC=OREC+2*K) VWindVelBIN(K)
             ENDDO
             OREC = OREC + 2*NSTAM
-C     
+C
          ENDDO
-C     
+C
          CASE DEFAULT
 C
             WRITE(*,2125) NOUTM
@@ -2378,13 +2378,13 @@ C
       DO IPROC = 1,NPROC
          CLOSE(LOC2(IPROC))
       ENDDO
-C     
+C
  2120 FORMAT(2X,E20.10,5X,I10)
  80   FORMAT(A80)
 c     2454 FORMAT(2X,I8,2X,E15.8,2X,E15.8)
- 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3) 
+ 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
-C     
+C
       RETURN
 C---------------------------------------------------------------------------
       END SUBROUTINE POST72
@@ -2395,7 +2395,7 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C                  S U B R O U T I N E   P O S T 7 3 
+C                  S U B R O U T I N E   P O S T 7 3
 C---------------------------------------------------------------------------
 C     Merge the atmospheric pressure data (fort.73 files) from each
 C     subdomain into a single, full domain fort.73 file. This version is
@@ -2405,13 +2405,13 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
 C     counters
-      INTEGER I,J,K,L ! loop counters 
+      INTEGER I,J,K,L ! loop counters
       INTEGER IPROC   ! subdomain counter
       INTEGER OREC    ! record counter in binary output file
       INTEGER, ALLOCATABLE::IREC(:) ! input record counters for binary files
       INTEGER INDX   ! full domain node number
 C     containers
-      CHARACTER*80 OUTMSG                  ! text line of full domain data 
+      CHARACTER*80 OUTMSG                  ! text line of full domain data
       CHARACTER*85 INLINE                  ! hold RUNDES, RUNID, AGRID in text
       CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
@@ -2439,9 +2439,9 @@ C
       ALLOCATE (AtmPresBIN(MNP),AtmPresBINP(MNPP))
       ALLOCATE (AtmPresSC(MNP),AtmPresSCP(MNPP))
       ALLOCATE ( LOCNAME(MNPROC))
-C     
+C
 C--   Determine whether Unit 73 is Sequential Formatted or Direct Access Binary
-C     
+C
       IF (ABS(NOUTGW).EQ.1) THEN
          GO TO 1000 ! file is text
       ELSE
@@ -2469,13 +2469,13 @@ C     Read header information from each fort.73 file
          IF (NP.NE.NNODP(IPROC)) THEN
             print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
             write(*,*) 'ERROR: Inconsistency in expected subdomain nodes.'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C     Create fort.73 file for full domain
       OPEN(UNIT=73,FILE='fort.73')
       WRITE(73,'(A85)') INLINE ! write RUNDES, RUNID, AGRID
-      WRITE(73,3645) NDSETSGW,NNODG,DTGW,NSPOOLGW,ITEMPGW 
+      WRITE(73,3645) NDSETSGW,NNODG,DTGW,NSPOOLGW,ITEMPGW
 C
 C     jgf46.00 Made the loop over data sets an infinite loop because the
 C     number of data sets at the top of the file will be wrong if the
@@ -2485,24 +2485,24 @@ C
 C
          DO IPROC=1,NPROC  ! loop over subdomains
             READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
-            IF (IPROC.EQ.1) WRITE(73,2120) TIMEOUTGW,ITGW    
+            IF (IPROC.EQ.1) WRITE(73,2120) TIMEOUTGW,ITGW
             DO K = 1,NNODP(IPROC) ! loop over subdomain nodes
                READ(LOC2(IPROC),80,END=9999) AtmPresSCP(K)
                INDX = IMAP_NOD_LG(K,IPROC) ! sub --> full (lookup table)
                IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                   AtmPresSC(INDX) = AtmPresSCP(K)
                ENDIF
-            ENDDO ! next subdomain node  
+            ENDDO ! next subdomain node
          ENDDO ! next subdomain
 C
          DO I = 1,NNODG   ! loop over full domain nodes
             CALL NEWINDEX(AtmPresSC(I),OUTMSG,I)
-            WRITE(73,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
-         ENDDO 
+            WRITE(73,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
+         ENDDO
       ENDDO ! next output time
       GO TO 9999 ! jump to end of subroutine where fort.73 file is closed
 C
-C     
+C
  2000 CONTINUE !here begins the post-processing if files are binary
 C--   Open all subdomain and the full domain Direct Access Binary fort.73 files
       DO IPROC = 1,NPROC
@@ -2581,13 +2581,13 @@ C--   Write RUNDES RUNID and AGRID to full domain file
          ENDDO
          OREC=OREC+3
       ENDIF
-C     
+C
 C--   Read NDSETSGW, NNODP, DTGW, NSPOOLGW, ITEMPGW from each subdomain file
 C     and then close files to flush file buffers
-C     
+C
       DO IPROC = 1,NPROC
          READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETSGW
-         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM
          READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTGW
          READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
          READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPGW
@@ -2595,9 +2595,9 @@ C
          CLOSE(LOC2(IPROC))      ! flush the write buffer
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
-C     
+C
 C--   Write same info to full domain file and close it to flush buffer also
-C     
+C
       WRITE(73,REC=OREC+1) NDSETSGW
       WRITE(73,REC=OREC+2) NNODG
       WRITE(73,REC=OREC+3) DTGW
@@ -2606,9 +2606,9 @@ C
       OREC = OREC+5
       CLOSE(73)                 ! flush the write buffer
       OPEN(73,FILE='fort.73',ACCESS='DIRECT',RECL=NBYTE)
-C     
+C
       DO J=1,NDSETSGW
-C     
+C
          DO IPROC=1,NPROC
             READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
             READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITGW
@@ -2624,7 +2624,7 @@ C
             ENDDO
             IREC(IPROC) = IREC(IPROC) + NNODP(IPROC)
          ENDDO
-C     
+C
          WRITE(73,REC=OREC+1) TIMEOUTGW
          WRITE(73,REC=OREC+2) ITGW
          OREC = OREC + 2
@@ -2632,27 +2632,27 @@ C
             WRITE(73,REC=OREC+K) AtmPresBIN(K)
          ENDDO
          OREC = OREC + NNODG
-C     
+C
       ENDDO
-C     
+C
  9999 CONTINUE
-C     
+C
 C--   Close the full domain and subdomain fort.73 Files
-C     
+C
       CLOSE(73)
       DO IPROC = 1,NPROC
          CLOSE(LOC2(IPROC))
       ENDDO
-C     
+C
  80   FORMAT(A80)
  2120 FORMAT(2X,E20.10,5X,I10)
  2453 FORMAT(2X,I8,2X,E15.8)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
-C     
+C
       RETURN
       END
 C---------------------------------------------------------------------------
-C     End of subroutine Post73 
+C     End of subroutine Post73
 C---------------------------------------------------------------------------
 
 
@@ -2660,7 +2660,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE POST74()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the Wind Stress Data at all nodes from the local fort.74 files.C
 C  This version is compatible with ADCIRC version 34.03                     C
 C---------------------------------------------------------------------------C
@@ -2718,7 +2718,7 @@ C
          READ(LOC2(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
          IF (NP.NE.NNODP(IPROC)) THEN
            write(*,*) 'Inconsistency in number of local nodes'
-           CALL EXIT(1) 
+           CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=74,FILE='fort.74')
@@ -2742,12 +2742,12 @@ C
                 UU(INDX) = UUP(K)
                ENDIF
             ENDDO
-         ENDDO 
+         ENDDO
          DO I = 1,NNODG
             CALL NEWINDEX(UU(I),OUTMSG,I)
             WRITE(74,*) TRIM(OUTMSG)  !jgf46.00 TRIM to cut down file size
          ENDDO
-      ENDDO               
+      ENDDO
       GO TO 9999
 C
 2000  CONTINUE
@@ -2911,9 +2911,9 @@ C
 
 
 C---------------------------------------------------------------------------
-C                  S U B R O U T I N E   P O S T 9 1 
+C                  S U B R O U T I N E   P O S T 9 1
 C---------------------------------------------------------------------------
-C     Merge the file containing ice concentration data at the ice 
+C     Merge the file containing ice concentration data at the ice
 C     concentration stations (fort.91 file) from each subdomain
 C     into a single, full domain fort.91 file. This version is
 C     compatible with ADCIRC version 45.07. jgf 11/02/2005.
@@ -2928,21 +2928,21 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
 c     counters
-      INTEGER I,J,K,L ! loop counters 
+      INTEGER I,J,K,L ! loop counters
       INTEGER IPROC   ! subdomain counter
       INTEGER OREC    ! record counter in binary output file
       INTEGER,ALLOCATABLE :: IREC(:) ! input record counters for binary files
 c     containers
       INTEGER IDUM                         ! to read number of nodes in binary
-      CHARACTER*80  OUTMSG                 ! text line of full domain data 
+      CHARACTER*80  OUTMSG                 ! text line of full domain data
       CHARACTER*85  INLINE                 ! hold RUNDES, RUNID, AGRID in text
       CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
-c     file stuff 
+c     file stuff
       LOGICAL FOUND                        ! TRUE if the file exists
       INTEGER,ALLOCATABLE::LOC2(:)          ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
-c     actual data 
+c     actual data
       INTEGER NTRSPM  ! number of data sets to be written to fort.91
       INTEGER NUMSTNS ! number of subdomain meteorlogical recording stations
       INTEGER NSTEMP  ! time step interval at which fort.91 is written
@@ -2963,7 +2963,7 @@ C
 C     Determine whether Unit 91 is Sequential Formatted or Direct Access Binary
 C
       SELECT CASE(ABS(NOUTM))
-C     -------      
+C     -------
       CASE(1)                   ! text (sequential formatted)
 C     -------
 C     Open All Local Sequential Formatted fort.91 files
@@ -2982,33 +2982,33 @@ C     Open All Local Sequential Formatted fort.91 files
             READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
                write(*,*) 'ERROR: Inconsistency in no. of ice conc. sta.'
-               CALL EXIT(1) 
+               CALL EXIT(1)
             ENDIF
          ENDDO
-C     
+C
 C     Open Global Sequential Formatted fort.91 file
          OPEN(UNIT=91,FILE='fort.91')
-C     
+C
          WRITE(91,'(A85)') INLINE
          WRITE(91,3645) NTRSPM,NUMSTNS,DTM,NSPOOLM,ITEMPM
-C     
+C
          DO                     ! loop infinitely over data sets
-C     
+C
             DO IPROC=1,NPROC
                READ(LOC2(IPROC),2120,END=9999) TIMEOUTSM,ITSM
                IF (NSTAMP(IPROC).GT.0) THEN
-                  READ(LOC2(IPROC),80,END=9999) 
+                  READ(LOC2(IPROC),80,END=9999)
      &                 (CiceASC(IMAP_STAM_LG(K,IPROC)),
      &                 K=1,NSTAMP(IPROC))
                ENDIF
             ENDDO
-C     
+C
             WRITE(91,2120) TIMEOUTSM,ITSM
             DO I=1, NSTAM
                CALL NEWINDEX(CiceASC(I),OUTMSG,I)
-               WRITE(91,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+               WRITE(91,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
             ENDDO
-C     
+C
          ENDDO
 C     -------
       CASE(2)                   ! binary
@@ -3028,10 +3028,10 @@ C     Open All Local and the Global Direct Access Binary fort.91 files
             ENDIF
          ENDDO
          OPEN(91,FILE='fort.91',ACCESS='DIRECT',RECL=NBYTE)
-C     
-C     
+C
+C
 C--   Read RUNDES RUNID and AGRID from each subdomain file
-C     
+C
          DO IPROC = 1,NPROC
             IREC(IPROC) = 0
             IF (NBYTE.EQ.4) THEN
@@ -3063,9 +3063,9 @@ C
                IREC(IPROC)=IREC(IPROC)+3
             ENDIF
          ENDDO
-C     
+C
 C--   Write RUNDES RUNID and AGRID to Global File
-C     
+C
          OREC = 0
          IF (NBYTE.EQ.4) THEN
             DO I=1,8
@@ -3095,28 +3095,28 @@ C
             ENDDO
             OREC=OREC+3
          ENDIF
-C     
+C
 C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
 C     and then close files to flush file buffers
-C     
+C
          DO IPROC = 1,NPROC
             READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPM
             READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
             READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTM
-            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
+            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSPOOLM
             READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPM
             IREC(IPROC) = IREC(IPROC)+5
             CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NSTAM.NE.NSTAMP(IPROC)) THEN
                write(*,*) 'ERROR: Inconsistency in no. of ice conc. sta.'
-               CALL EXIT(1) 
+               CALL EXIT(1)
             ENDIF
             OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
          ENDDO
-C     
+C
 C--   Write same info to full-domain file and close it to flush buffer also
-C     
+C
          WRITE(91,REC=OREC+1) NTRSPM
          WRITE(91,REC=OREC+2) NUMSTNS
          WRITE(91,REC=OREC+3) DTM
@@ -3125,9 +3125,9 @@ C
          OREC = OREC+5
          CLOSE(91)              ! Flush the Write Buffer
          OPEN(91,FILE='fort.91',ACCESS='DIRECT',RECL=NBYTE)
-C     
+C
          DO J=1,NTRSPM
-C     
+C
             DO IPROC=1,NPROC
                READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
                READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSM
@@ -3142,7 +3142,7 @@ C
                   IREC(IPROC) = IREC(IPROC) + NSTAMP(IPROC)
                ENDIF
             ENDDO
-C     
+C
             WRITE(91,REC=OREC+1) TIMEOUTSM
             WRITE(91,REC=OREC+2) ITSM
             OREC = OREC + 2
@@ -3150,15 +3150,15 @@ C
                WRITE(91,REC=OREC+K) CiceBIN(K)
             ENDDO
             OREC = OREC + NSTAM
-C     
+C
          ENDDO
 C
       CASE DEFAULT
-C     
+C
          WRITE(*,2125) NOUTM
 C
       END SELECT
-C     
+C
 C     Close the full domain and subdomain fort.91 Files
 C
  9999 CONTINUE
@@ -3166,12 +3166,12 @@ C
       DO IPROC = 1,NPROC
          CLOSE(LOC2(IPROC))
       ENDDO
-C     
+C
  80   FORMAT(A40)
  2120 FORMAT(2X,E20.10,5X,I10)
- 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3) 
+ 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
-C     
+C
       RETURN
 C---------------------------------------------------------------------------
       END SUBROUTINE POST91
@@ -3179,7 +3179,7 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C                  S U B R O U T I N E   P O S T 9 3 
+C                  S U B R O U T I N E   P O S T 9 3
 C---------------------------------------------------------------------------
 C     Merge the ice concentration data (fort.93 files) from each
 C     subdomain into a single, full domain fort.93 file. This version is
@@ -3191,13 +3191,13 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
 C     counters
-      INTEGER I,J,K,L ! loop counters 
+      INTEGER I,J,K,L ! loop counters
       INTEGER IPROC   ! subdomain counter
       INTEGER OREC    ! record counter in binary output file
       INTEGER, ALLOCATABLE::IREC(:) ! input record counters for binary files
       INTEGER INDX   ! full domain node number
 C     containers
-      CHARACTER*80 OUTMSG                  ! text line of full domain data 
+      CHARACTER*80 OUTMSG                  ! text line of full domain data
       CHARACTER*85 INLINE                  ! hold RUNDES, RUNID, AGRID in text
       CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
@@ -3225,9 +3225,9 @@ C
       ALLOCATE (CiceBIN(MNP),CiceBINP(MNPP))
       ALLOCATE (CiceSC(MNP),CiceSCP(MNPP))
       ALLOCATE ( LOCNAME(MNPROC))
-C     
+C
 C--   Determine whether Unit 93 is Sequential Formatted or Direct Access Binary
-C     
+C
       IF (ABS(NOUTGW).EQ.1) THEN
          GO TO 1000 ! file is text
       ELSE
@@ -3255,13 +3255,13 @@ C     Read header information from each fort.93 file
          IF (NP.NE.NNODP(IPROC)) THEN
             print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
             write(*,*) 'ERROR: Inconsistency in expected subdomain nodes.'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C     Create fort.93 file for full domain
       OPEN(UNIT=93,FILE='fort.93')
       WRITE(93,'(A85)') INLINE ! write RUNDES, RUNID, AGRID
-      WRITE(93,3645) NDSETSGW,NNODG,DTGW,NSPOOLGW,ITEMPGW 
+      WRITE(93,3645) NDSETSGW,NNODG,DTGW,NSPOOLGW,ITEMPGW
 C
 C     jgf46.00 Made the loop over data sets an infinite loop because the
 C     number of data sets at the top of the file will be wrong if the
@@ -3271,24 +3271,24 @@ C
 C
          DO IPROC=1,NPROC  ! loop over subdomains
             READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
-            IF (IPROC.EQ.1) WRITE(93,2120) TIMEOUTGW,ITGW    
+            IF (IPROC.EQ.1) WRITE(93,2120) TIMEOUTGW,ITGW
             DO K = 1,NNODP(IPROC) ! loop over subdomain nodes
                READ(LOC2(IPROC),80,END=9999) CiceSCP(K)
                INDX = IMAP_NOD_LG(K,IPROC) ! sub --> full (lookup table)
                IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                   CiceSC(INDX) = CiceSCP(K)
                ENDIF
-            ENDDO ! next subdomain node  
+            ENDDO ! next subdomain node
          ENDDO ! next subdomain
 C
          DO I = 1,NNODG   ! loop over full domain nodes
             CALL NEWINDEX(CiceSC(I),OUTMSG,I)
-            WRITE(93,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
-         ENDDO 
+            WRITE(93,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
+         ENDDO
       ENDDO ! next output time
       GO TO 9999 ! jump to end of subroutine where fort.93 file is closed
 C
-C     
+C
  2000 CONTINUE !here begins the post-processing if files are binary
 C--   Open all subdomain and the full domain Direct Access Binary fort.93 files
       DO IPROC = 1,NPROC
@@ -3367,13 +3367,13 @@ C--   Write RUNDES RUNID and AGRID to full domain file
          ENDDO
          OREC=OREC+3
       ENDIF
-C     
+C
 C--   Read NDSETSGW, NNODP, DTGW, NSPOOLGW, ITEMPGW from each subdomain file
 C     and then close files to flush file buffers
-C     
+C
       DO IPROC = 1,NPROC
          READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETSGW
-         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM
          READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTGW
          READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
          READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPGW
@@ -3381,9 +3381,9 @@ C
          CLOSE(LOC2(IPROC))      ! flush the write buffer
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
-C     
+C
 C--   Write same info to full domain file and close it to flush buffer also
-C     
+C
       WRITE(93,REC=OREC+1) NDSETSGW
       WRITE(93,REC=OREC+2) NNODG
       WRITE(93,REC=OREC+3) DTGW
@@ -3392,9 +3392,9 @@ C
       OREC = OREC+5
       CLOSE(93)                 ! flush the write buffer
       OPEN(93,FILE='fort.93',ACCESS='DIRECT',RECL=NBYTE)
-C     
+C
       DO J=1,NDSETSGW
-C     
+C
          DO IPROC=1,NPROC
             READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
             READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITGW
@@ -3410,7 +3410,7 @@ C
             ENDDO
             IREC(IPROC) = IREC(IPROC) + NNODP(IPROC)
          ENDDO
-C     
+C
          WRITE(93,REC=OREC+1) TIMEOUTGW
          WRITE(93,REC=OREC+2) ITGW
          OREC = OREC + 2
@@ -3418,27 +3418,27 @@ C
             WRITE(93,REC=OREC+K) CiceBIN(K)
          ENDDO
          OREC = OREC + NNODG
-C     
+C
       ENDDO
-C     
+C
  9999 CONTINUE
-C     
+C
 C--   Close the full domain and subdomain fort.93 Files
-C     
+C
       CLOSE(93)
       DO IPROC = 1,NPROC
          CLOSE(LOC2(IPROC))
       ENDDO
-C     
+C
  80   FORMAT(A80)
  2120 FORMAT(2X,E20.10,5X,I10)
  2453 FORMAT(2X,I8,2X,E15.8)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
-C     
+C
       RETURN
       END SUBROUTINE POST93
 C---------------------------------------------------------------------------
-C     End of subroutine Post93 
+C     End of subroutine Post93
 C---------------------------------------------------------------------------
 
 
@@ -3446,11 +3446,11 @@ C---------------------------------------------------------------------------
 
 
       SUBROUTINE POST67_68()
-      USE POST_GLOBAL 
+      USE POST_GLOBAL
 C
 C---------------------------------------------------------------------------C
-C                     written 10/11/01 by RL                                C 
-C                                                                           C  
+C                     written 10/11/01 by RL                                C
+C                                                                           C
 C  This routine gathers the local hot start files (fort.67 and fort.68) and C
 C  writes a global hotstart file                                            C
 C  jgf Updated for v45.06 09/07/2005                                        C
@@ -3458,7 +3458,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       USE HARM, ONLY : FNAM8, HAFREQ, HAFF, HAFACE, HA, STAELV, STAULV,
-     &                  STAVLV, GLOELV, GLOULV, GLOVLV, ELAV, ELVA, 
+     &                  STAVLV, GLOELV, GLOULV, GLOVLV, ELAV, ELVA,
      &                  CHARMV, ICHA, IHARIND, ITHAS, MM, XELAV, YELAV,
      &                  XELVA, YELVA, ICALL, ITMV, ITUD, NF, NFREQ, NZ,
      &                  TIMEUD, NAMEFR, NTSTEPS
@@ -3527,9 +3527,9 @@ C  kmd48.33bc allocate arrays that need NFEN
       ALLOCATE ( SIGT(MNP,NFEN),SAL(MNP,NFEN),TEMP(MNP,NFEN) )
 
       DO J=1,NHSFILES
-         IHOT=IHOT+J-1  
+         IHOT=IHOT+J-1
 
-C--Set up unit numbers for all Local Hot Start files 
+C--Set up unit numbers for all Local Hot Start files
 
          DO IPROC = 1,NPROC
             LOC2(IPROC) = 105 + (IPROC-1)
@@ -3539,7 +3539,7 @@ C--Read common info from highest processor hotstart file
 
 C  kmd48.33bc add information for hot start
          IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
-         IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68' 
+         IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
          LOCHSF=LOC2(NPROC)
          WRITE(LOCFN(3:6),'(I4.4)') (NPROC-1)
          OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
@@ -3561,7 +3561,7 @@ C  kmd48.33bc add information for hot start
          READ(LOCHSF,REC=IHOTSTP) NEX
          CLOSE(LOCHSF)          !close to flush the buffer
 
-C--Read stuff from each local file  
+C--Read stuff from each local file
 C  kmd48.33bc add in information for node and elements
          NPG=MNP
          NEG=MNE
@@ -3569,7 +3569,7 @@ C  kmd48.33bc add in information for node and elements
 C  kmd48.33bc update to utilize the global IO
          DO IPROC=1,NPROC
             IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
-            IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68' 
+            IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
             LOCHSF=LOC2(IPROC)
             WRITE(LOCFN(3:6),'(I4.4)') (IPROC-1)
             OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
@@ -3617,7 +3617,7 @@ C  kmd48.33bc update to utilize the global IO
                IHOTSTP=IHOTSTP+1
             END DO
            CLOSE(LOCHSF)
-         END DO 
+         END DO
 
 !            DO I=1,NNODP(IPROC)
 !               INDX=IMAP_NOD_LG(I,IPROC)
@@ -3636,13 +3636,13 @@ C  kmd48.33bc update to utilize the global IO
 !            DO I=1,NELP(IPROC)
 !               INDX=IMAP_EL_LG(I,IPROC)
 !               READ(LOCHSF,REC=IHOTSTP+1) NOFF(INDX)
-!               IHOTSTP=IHOTSTP+1                                    
+!               IHOTSTP=IHOTSTP+1
 !            END DO
 
 C--Read in more common info from higest processor hotstart file
-         
+
          IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
-         IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68' 
+         IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
          LOCHSF=LOC2(NPROC)
          WRITE(LOCFN(3:6),'(I4.4)') (NPROC-1)
          OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
@@ -3817,134 +3817,134 @@ C  kmd48.33bc add in the 3D barotropic and baroclinic information
 
 c kmd 50 update to include harmonics in hotstart files
 
-         IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN 
+         IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
             DO IPROC=1,NPROC
                IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
                IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
                LOCHSF=LOC2(IPROC)
                WRITE(LOCFN(3:6),'(I4.4)') (IPROC-1)
                OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
-               IF ((IM.EQ.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR. 
+               IF ((IM.EQ.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR.
      &             (IM.EQ.11).OR.(IM.EQ.21).OR.(IM.EQ.31))) THEN
                   IHOTSTP=8+(NNODP(IPROC)*7)+(NELP(IPROC)*1)+31+
      &                    (NNODP(IPROC)*7)+(NNODP(IPROC)*NFEN*5)
                ELSE IF ((IM.EQ.10).AND.((IM.NE.1).OR.(IM.NE.2).OR.
-     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN 
+     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN
                   IHOTSTP=8+(NNODP(IPROC)*7)+(NELP(IPROC)*1)+31
-               ELSE IF ((IM.NE.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR. 
+               ELSE IF ((IM.NE.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR.
      &             (IM.EQ.11).OR.(IM.EQ.21).OR.(IM.EQ.31))) THEN
                   IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31+
      &                    (NNODP(IPROC)*7)+(NNODP(IPROC)*NFEN*5)
                ELSE IF ((IM.NE.10).AND.((IM.NE.1).OR.(IM.NE.2).OR.
-     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN 
+     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN
                   IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31
                END IF
                IF ((IDEN.EQ.1).OR.(IDEN.EQ.2).OR.
-     &             (IDEN.EQ.3)) THEN 
+     &             (IDEN.EQ.3)) THEN
                   IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*1)
-               ELSE IF (IDEN.EQ.4) THEN 
-                  IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*2) 
-               END IF 
+               ELSE IF (IDEN.EQ.4) THEN
+                  IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*2)
+               END IF
                IHOTSTP=IHOTSTP+1
                READ(LOCHSF,REC=IHOTSTP) ICHA
-               READ(LOCHSF,REC=IHOTSTP+1) NZ 
-               READ(LOCHSF,REC=IHOTSTP+2) NF 
-               READ(LOCHSF,REC=IHOTSTP+3) MM 
-               READ(LOCHSF,REC=IHOTSTP+4) NPX 
-               READ(LOCHSF,REC=IHOTSTP+5) NSTAEX 
+               READ(LOCHSF,REC=IHOTSTP+1) NZ
+               READ(LOCHSF,REC=IHOTSTP+2) NF
+               READ(LOCHSF,REC=IHOTSTP+3) MM
+               READ(LOCHSF,REC=IHOTSTP+4) NPX
+               READ(LOCHSF,REC=IHOTSTP+5) NSTAEX
                READ(LOCHSF,REC=IHOTSTP+6) NSTAVX
                READ(LOCHSF,REC=IHOTSTP+7) NHASE
-               READ(LOCHSF,REC=IHOTSTP+8) NHASV 
+               READ(LOCHSF,REC=IHOTSTP+8) NHASV
                READ(LOCHSF,REC=IHOTSTP+9) NHAGE
-               READ(LOCHSF,REC=IHOTSTP+10) NHAGV 
-               READ(LOCHSF,REC=IHOTSTP+11) ICALL 
-               READ(LOCHSF,REC=IHOTSTP+12) NFREQ 
+               READ(LOCHSF,REC=IHOTSTP+10) NHAGV
+               READ(LOCHSF,REC=IHOTSTP+11) ICALL
+               READ(LOCHSF,REC=IHOTSTP+12) NFREQ
                IHOTSTP = IHOTSTP + 12
-            
+
                DO I=1,NFREQ+NF
-                  FNAME=NAMEFR(I) 
+                  FNAME=NAMEFR(I)
                   READ(LOCHSF,REC=IHOTSTP+1) FNAM8(1)
                   READ(LOCHSF,REC=IHOTSTP+2) FNAM8(2)
-                  IHOTSTP = IHOTSTP + 2 
+                  IHOTSTP = IHOTSTP + 2
                   READ(LOCHSF,REC=IHOTSTP+1) HAFREQ(I)
                   READ(LOCHSF,REC=IHOTSTP+2) HAFF(I)
                   READ(LOCHSF,REC=IHOTSTP+3) HAFACE(I)
                   IHOTSTP=IHOTSTP+3
-               END DO 
+               END DO
 
 C --       Write out time of most recent H.A. update
 
                READ(LOCHSF,REC=IHOTSTP+1) TIMEUD
                READ(LOCHSF,REC=IHOTSTP+2) ITUD
                IHOTSTP=IHOTSTP+2
- 
-C --       Write out LHS Matrix 
+
+C --       Write out LHS Matrix
 
                IHOTSTP=IHOTSTP+1
                DO I=1,MM
                   DO K=1,MM
                      READ(LOCHSF,REC=IHOTSTP) HA(I,K)
-                     IHOTSTP=IHOTSTP+1 
-                  END DO 
-               END DO 
+                     IHOTSTP=IHOTSTP+1
+                  END DO
+               END DO
 
 C --      Read in load vectors to hotstart file.
-               IF (NHASE.NE.0) THEN 
-                 DO N=1,NSTAEX 
+               IF (NHASE.NE.0) THEN
+                 DO N=1,NSTAEX
                     DO I=1,MM
                        READ(LOCHSF,REC=IHOTSTP) STAELV(I,N)
                        IHOTSTP=IHOTSTP+1
-                    END DO 
-                 END DO 
-               END IF 
+                    END DO
+                 END DO
+               END IF
 
-               IF (NHASV.NE.0) THEN 
-                 DO N=1,NSTAVX 
+               IF (NHASV.NE.0) THEN
+                 DO N=1,NSTAVX
                     DO I=1,MM
                        READ(LOCHSF,REC=IHOTSTP) STAULV(I,N)
                        IHOTSTP=IHOTSTP+1
                        READ(LOCHSF,REC=IHOTSTP) STAVLV(I,N)
                        IHOTSTP=IHOTSTP+1
-                    END DO 
-                 END DO 
-               END IF 
+                    END DO
+                 END DO
+               END IF
 
-               IF (NHAGE.NE.0) THEN 
+               IF (NHAGE.NE.0) THEN
                  DO N=1,NNODP(IPROC)
                     DO I=1,MM
-                       INDX=IMAP_NOD_LG(I,IPROC) 
+                       INDX=IMAP_NOD_LG(I,IPROC)
                        READ(LOCHSF,REC=IHOTSTP) GLOELV(I,INDX)
                        IHOTSTP=IHOTSTP+1
-                    END DO 
-                 END DO 
-               END IF 
+                    END DO
+                 END DO
+               END IF
 
-               IF (NHAGV.NE.0) THEN 
-                 DO N=1,NNODP(IPROC) 
+               IF (NHAGV.NE.0) THEN
+                 DO N=1,NNODP(IPROC)
                     DO I=1,MM
                        INDX=IMAP_NOD_LG(I,IPROC)
                        READ(LOCHSF,REC=IHOTSTP) GLOULV(I,INDX)
                        IHOTSTP=IHOTSTP+1
                        READ(LOCHSF,REC=IHOTSTP) GLOVLV(I,INDX)
                        IHOTSTP=IHOTSTP+1
-                    END DO 
-                 END DO 
-               END IF 
+                    END DO
+                 END DO
+               END IF
 
-               IF (CHARMV) THEN 
-                 IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN 
+               IF (CHARMV) THEN
+                 IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN
                   READ(LOCHSF,REC=IHOTSTP) NTSTEPS
                   IHOTSTP=IHOTSTP+1
-                  IF (NHAGE.NE.0) THEN 
+                  IF (NHAGE.NE.0) THEN
                      DO I=1,NNODP(IPROC)
                         INDX=IMAP_NOD_LG(I,IPROC)
                         READ(LOCHSF,REC=IHOTSTP) ELAV(INDX)
                         IHOTSTP=IHOTSTP+1
                         READ(LOCHSF,REC=IHOTSTP) ELVA(INDX)
                         IHOTSTP=IHOTSTP+1
-                     END DO 
-                  END IF 
-                  IF (NHAGV.NE.0) THEN 
+                     END DO
+                  END IF
+                  IF (NHAGV.NE.0) THEN
                      DO I=1,NNODP(IPROC)
                         INDX=IMAP_NOD_LG(I,IPROC)
                         READ(LOCHSF,REC=IHOTSTP) XELAV(INDX)
@@ -3955,16 +3955,16 @@ C --      Read in load vectors to hotstart file.
                         IHOTSTP=IHOTSTP+1
                         READ(LOCHSF,REC=IHOTSTP) YELVA(INDX)
                         IHOTSTP=IHOTSTP+1
-                     END DO 
-                  END IF 
-                 END IF 
-               END IF 
+                     END DO
+                  END IF
+                 END IF
+               END IF
                CLOSE(LOCHSF)
-            END DO 
-         END IF 
+            END DO
+         END IF
 
 
-C--Open Appropriate Hot Start File based on the value of IHOT from the fort.15 file 
+C--Open Appropriate Hot Start File based on the value of IHOT from the fort.15 file
 
         IF(IHOT.EQ.67) FNAME='fort.67'
         IF(IHOT.EQ.68) FNAME='fort.68'
@@ -4176,8 +4176,8 @@ C  kmd48.33bc update to new format
 !         IHOTSTP=IHOTSTP+1
 !         END DO
 !       DO I=1,MNE
-!          WRITE(IHOT,REC=IHOTSTP+1) NOFF(I)                     
-!          IHOTSTP=IHOTSTP+1                                    
+!          WRITE(IHOT,REC=IHOTSTP+1) NOFF(I)
+!          IHOTSTP=IHOTSTP+1
 !       END DO
 !       WRITE(IHOT,REC=IHOTSTP+1 ) IESTP
 !       WRITE(IHOT,REC=IHOTSTP+2 ) NSCOUE
@@ -4198,7 +4198,7 @@ C  kmd48.33bc update to new format
 !       WRITE(IHOT,REC=IHOTSTP+17) IGWP
 !       WRITE(IHOT,REC=IHOTSTP+18) NSCOUGW
 !
-!       CLOSE(IHOT)           
+!       CLOSE(IHOT)
 
 !       ENDDO
 C
@@ -4206,19 +4206,19 @@ C
       END
 
 C---------------------------------------------------------------------------
-C 
-C                  S U B R O U T I N E   P O S T 4 1 
+C
+C                  S U B R O U T I N E   P O S T 4 1
 C
 C---------------------------------------------------------------------------
-C                     (  Serial Version  3/28/98  )                          
-C  Globalize the 3D density data at the density stations from the local     
-C  fort.41 files.                                                           
-C  This version is compatible with ADCIRC version 34.03                     
+C                     (  Serial Version  3/28/98  )
+C  Globalize the 3D density data at the density stations from the local
+C  fort.41 files.
+C  This version is compatible with ADCIRC version 34.03
 C
 C     jgf45.11 Updated: added support for different formats based on
-C     value of IDEN, added support for 3D density stations defined by 
+C     value of IDEN, added support for 3D density stations defined by
 C     coordinates rather than node numbers.
-C     
+C
 C---------------------------------------------------------------------------
       SUBROUTINE POST41()
       USE POST_GLOBAL
@@ -4276,7 +4276,7 @@ C
          READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DSD,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DDP(IPROC)) THEN
             write(*,*) 'Inconsistency in number of 3D density stations.'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C
@@ -4298,7 +4298,7 @@ C
       CASE DEFAULT  ! fall-through
          PRINT *, 'IDEN = ',IDEN
          write(*,*) 'ERROR: This value of IDEN is not allowed.'
-         CALL EXIT(1) 
+         CALL EXIT(1)
 
       END SELECT
 
@@ -4326,12 +4326,12 @@ C     run was hot started.
                ENDDO
             ENDIF
          ENDDO
-C        jgf46.32jgf11 The writing of the data to the full domain 
+C        jgf46.32jgf11 The writing of the data to the full domain
 C        output file must be performed after all the stations have
-C        been read and mapped for a particular data set. This is 
+C        been read and mapped for a particular data set. This is
 C        because stations that land in ghost elements will appear in
-C        multiple subdomains, and we have to go through and map them 
-C        all into the full domain, allowing duplicates to overwrite 
+C        multiple subdomains, and we have to go through and map them
+C        all into the full domain, allowing duplicates to overwrite
 C        each other (with identical values) in the full domain array.
          WRITE(41,1100) TIMEOUT,IT,
      &        ((SIGMA(M,N),M=1,NVar),N=1,NFEN-1),
@@ -4343,7 +4343,7 @@ C        each other (with identical values) in the full domain array.
       DEALLOCATE(SIGMA,SDVar,FDVar)
 
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C     Open all local and the global direct access binary fort.41 file
@@ -4374,15 +4374,15 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C 
-C                  S U B R O U T I N E   P O S T 4 2 
+C
+C                  S U B R O U T I N E   P O S T 4 2
 C
 C---------------------------------------------------------------------------
 C
-C                     (  Serial Version  3/28/98  )                          
-C  Globalize the 3D velocity data at the velocity stations from the local   
-C  fort.42 files.                                                           
-C  This version is compatible with ADCIRC version 34.03                     
+C                     (  Serial Version  3/28/98  )
+C  Globalize the 3D velocity data at the velocity stations from the local
+C  fort.42 files.
+C  This version is compatible with ADCIRC version 34.03
 C
 C     jgf45.11 Updated to process 3D velocity recording stations defined
 C     by coordinates rather than node numbers.
@@ -4480,12 +4480,12 @@ C
                ENDDO
             ENDIF
          ENDDO
-C        jgf46.32jgf11 The writing of the data to the full domain 
+C        jgf46.32jgf11 The writing of the data to the full domain
 C        output file must be performed after all the stations have
-C        been read and mapped for a particular data set. This is 
+C        been read and mapped for a particular data set. This is
 C        because stations that land in ghost elements will appear in
-C        multiple subdomains, and we have to go through and map them 
-C        all into the full domain, allowing duplicates to overwrite 
+C        multiple subdomains, and we have to go through and map them
+C        all into the full domain, allowing duplicates to overwrite
 C        each other (with identical values) in the full domain array.
          WRITE(42,1100) TIMEOUT,IT,
      &      (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
@@ -4493,11 +4493,11 @@ C        each other (with identical values) in the full domain array.
          DO I=1,NSTA3DV
             WRITE(42,1104) I,((FDVar(I,M,L),M=1,NVar),L=1,NFEN)
          ENDDO
-C     
+C
       ENDDO
 
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C     Open all local and the global direct access binary fort.42 file
@@ -4527,14 +4527,14 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C 
-C                  S U B R O U T I N E   P O S T 4 3 
+C
+C                  S U B R O U T I N E   P O S T 4 3
 C
 C---------------------------------------------------------------------------
-C                     (  Serial Version  3/28/98  )                          
-C  Globalize the 3D turbulence data at the turbulence stations from the     
-C  local fort.43 files.                                                     
-C  This version is compatible with ADCIRC version 34.03                     
+C                     (  Serial Version  3/28/98  )
+C  Globalize the 3D turbulence data at the turbulence stations from the
+C  local fort.43 files.
+C  This version is compatible with ADCIRC version 34.03
 C
 C     jgf45.11 Updated to process 3D turbulence recording stations defined
 C     by coordinates rather than node numbers.
@@ -4594,7 +4594,7 @@ C
          READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DST,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DTP(IPROC)) THEN
             write(*,*) 'Inconsistency in number of 3D turbulence stations.'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C
@@ -4631,12 +4631,12 @@ C
                ENDDO
             ENDIF
          ENDDO
-C        jgf46.32jgf11 The writing of the data to the full domain 
+C        jgf46.32jgf11 The writing of the data to the full domain
 C        output file must be performed after all the stations have
-C        been read and mapped for a particular data set. This is 
+C        been read and mapped for a particular data set. This is
 C        because stations that land in ghost elements will appear in
-C        multiple subdomains, and we have to go through and map them 
-C        all into the full domain, allowing duplicates to overwrite 
+C        multiple subdomains, and we have to go through and map them
+C        all into the full domain, allowing duplicates to overwrite
 C        each other (with identical values) in the full domain array.
          WRITE(43,1100) TIMEOUT,IT,
      &      (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
@@ -4644,11 +4644,11 @@ C        each other (with identical values) in the full domain array.
          DO I=1,NSTA3DT
             WRITE(43,1104) I,((FDVar(I,M,L),M=1,NVar),L=1,NFEN)
          ENDDO
-C     
+C
       ENDDO
 
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C     Open all local and the global direct access binary fort.43 file
@@ -4679,23 +4679,23 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C 
-C                  S U B R O U T I N E   P O S T 4 4 
+C
+C                  S U B R O U T I N E   P O S T 4 4
 C
 C---------------------------------------------------------------------------
-C                     (  Serial Version  3/28/98  )                          
-C  Globalize the Density Data at all nodes from the local fort.44 files.    
-C  This version is compatible with ADCIRC version 41.11a                    
+C                     (  Serial Version  3/28/98  )
+C  Globalize the Density Data at all nodes from the local fort.44 files.
+C  This version is compatible with ADCIRC version 41.11a
 C
 C     jgf45.11 Updated to process 3D velocity recording stations defined
 C     by coordinates rather than node numbers.
 C
 C---------------------------------------------------------------------------
-!kmd48.33bc - added in the post processing of the fort.47 file for the top 
+!kmd48.33bc - added in the post processing of the fort.47 file for the top
 !       temperature boundary conditions. Since it writes out with the fort.44
-!       file, I just decided not to make a special subroutine for it. We may 
-!       want to make the file a global write with the changing of the 3D to 
-!       write globally. 
+!       file, I just decided not to make a special subroutine for it. We may
+!       want to make the file a global write with the changing of the 3D to
+!       write globally.
       SUBROUTINE POST44()
       USE POST_GLOBAL
       IMPLICIT NONE
@@ -4757,15 +4757,15 @@ C
          READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGD,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
             write(*,*) 'Inconsistency in number of local nodes.'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=44,FILE='fort.44')
-C     
+C
       WRITE(44,'(A85)') INLINE
       WRITE(44,3645) NDSET,NNODG,DT,NSPO3DGD,NFEN,IRTYPE
-C     
-      SELECT CASE(ABS(IDEN)) ! (+) is prognostic, (-) is diagnostic     
+C
+      SELECT CASE(ABS(IDEN)) ! (+) is prognostic, (-) is diagnostic
 
       CASE(1) ! baroclinic model run, density forcing
          ALLOCATE(SIGMA(NFEN),VAR1(MNP,NFEN),VAR1P(MNPP,NFEN))
@@ -4791,11 +4791,11 @@ C
                      ENDDO
                   ENDIF
                ENDDO
-            ENDDO 
+            ENDDO
             DO I = 1,NNODG
                WRITE(44,1104) I,(VAR1(I,L),L=1,NFEN)
             ENDDO
-         ENDDO 
+         ENDDO
          DEALLOCATE(SIGMA,VAR1,VAR1P)
 
       CASE(2,3) ! baroclinic with salinity(=2) or temperature(=3) forcing
@@ -4818,11 +4818,11 @@ C
                      ENDDO
                   ENDIF
                ENDDO
-            ENDDO 
+            ENDDO
             DO I = 1,NNODG
                WRITE(44,1104) I,(VAR1(I,L),VAR2(I,L),L=1,NFEN)
             ENDDO
-         ENDDO 
+         ENDDO
          DEALLOCATE(SIGMA,VAR1,VAR1P,VAR2,VAR2P)
 
       CASE(4) ! baroclinic with salinity and temperature forcing
@@ -4849,11 +4849,11 @@ C
                      ENDDO
                   ENDIF
                ENDDO
-            ENDDO 
+            ENDDO
             DO I = 1,NNODG
                WRITE(44,1104) I,(VAR1(I,L),VAR2(I,L),VAR3(I,L),L=1,NFEN)
             ENDDO
-         ENDDO 
+         ENDDO
          DEALLOCATE(SIGMA,VAR1,VAR1P,VAR2,VAR2P,VAR3,VAR3P)
 
       CASE DEFAULT  ! fall-through -> user can re-enter menu selection
@@ -4899,7 +4899,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE POST45()
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the Velocity Data at all nodes from the local fort.45 files.   C
 C  This version is compatible with ADCIRC version 41.11a                    C
 C
@@ -4958,7 +4958,7 @@ C
          READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGV,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
            write(*,*) 'Inconsistency in number of local nodes'
-           CALL EXIT(1) 
+           CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=45,ACTION='WRITE',FILE='fort.45')
@@ -4996,11 +4996,11 @@ C
                  ENDDO
                ENDIF
             ENDDO
-         ENDDO 
+         ENDDO
          DO I = 1,NNODG
             WRITE(45,1104) I,(VAR1(I,L),VAR2(I,L),VAR3(I,L),L=1,NFEN)
          ENDDO
-      ENDDO               
+      ENDDO
       GO TO 9999
 C
 2000  CONTINUE
@@ -5035,7 +5035,7 @@ C
       SUBROUTINE POST46()
 
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Globalize the Turbulence Data at all nodes from the local fort.46 files. C
 C  This version is compatible with ADCIRC version 41.11a                    C
 C
@@ -5093,7 +5093,7 @@ C
          READ(LOC2(IPROC),3646) NDSET,NP,DT,NSPO3DGT,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
            write(*,*) 'Inconsistency in number of local nodes.'
-           CALL EXIT(1) 
+           CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=46,FILE='fort.46')
@@ -5129,11 +5129,11 @@ C
                  ENDDO
                ENDIF
             ENDDO
-         ENDDO 
+         ENDDO
          DO I = 1,NNODG
             WRITE(46,1104) I,(VAR1(I,L),VAR2(I,L),VAR3(I,L),L=1,NFEN)
          ENDDO
-      ENDDO               
+      ENDDO
       GO TO 9999
 C
 2000  CONTINUE
@@ -5167,20 +5167,20 @@ C
       END
 
 C---------------------------------------------------------------------------
-C 
-C                  S U B R O U T I N E   P O S T 4 7 
+C
+C                  S U B R O U T I N E   P O S T 4 7
 C
 C---------------------------------------------------------------------------
-C                     (  Serial Version  3/28/98  )                          
-C  Globalize the Density Data at all nodes from the local fort.47 files.    
-C  This version is compatible with ADCIRC version 41.11a                    
+C                     (  Serial Version  3/28/98  )
+C  Globalize the Density Data at all nodes from the local fort.47 files.
+C  This version is compatible with ADCIRC version 41.11a
 C
 C     jgf45.11 Updated to process 3D velocity recording stations defined
 C     by coordinates rather than node numbers.
 C
 C---------------------------------------------------------------------------
-!kmd48.33bc - added in the post processing of the fort.47 file for the top 
-!       temperature boundary conditions. 
+!kmd48.33bc - added in the post processing of the fort.47 file for the top
+!       temperature boundary conditions.
       SUBROUTINE POST47()
       USE POST_GLOBAL
       IMPLICIT NONE
@@ -5190,7 +5190,7 @@ C---------------------------------------------------------------------------
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
       REAL(8) DT
-      REAL(8) TIMEOUTE 
+      REAL(8) TIMEOUTE
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
       CHARACTER*4 RDES4(8),RID4(6),AID4(6)
@@ -5233,14 +5233,14 @@ C
          READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGD,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
             write(*,*) 'Inconsistency in number of local nodes.'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
       ENDDO
       OPEN(UNIT=47,FILE='fort.47')
-C     
+C
       WRITE(47,'(A85)') INLINE
       WRITE(47,3645) NDSET,NNODG,DT,NSPO3DGD,IRTYPE
-C     
+C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
@@ -5252,14 +5252,14 @@ C
                IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                  TOPTEMP(INDX) = TOPTEMPP(K)
                 ENDIF
-            ENDDO  
-         ENDDO 
+            ENDDO
+         ENDDO
          DO I = 1,NNODG
             CALL NEWINDEX(TOPTEMP(I),OUTMSG,I)
-            WRITE(47,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+            WRITE(47,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size
             !WRITE(47,2413) I, TOPTEMP(I)
          ENDDO
-C              
+C
       ENDDO
       GO TO 9999
 C
@@ -5300,27 +5300,27 @@ C---------------------------------------------------------------------------
       !  S U B R O U T I N E   M E R G E   S U B D O M A I N   F I L E S
       !------------------------------------------------------------------
       ! jgf52.04.03: Merge subdomain output files back into a fulldomain
-      ! output file. Developed to handle nodecode and noff and to 
-      ! analyze whether ghost and resident values really are the 
+      ! output file. Developed to handle nodecode and noff and to
+      ! analyze whether ghost and resident values really are the
       ! same in all cases.
       !------------------------------------------------------------------
       subroutine mergeSubdomainFiles(filename)
       use post_global
       implicit none
-      character(len=2048), intent(in) :: filename ! e.g. "fort.63" 
+      character(len=2048), intent(in) :: filename ! e.g. "fort.63"
       integer, parameter :: NODE = 1         ! nodally based data
       integer, parameter :: ELEMENT = 2      ! elementally based data
       integer, parameter :: INTEGERTYPE = 1  ! for integer data
       integer, parameter :: REALTYPE = 2     ! for real(8) data
       integer :: dataType     ! set to INTEGERTYPE or REALTYPE
       integer :: dataLocation ! set to NODE or ELEMENT
-  
+
       real(8) :: dataVal(3)  ! real values read from subdomain
       integer :: iRawValue  ! integer value read from subdomain
       integer :: ite        ! time step associated with dataset
       real(8) :: timeoute    ! time associated with dataset
-      real(8) :: timeInc     ! time increment at which datasets were written 
-      integer :: tsInc      ! time step increment at which datasets were written 
+      real(8) :: timeInc     ! time increment at which datasets were written
+      integer :: tsInc      ! time step increment at which datasets were written
       integer :: numFullDomainValues
       integer :: numSubDomainValues
       integer :: numSets  ! number of time dependent datasets
@@ -5337,13 +5337,13 @@ C---------------------------------------------------------------------------
       character(len=2048), allocatable  ::  locname(:)
       character(len=2048) ::  outputFmt ! format string
       character(len=85) :: inline ! file metadata header
-     
+
       integer :: i, j, k, n, iproc ! loop counters
       integer :: idum              ! toss the subdomain node number
       !
-      ! allocate memory for arrays dimensioned by number of subdomains 
+      ! allocate memory for arrays dimensioned by number of subdomains
       allocate (loc2(mnproc))
-      allocate (locname(mnproc))    
+      allocate (locname(mnproc))
       ! set default datatype
       dataType = REALTYPE
       ! noff is the only data type that is elementally based
@@ -5352,7 +5352,7 @@ C---------------------------------------------------------------------------
          dataType = INTEGERTYPE
       endif
       initialized = .false.
-      ! 
+      !
       ! Loop over subdomains; find and open subdomain output files.
       do iproc = 1,nproc
          ! find and open subdomain output files.
@@ -5368,9 +5368,9 @@ C---------------------------------------------------------------------------
      &        '". Subdomain files of this type will not be merged.'
            return
          endif
-      end do      
-      ! 
-      ! Loop over subdomains; read off header lines and initialize 
+      end do
+      !
+      ! Loop over subdomains; read off header lines and initialize
       ! arrays based on the characteristics of the file
       do iproc = 1,nproc
          ! read metadata header
@@ -5378,11 +5378,11 @@ C---------------------------------------------------------------------------
          ! read file characteristics header
          read(loc2(iproc),*)  numSets, numVals, timeInc, tsInc, irtype
          !
-         ! Determine if this is a nodal or elemental quantity and 
+         ! Determine if this is a nodal or elemental quantity and
          ! allocate fulldomain arrays to hold the data
-         if ( (numVals.ne.nnodp(iproc)) .and. 
+         if ( (numVals.ne.nnodp(iproc)) .and.
      &           (numVals.ne.nelp(iproc)) ) then
-            write(*,'(a,i0,a,i0,a,i0,a)') 
+            write(*,'(a,i0,a,i0,a,i0,a)')
      &      'ERROR: The number of values per data set in the file "'//
      &       trim(locname(iproc))//
      &      '" does not match the number of nodes or elements '//
@@ -5400,7 +5400,7 @@ C---------------------------------------------------------------------------
             if (numVals.eq.nelp(iproc)) then
                dataLocation = ELEMENT
                numFullDomainValues = nelg
-            endif         
+            endif
              if (dataType.eq.REALTYPE) then
                allocate(fulldomainReal(irtype,numFullDomainValues))
             endif
@@ -5432,8 +5432,8 @@ C
             ! read time and timestep
             read(loc2(iproc),fmt=2120,end=9999) timeoute,ite
             ! determine the number of lines in the dataset
-            select case(dataLocation)          
-            case(NODE) 
+            select case(dataLocation)
+            case(NODE)
                numSubdomainValues = nnodp(iproc)
             case(ELEMENT)
                numSubdomainValues = nelp(iproc)
@@ -5443,7 +5443,7 @@ C
             end select
             !
             ! read all the datavalues in this subdomain, mapping them
-            ! to their fulldomain positions 
+            ! to their fulldomain positions
             do k = 1,numSubdomainValues
                !
                ! Read the data according to its type
@@ -5468,8 +5468,8 @@ C
                !
                ! Check/set the data (resident and ghost values should match)
                if (setYet(fdLocation).eqv..true.) then
-                  ! check to ensure that the value we've read from the 
-                  ! subdomain for this fulldomain location matches the 
+                  ! check to ensure that the value we've read from the
+                  ! subdomain for this fulldomain location matches the
                   ! value we've already written to that fulldomain location
                   if (dataType.eq.REALTYPE) then
                      do j=1,irtype
@@ -5482,14 +5482,14 @@ C
      &     ' were already mapped.'
                            ambiguous(fdLocation) = .true.
                            exit ! break out of the irtype loop
-                        endif 
+                        endif
                      end do
                   endif
                   if (dataType.eq.INTEGERTYPE) then
                      if ( iRawValue.ne.fullDomainInteger(fdLocation) ) then
                         outputFmt = '("ERROR: fd ",i0," Subdomain ",i0,"'//
      &                   ' sd value ",i0," vs  fd val ",i0).'
-                        write(*,fmt=outputFmt) fdLocation, iproc, 
+                        write(*,fmt=outputFmt) fdLocation, iproc,
      &                   iRawValue, fullDomainInteger(fdLocation)
                         ambiguous(fdLocation) = .true.
                      endif
@@ -5505,8 +5505,8 @@ C
             enddo ! next subdomain value
 
          enddo ! next subdomain
-         ! all the subdomain values for this dataset have been mapped 
-         ! 
+         ! all the subdomain values for this dataset have been mapped
+         !
          ! check to see if there were any fulldomain values that did not
          ! get set???
          do i=1, numFullDomainValues
@@ -5516,7 +5516,7 @@ C
             endif
          end do
          !
-         ! where the value at the resident location did not match the 
+         ! where the value at the resident location did not match the
          ! value at the ghost location, set the ambiguous flag
          do i = 1,numFullDomainValues
             if (ambiguous(i).eqv..true.) then
@@ -5527,26 +5527,26 @@ C
                   fullDomainInteger(i) = -1
                endif
             endif
-         end do 
+         end do
          !
-         ! write this time dependent dataset header into the full domain file 
+         ! write this time dependent dataset header into the full domain file
          write(100,2120) timeoute,ite
          ! write the mapped values for all subdomains into the fulldomain file
          ! for this dataset
          do i = 1,numFullDomainValues
             if (dataType.eq.REALTYPE) then
-               write(100,'(2x,i8,3(2x,e15.8))') 
+               write(100,'(2x,i8,3(2x,e15.8))')
      &             i,(fullDomainReal(j,i),j=1,irtype)
             endif
             if (dataType.eq.INTEGERTYPE) then
                write(100,'(2x,i8,2x,i0)') i, fullDomainInteger(i)
             endif
-         enddo 
-         !              
+         enddo
+         !
          ! clear flags for the next dataset
-         setYet(:) = .false. 
+         setYet(:) = .false.
          ambiguous(:) = .false.
-         fullDomainInteger(:) = -99  
+         fullDomainInteger(:) = -99
       enddo ! next time dependent dataset
 
 9999  close(100) ! jump to here when we run out of time dependent data

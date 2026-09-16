@@ -2,13 +2,13 @@
  * NCEP_uv
  *
  * duplicate ncep files by puting U and V into one grib messsage
- *  
+ *
  * U and V must be adjacent
  *
  * if (cleanup) {
  *    if (saved_U) write saved_U
  *    return
- *  } 
+ *  }
  *  if (saved_U) {
  *     if (current_message != V) {
  *        write saved_U
@@ -73,7 +73,7 @@ int f_ncep_uv(ARG1) {
 
     if (mode == -2)  {		// cleanup
 	if (save->has_U) {
-	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3], 
+	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3],
 		save->sec[4], save->sec[5], save->sec[6], save->sec[7], &(save->out));
 	   if (i) fatal_error_i("NCEP_uv: last record problem %i",i);
            free_sec(save->sec);
@@ -153,7 +153,7 @@ int f_ncep_uv(ARG1) {
 
 	// U and not V
 	if (save->has_U) {
-	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3], 
+	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3],
 		save->sec[4], save->sec[5], save->sec[6], save->sec[7], &(save->out));
 	   if (i) fatal_error_i("NCEP_uv: last field problem %i",i);
 	   free_sec(save->sec);

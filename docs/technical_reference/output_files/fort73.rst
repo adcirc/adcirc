@@ -25,4 +25,4 @@ Notes
 -----
 
 * Output may be in ascii or binary format depending on how :ref:`NOUTGW <NOUTGW>` is set in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`
-* If binary output is specified, the node number (k) is not included in the output 
+* If binary output is specified, the node number (k) is not included in the output

@@ -15,7 +15,7 @@
 
 /*  10/2024  Public Domain Wesley Ebisuzaki
  *
- * write a grib-2 file 
+ * write a grib-2 file
  *
  * sec0..sec4 predefined sections 0 to 4
  * data[] = values to encode into grib
@@ -24,8 +24,8 @@
  *
  */
 
-int simple_grib_out(unsigned char **sec, float *data, unsigned int ndata, 
-    int use_scale, int dec_scale, int bin_scale, int wanted_bits, 
+int simple_grib_out(unsigned char **sec, float *data, unsigned int ndata,
+    int use_scale, int dec_scale, int bin_scale, int wanted_bits,
     int max_bits, struct seq_file *out) {
 
     unsigned int n_defined;
@@ -42,7 +42,7 @@ int simple_grib_out(unsigned char **sec, float *data, unsigned int ndata,
     n_defined = ndata;
     sec6 = mk_bms(data, &n_defined);			// make bitmap section
 
-    mk_sec5and7(data, n_defined, &sec5, &sec7,use_scale,dec_scale,bin_scale, 
+    mk_sec5and7(data, n_defined, &sec5, &sec7,use_scale,dec_scale,bin_scale,
         wanted_bits, max_bits);		// make sec 5 and 7
     i = wrt_sec(sec0, sec1, sec2, sec3, sec4, sec5, sec6, sec7, out);
 
@@ -58,7 +58,7 @@ int simple_grib_out(unsigned char **sec, float *data, unsigned int ndata,
  */
 
 
-int mk_sec5and7(float *data, unsigned int n, unsigned char **sec5, unsigned char **sec7, 
+int mk_sec5and7(float *data, unsigned int n, unsigned char **sec5, unsigned char **sec7,
 	int use_scale, int dec_scale, int bin_scale, int wanted_bits, int max_bits) {
 
     float min_val, max_val, ncep_min_val;
@@ -155,7 +155,7 @@ int mk_sec5and7(float *data, unsigned int n, unsigned char **sec5, unsigned char
 
 //      flist2bitstream can run in parallel if the loop has
 //      increments of 8.  Then each conversion to a bitstream
-//      starts on a byte boundary.  
+//      starts on a byte boundary.
 //
 
 	/* can parallized if di is a multiple of 8,  large di reduces flist2bits overhead
@@ -215,4 +215,3 @@ int mk_sec5and7(float *data, unsigned int n, unsigned char **sec5, unsigned char
 
     return 0;
 }
-

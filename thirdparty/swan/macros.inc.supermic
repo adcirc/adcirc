@@ -26,7 +26,7 @@ else
   NCF_OBJS =
 endif
 O_DIR = ../../work/odir4/
-OUT = -o 
+OUT = -o
 EXTO = o
 MAKE = make
 RM = rm -f

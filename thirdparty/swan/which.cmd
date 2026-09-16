@@ -4,13 +4,13 @@ rem found on http://superuser.com/questions/21067/windows-equivalent-of-whereis
 @echo off
 @set PATH=.;%PATH%
 
-@rem 
+@rem
 @rem about:  something similar like the unix-alike-which, but with
 @rem         within pure cmd
-@rem 
+@rem
 
 if "%1" == "" (
-    @echo Usage: 
+    @echo Usage:
     @echo.
     @echo   which 'cmd'
     @echo.

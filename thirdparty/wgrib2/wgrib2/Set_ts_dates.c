@@ -38,7 +38,7 @@ int f_set_ts_dates(ARG3) {
 	save->month = save->day = 1;
 	save->hour = save->minute = save->second = 0;
 
-	i = sscanf(arg1,"%4d%2d%2d%2d%2d%2d" , &(save->year), &(save->month), 
+	i = sscanf(arg1,"%4d%2d%2d%2d%2d%2d" , &(save->year), &(save->month),
 		&(save->day), &(save->hour), &(save->minute), &(save->second));
 
 	save->dtime = 0;

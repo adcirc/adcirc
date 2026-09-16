@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                      ALASKA CONFORMAL 
+NAME                      ALASKA CONFORMAL
 
 PURPOSE:	Transforms input longitude and latitude to Easting and Northing
 		for the Alaska Conformal projection.  The longitude and latitude
 		must be in radians.  The Easting and Northing values will
 		be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		March, 1993
 
 This function was adapted from the Alaska Conformal projection code
 (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -47,7 +47,7 @@ static long n;
   -----------------------------------------*/
 long alconforint( double r_maj, double r_min, double false_east,
         double false_north) {
-//long alconforint(r_maj,r_min,false_east,false_north) 
+//long alconforint(r_maj,r_min,false_east,false_north)
 //
 //double r_maj; 			/* Major axis			 	*/
 //double r_min; 			/* Minor axis			 	*/
@@ -71,35 +71,35 @@ n = 6;
 es = .006768657997291094;
 e = sqrt(es);
 
-         acoef[1]= 0.9945303;  
-         acoef[2]= 0.0052083;   
-         acoef[3]= 0.0072721;    
-         acoef[4]= -0.0151089;    
-         acoef[5]= 0.0642675;      
-         acoef[6]= 0.3582802;       
-         bcoef[1]= 0.0;      
-         bcoef[2]= -.0027404; 
-         bcoef[3]= 0.0048181;  
-         bcoef[4]= -0.1932526;  
+         acoef[1]= 0.9945303;
+         acoef[2]= 0.0052083;
+         acoef[3]= 0.0072721;
+         acoef[4]= -0.0151089;
+         acoef[5]= 0.0642675;
+         acoef[6]= 0.3582802;
+         bcoef[1]= 0.0;
+         bcoef[2]= -.0027404;
+         bcoef[3]= 0.0048181;
+         bcoef[4]= -0.1932526;
          bcoef[5]= -0.1381226;
-         bcoef[6]= -0.2884586; 
+         bcoef[6]= -0.2884586;
 
 esphi = e * sin(lat_center);
-chi = 2.0 * atan(tan((HALF_PI + lat_center)/2.0) * 
+chi = 2.0 * atan(tan((HALF_PI + lat_center)/2.0) *
             pow(((1.0 - esphi)/(1.0 + esphi)),(e/2.0))) - HALF_PI;
 sincos(chi,&sin_p26,&cos_p26);
 
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("ALASKA CONFORMAL"); 
+ptitle("ALASKA CONFORMAL");
 radius2(r_major,r_minor);
 cenlon(lon_center);
 cenlat(lat_center);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* ALASKA CONFORMAL forward equations--mapping lat,long to x,y
   ----------------------------------------------------------*/
 long alconfor(double lon, double lat, double *x, double *y) {
@@ -136,7 +136,7 @@ dlon = adjust_lon( lon - lon_center);
 ----------------------------------------------------------------*/
 sincos(dlon,&sinlon,&coslon);
 esphi = e * sin(lat);
-chi = 2.0 * atan(tan((HALF_PI + lat) / 2.0) * 
+chi = 2.0 * atan(tan((HALF_PI + lat) / 2.0) *
             pow(((1.0 - esphi) / (1.0 + esphi)),(e/2.0))) - HALF_PI;
 sincos(chi,&sinphi,&cosphi);
 g = sin_p26 * sinphi + cos_p26 * cosphi * coslon;
@@ -156,7 +156,7 @@ bi = bcoef[n -1];
 for (j =2; j <= n; j++)
    {
    arn = br + r * ar;
-   ain = bi + r * ai; 
+   ain = bi + r * ai;
    if (j < n)
       {
       br = acoef[n - j] - s * ar;

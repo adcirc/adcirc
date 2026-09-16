@@ -36,8 +36,8 @@ int f_ijsmall_grib(ARG3) {
     struct local_struct {
         struct seq_file out;
 	int ix0, iy0, ix1, iy1;
-    };  
-    struct local_struct *save; 
+    };
+    struct local_struct *save;
 
     if (mode == -1) {
 	decode = latlon = 1;
@@ -45,9 +45,9 @@ int f_ijsmall_grib(ARG3) {
         *local = save = (struct local_struct *)malloc( sizeof(struct local_struct));
         if (save == NULL) fatal_error("ijsmall_grib  memory allocation ","");
 
-	if (sscanf(arg1,"%d:%d", &(save->ix0), &(save->ix1)) != 2) 
+	if (sscanf(arg1,"%d:%d", &(save->ix0), &(save->ix1)) != 2)
 		fatal_error("ijsmall_grib: ix0:ix1 = %s?", arg1);
-	if (sscanf(arg2,"%d:%d", &(save->iy0), &(save->iy1)) != 2) 
+	if (sscanf(arg2,"%d:%d", &(save->iy0), &(save->iy1)) != 2)
 		fatal_error("ijsmall_grib: iy0:iy1 = %s?", arg2);
         if (fopen_file(&(save->out), arg3, file_append ? "ab" : "wb") != 0) {
             free(save);
@@ -79,7 +79,7 @@ int f_ijsmall_grib(ARG3) {
 
 static unsigned int idx(int ix, int iy, int nx, int ny, int cyclic_grid) {
     int i;
-    
+
     if (iy <= 0) fatal_error("idx(..) iy <= 0","");
     if (iy > ny) fatal_error_i("idx(..) iy = %d",iy);
 
@@ -273,7 +273,7 @@ int small_grib(unsigned char **sec, int mode, float *data, double *lon, double *
 
     set_order(new_sec, output_order);
 
-    grib_wrt(new_sec, new_data, new_ndata, new_nx, new_ny, use_scale, dec_scale, 
+    grib_wrt(new_sec, new_data, new_ndata, new_nx, new_ny, use_scale, dec_scale,
 	bin_scale, wanted_bits, max_bits, grib_type, out);
 
     if (flush_mode) fflush_file(out);
@@ -296,8 +296,8 @@ int f_small_grib(ARG3) {
 	int GDS_change_no;
 	int ix0, ix1, iy0, iy1;
 
-    };  
-    struct local_struct *save; 
+    };
+    struct local_struct *save;
 
     if (mode == -1) {
 	decode = latlon = 1;
@@ -308,9 +308,9 @@ int f_small_grib(ARG3) {
 	save->GDS_change_no = 0;
 	save->ix0 = save->ix1 = save->iy0 = save->iy1 = 0;
 
-	if (sscanf(arg1,"%lf:%lf", &(save->lonW), &(save->lonE)) != 2) 
+	if (sscanf(arg1,"%lf:%lf", &(save->lonW), &(save->lonE)) != 2)
 		fatal_error("small_grib: lonW:lonE = %s?", arg1);
-	if (sscanf(arg2,"%lf:%lf", &(save->latS), &(save->latN)) != 2) 
+	if (sscanf(arg2,"%lf:%lf", &(save->latS), &(save->latN)) != 2)
 		fatal_error("small_grib: latS:latN = %s?", arg2);
         if (fopen_file(&(save->out), arg3, file_append ? "ab" : "wb") != 0) {
             free(save);

@@ -33,9 +33,9 @@ Customizations of iplib
 
 2) new output grid
 	Modify New_grid.c: parse parameters describing new grid
-			   call sec3_new_grid() to create a new sec3. 
+			   call sec3_new_grid() to create a new sec3.
 				See sec3_grid.c
 			   add grid to mk_kgds()
-                           
+
 	Note: adding a new output grid automatically adds it to an supported
 	input grid.

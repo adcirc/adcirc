@@ -16,16 +16,16 @@
 
 
 /*************************************************************************
-* This function performs a node-based FM refinement 
+* This function performs a node-based FM refinement
 **************************************************************************/
 void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npasses)
 {
   int i, ii, j, k, jj, kk, nvtxs, nbnd, nswaps, nmind;
   idxtype *xadj, *vwgt, *adjncy, *where, *pwgts, *edegrees, *bndind, *bndptr;
   idxtype *mptr, *mind, *moved, *swaps, *perm;
-  PQueueType parts[2]; 
+  PQueueType parts[2];
   NRInfoType *rinfo;
-  int higain, oldgain, mincut, initcut, mincutorder;	
+  int higain, oldgain, mincut, initcut, mincutorder;
   int pass, to, other, limit;
   int badmaxpwgt, mindiff, newdiff;
   int u[2], g[2];
@@ -86,16 +86,16 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
     mindiff = abs(pwgts[0]-pwgts[1]);
     to = (pwgts[0] < pwgts[1] ? 0 : 1);
     for (nswaps=0; nswaps<nvtxs; nswaps++) {
-      u[0] = PQueueSeeMax(&parts[0]);  
+      u[0] = PQueueSeeMax(&parts[0]);
       u[1] = PQueueSeeMax(&parts[1]);
       if (u[0] != -1 && u[1] != -1) {
         g[0] = vwgt[u[0]]-rinfo[u[0]].edegrees[1];
         g[1] = vwgt[u[1]]-rinfo[u[1]].edegrees[0];
 
-        to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : pass%2)); 
+        to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : pass%2));
         /* to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : (pwgts[0] < pwgts[1] ? 0 : 1))); */
 
-        if (pwgts[to]+vwgt[u[to]] > badmaxpwgt) 
+        if (pwgts[to]+vwgt[u[to]] > badmaxpwgt)
           to = (to+1)%2;
       }
       else if (u[0] == -1 && u[1] == -1) {
@@ -137,7 +137,7 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
       pwgts[to] += vwgt[higain];
       where[higain] = to;
       moved[higain] = nswaps;
-      swaps[nswaps] = higain;  
+      swaps[nswaps] = higain;
 
 
       /**********************************************************
@@ -163,7 +163,7 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
           edegrees[0] = edegrees[1] = 0;
           for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
             kk = adjncy[jj];
-            if (where[kk] != 2) 
+            if (where[kk] != 2)
               edegrees[where[kk]] += vwgt[kk];
             else {
               oldgain = vwgt[kk]-rinfo[kk].edegrees[other];
@@ -189,7 +189,7 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
 
 
     /****************************************************************
-    * Roll back computation 
+    * Roll back computation
     *****************************************************************/
     for (nswaps--; nswaps>mincutorder; nswaps--) {
       higain = swaps[nswaps];
@@ -206,7 +206,7 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
       edegrees[0] = edegrees[1] = 0;
       for (j=xadj[higain]; j<xadj[higain+1]; j++) {
         k = adjncy[j];
-        if (where[k] == 2) 
+        if (where[k] == 2)
           rinfo[k].edegrees[to] -= vwgt[higain];
         else
           edegrees[where[k]] += vwgt[k];
@@ -221,7 +221,7 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
         BNDDelete(nbnd, bndind, bndptr, k);
         for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
           kk = adjncy[jj];
-          if (where[kk] == 2) 
+          if (where[kk] == 2)
             rinfo[kk].edegrees[other] += vwgt[k];
         }
       }
@@ -251,16 +251,16 @@ void FM_2WayNodeRefine(CtrlType *ctrl, GraphType *graph, float ubfactor, int npa
 
 
 /*************************************************************************
-* This function performs a node-based FM refinement 
+* This function performs a node-based FM refinement
 **************************************************************************/
 void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int npasses)
 {
   int i, ii, j, k, jj, kk, nvtxs, nbnd, nswaps, nmind;
   idxtype *xadj, *vwgt, *adjncy, *where, *pwgts, *edegrees, *bndind, *bndptr;
   idxtype *mptr, *mind, *moved, *swaps, *perm;
-  PQueueType parts[2]; 
+  PQueueType parts[2];
   NRInfoType *rinfo;
-  int higain, oldgain, mincut, initcut, mincutorder;	
+  int higain, oldgain, mincut, initcut, mincutorder;
   int pass, to, other, limit;
   int badmaxpwgt, mindiff, newdiff;
   int u[2], g[2];
@@ -323,16 +323,16 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
     for (nswaps=0; nswaps<nvtxs; nswaps++) {
       badmaxpwgt = (int)(ubfactor*(pwgts[0]+pwgts[1]+pwgts[2]/2)/2);
 
-      u[0] = PQueueSeeMax(&parts[0]);  
+      u[0] = PQueueSeeMax(&parts[0]);
       u[1] = PQueueSeeMax(&parts[1]);
       if (u[0] != -1 && u[1] != -1) {
         g[0] = vwgt[u[0]]-rinfo[u[0]].edegrees[1];
         g[1] = vwgt[u[1]]-rinfo[u[1]].edegrees[0];
 
-        to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : pass%2)); 
+        to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : pass%2));
         /* to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : (pwgts[0] < pwgts[1] ? 0 : 1))); */
 
-        if (pwgts[to]+vwgt[u[to]] > badmaxpwgt) 
+        if (pwgts[to]+vwgt[u[to]] > badmaxpwgt)
           to = (to+1)%2;
       }
       else if (u[0] == -1 && u[1] == -1) {
@@ -374,7 +374,7 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
       pwgts[to] += vwgt[higain];
       where[higain] = to;
       moved[higain] = nswaps;
-      swaps[nswaps] = higain;  
+      swaps[nswaps] = higain;
 
 
       /**********************************************************
@@ -400,7 +400,7 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
           edegrees[0] = edegrees[1] = 0;
           for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
             kk = adjncy[jj];
-            if (where[kk] != 2) 
+            if (where[kk] != 2)
               edegrees[where[kk]] += vwgt[kk];
             else {
               oldgain = vwgt[kk]-rinfo[kk].edegrees[other];
@@ -426,7 +426,7 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
 
 
     /****************************************************************
-    * Roll back computation 
+    * Roll back computation
     *****************************************************************/
     for (nswaps--; nswaps>mincutorder; nswaps--) {
       higain = swaps[nswaps];
@@ -443,7 +443,7 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
       edegrees[0] = edegrees[1] = 0;
       for (j=xadj[higain]; j<xadj[higain+1]; j++) {
         k = adjncy[j];
-        if (where[k] == 2) 
+        if (where[k] == 2)
           rinfo[k].edegrees[to] -= vwgt[higain];
         else
           edegrees[where[k]] += vwgt[k];
@@ -458,7 +458,7 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
         BNDDelete(nbnd, bndind, bndptr, k);
         for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
           kk = adjncy[jj];
-          if (where[kk] == 2) 
+          if (where[kk] == 2)
             rinfo[kk].edegrees[other] += vwgt[k];
         }
       }
@@ -488,16 +488,16 @@ void FM_2WayNodeRefine2(CtrlType *ctrl, GraphType *graph, float ubfactor, int np
 
 
 /*************************************************************************
-* This function performs a node-based FM refinement 
+* This function performs a node-based FM refinement
 **************************************************************************/
 void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
 {
   int i, ii, j, k, jj, kk, nvtxs, nbnd, nswaps, nmind;
   idxtype *xadj, *vwgt, *adjncy, *where, *pwgts, *edegrees, *bndind, *bndptr;
   idxtype *mptr, *mind, *moved, *swaps, *perm;
-  PQueueType parts[2]; 
+  PQueueType parts[2];
   NRInfoType *rinfo;
-  int higain, oldgain, mincut, initcut, mincutorder;	
+  int higain, oldgain, mincut, initcut, mincutorder;
   int pass, to, other, limit;
   int mindiff, newdiff;
   int u[2], g[2];
@@ -559,13 +559,13 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
       to = (pwgts[0] < pwgts[1] ? 0 : 1);
 
       if (pwgts[0] == pwgts[1]) {
-        u[0] = PQueueSeeMax(&parts[0]);  
+        u[0] = PQueueSeeMax(&parts[0]);
         u[1] = PQueueSeeMax(&parts[1]);
         if (u[0] != -1 && u[1] != -1) {
           g[0] = vwgt[u[0]]-rinfo[u[0]].edegrees[1];
           g[1] = vwgt[u[1]]-rinfo[u[1]].edegrees[0];
 
-          to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : pass%2)); 
+          to = (g[0] > g[1] ? 0 : (g[0] < g[1] ? 1 : pass%2));
         }
       }
       other = (to+1)%2;
@@ -597,7 +597,7 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
       pwgts[to] += vwgt[higain];
       where[higain] = to;
       moved[higain] = nswaps;
-      swaps[nswaps] = higain;  
+      swaps[nswaps] = higain;
 
 
       /**********************************************************
@@ -623,7 +623,7 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
           edegrees[0] = edegrees[1] = 0;
           for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
             kk = adjncy[jj];
-            if (where[kk] != 2) 
+            if (where[kk] != 2)
               edegrees[where[kk]] += vwgt[kk];
             else {
               oldgain = vwgt[kk]-rinfo[kk].edegrees[other];
@@ -649,7 +649,7 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
 
 
     /****************************************************************
-    * Roll back computation 
+    * Roll back computation
     *****************************************************************/
     for (nswaps--; nswaps>mincutorder; nswaps--) {
       higain = swaps[nswaps];
@@ -666,7 +666,7 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
       edegrees[0] = edegrees[1] = 0;
       for (j=xadj[higain]; j<xadj[higain+1]; j++) {
         k = adjncy[j];
-        if (where[k] == 2) 
+        if (where[k] == 2)
           rinfo[k].edegrees[to] -= vwgt[higain];
         else
           edegrees[where[k]] += vwgt[k];
@@ -681,7 +681,7 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
         BNDDelete(nbnd, bndind, bndptr, k);
         for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
           kk = adjncy[jj];
-          if (where[kk] == 2) 
+          if (where[kk] == 2)
             rinfo[kk].edegrees[other] += vwgt[k];
         }
       }
@@ -711,17 +711,17 @@ void FM_2WayNodeRefineEqWgt(CtrlType *ctrl, GraphType *graph, int npasses)
 
 
 /*************************************************************************
-* This function performs a node-based FM refinement. This is the 
-* one-way version 
+* This function performs a node-based FM refinement. This is the
+* one-way version
 **************************************************************************/
 void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor, int npasses)
 {
   int i, ii, j, k, jj, kk, nvtxs, nbnd, nswaps, nmind;
   idxtype *xadj, *vwgt, *adjncy, *where, *pwgts, *edegrees, *bndind, *bndptr;
   idxtype *mptr, *mind, *swaps, *perm;
-  PQueueType parts; 
+  PQueueType parts;
   NRInfoType *rinfo;
-  int higain, oldgain, mincut, initcut, mincutorder;	
+  int higain, oldgain, mincut, initcut, mincutorder;
   int pass, to, other, limit;
   int badmaxpwgt, mindiff, newdiff;
 
@@ -750,7 +750,7 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
 
   to = (pwgts[0] < pwgts[1] ? 1 : 0);
   for (pass=0; pass<npasses; pass++) {
-    other = to; 
+    other = to;
     to = (to+1)%2;
 
     PQueueReset(&parts);
@@ -804,7 +804,7 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
       BNDDelete(nbnd, bndind, bndptr, higain);
       pwgts[to] += vwgt[higain];
       where[higain] = to;
-      swaps[nswaps] = higain;  
+      swaps[nswaps] = higain;
 
 
       /**********************************************************
@@ -827,14 +827,14 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
           edegrees[0] = edegrees[1] = 0;
           for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
             kk = adjncy[jj];
-            if (where[kk] != 2) 
+            if (where[kk] != 2)
               edegrees[where[kk]] += vwgt[kk];
             else {
               oldgain = vwgt[kk]-rinfo[kk].edegrees[other];
               rinfo[kk].edegrees[other] -= vwgt[k];
 
               /* Since the moves are one-sided this vertex has not been moved yet */
-              PQueueUpdateUp(&parts, kk, oldgain, oldgain+vwgt[k]); 
+              PQueueUpdateUp(&parts, kk, oldgain, oldgain+vwgt[k]);
             }
           }
 
@@ -846,14 +846,14 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
 
 
       IFSET(ctrl->dbglvl, DBG_MOVEINFO,
-            printf("Moved %6d to %3d, Gain: %5d [%5d] \t[%5d %5d %5d] [%3d %2d]\n", 
+            printf("Moved %6d to %3d, Gain: %5d [%5d] \t[%5d %5d %5d] [%3d %2d]\n",
                        higain, to, (vwgt[higain]-rinfo[higain].edegrees[other]), vwgt[higain], pwgts[0], pwgts[1], pwgts[2], nswaps, limit));
 
     }
 
 
     /****************************************************************
-    * Roll back computation 
+    * Roll back computation
     *****************************************************************/
     for (nswaps--; nswaps>mincutorder; nswaps--) {
       higain = swaps[nswaps];
@@ -869,7 +869,7 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
       edegrees[0] = edegrees[1] = 0;
       for (j=xadj[higain]; j<xadj[higain+1]; j++) {
         k = adjncy[j];
-        if (where[k] == 2) 
+        if (where[k] == 2)
           rinfo[k].edegrees[to] -= vwgt[higain];
         else
           edegrees[where[k]] += vwgt[k];
@@ -884,7 +884,7 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
         BNDDelete(nbnd, bndind, bndptr, k);
         for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
           kk = adjncy[jj];
-          if (where[kk] == 2) 
+          if (where[kk] == 2)
             rinfo[kk].edegrees[other] += vwgt[k];
         }
       }
@@ -913,16 +913,16 @@ void FM_2WayNodeRefine_OneSided(CtrlType *ctrl, GraphType *graph, float ubfactor
 
 
 /*************************************************************************
-* This function performs a node-based FM refinement 
+* This function performs a node-based FM refinement
 **************************************************************************/
 void FM_2WayNodeBalance(CtrlType *ctrl, GraphType *graph, float ubfactor)
 {
   int i, ii, j, k, jj, kk, nvtxs, nbnd, nswaps;
   idxtype *xadj, *vwgt, *adjncy, *where, *pwgts, *edegrees, *bndind, *bndptr;
   idxtype *perm, *moved;
-  PQueueType parts; 
+  PQueueType parts;
   NRInfoType *rinfo;
-  int higain, oldgain;	
+  int higain, oldgain;
   int pass, to, other;
 
   nvtxs = graph->nvtxs;
@@ -941,7 +941,7 @@ void FM_2WayNodeBalance(CtrlType *ctrl, GraphType *graph, float ubfactor)
   if (abs(pwgts[0]-pwgts[1]) < 3*idxsum(nvtxs, vwgt)/nvtxs)
     return;
 
-  to = (pwgts[0] < pwgts[1] ? 0 : 1); 
+  to = (pwgts[0] < pwgts[1] ? 0 : 1);
   other = (to+1)%2;
 
   PQueueInit(ctrl, &parts, nvtxs, ComputeMaxNodeGain(nvtxs, xadj, adjncy, vwgt));
@@ -972,10 +972,10 @@ void FM_2WayNodeBalance(CtrlType *ctrl, GraphType *graph, float ubfactor)
 
     moved[higain] = 1;
 
-    if (pwgts[other] - rinfo[higain].edegrees[other] < (pwgts[0]+pwgts[1])/2) 
+    if (pwgts[other] - rinfo[higain].edegrees[other] < (pwgts[0]+pwgts[1])/2)
       continue;
 #ifdef XXX
-    if (pwgts[other] - rinfo[higain].edegrees[other] < pwgts[to]+vwgt[higain]) 
+    if (pwgts[other] - rinfo[higain].edegrees[other] < pwgts[to]+vwgt[higain])
       break;
 #endif
 
@@ -1010,7 +1010,7 @@ void FM_2WayNodeBalance(CtrlType *ctrl, GraphType *graph, float ubfactor)
         edegrees[0] = edegrees[1] = 0;
         for (jj=xadj[k]; jj<xadj[k+1]; jj++) {
           kk = adjncy[jj];
-          if (where[kk] != 2) 
+          if (where[kk] != 2)
             edegrees[where[kk]] += vwgt[kk];
           else {
             ASSERT(bndptr[kk] != -1);
@@ -1065,5 +1065,3 @@ int ComputeMaxNodeGain(int nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt)
 
   return max;
 }
-   
-

@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -47,15 +47,15 @@ C     jgf49.44: Allocates memory for the full domain arrays for i/o
 C     purposes; these arrays are both read from and written to hotstart
 C     files. Arrays that are only written are allocated in the
 C     subroutine that does the writing.
-C 
-C     jgf51.46: Just to clarify, these arrays are needed during 
+C
+C     jgf51.46: Just to clarify, these arrays are needed during
 C     hotstart initialization, to read in the previous state of the
 C     fulldomain simulation.a So, they need to be allocated prior
 C     to hotstart initialization. These arrays may also be needed
 C     to write fulldomain output, but care should be taken so they
-C     are not allocated more than once, i.e., in write_output.F 
-C     or global.F. 
-C 
+C     are not allocated more than once, i.e., in write_output.F
+C     or global.F.
+C
 C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainIOArrays()
       IMPLICIT NONE
@@ -75,8 +75,13 @@ C--------------------------------------------------------------------
       ALLOCATE(NOFF_g(NE_G))
       ALLOCATE(NNodeCode_g(NP_G))
 
-      ALLOCATE(HTOT1_g(NP_G)) 
-      ALLOCATE(HTOT2_g(NP_G)) 
+      ALLOCATE(HTOT1_g(NP_G))
+      ALLOCATE(HTOT2_g(NP_G))
+
+      ! inlnie SAL
+      ALLOCATE( zetasaltm0_g(NP_G) ) ;
+      ALLOCATE( zetasaltm1_g(NP_G) ) ;
+      ALLOCATE( zetasaltm2_g(NP_G) ) ;
 
 C--------------------------------------------------------------------
       END SUBROUTINE allocateFullDomainIOArrays
@@ -103,7 +108,7 @@ C--------------------------------------------------------------------
       integer      :: iproc
       integer      :: bufsize
       integer      :: ibucket
-      integer      :: iremainder ! after dividing bufsize by array rank      
+      integer      :: iremainder ! after dividing bufsize by array rank
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
       integer      :: tag
@@ -141,7 +146,7 @@ C     on each iteration of the while loop below
          ! Initialize
          !------------------------------------------------------------
          if ( descript % isInteger .eqv. .true. ) then
-            integerBuffer(:)  = int(descript % initial_value)           
+            integerBuffer(:)  = int(descript % initial_value)
          else
             buf(:)  = descript % initial_value
          endif
@@ -200,7 +205,7 @@ C        or to the end of the full domain array, whichever is less
 #ifdef CMPI
       ioffset = istart - 1
       if ( descript % isInteger .eqv. .true. ) then
-      
+
          do i = 1, descript % num_records_this
             iglobal = descript % imap(i)
             if (istart <= iglobal .and. iglobal <= iend) then
@@ -213,11 +218,11 @@ C        or to the end of the full domain array, whichever is less
          do i = 1, descript % num_records_this
             iglobal = descript % imap(i)
             if (istart <= iglobal .and. iglobal <= iend) then
-               buf(iglobal - ioffset ) = descript % array(i) 
+               buf(iglobal - ioffset ) = descript % array(i)
                ! jgf51.21.24: Updated and generalized to take into account wet/dry
                ! jgf52.25: Station data that should take wet dry state
                ! into account have already done so in subroutine stationArrayInterp()
-               ! in module write_output.F. For stations, it doesn't make 
+               ! in module write_output.F. For stations, it doesn't make
                ! sense to check the nodecode.
                if ( descript % considerWetDry.eqv..true. ) then
                   if ( descript % isStation.eqv..false. ) then
@@ -261,7 +266,7 @@ C        or to the end of the full domain array, whichever is less
             descript % iarray_g(i) = integerResultBuffer(j)
             j = j + 1
          end do
-     
+
       else
 
          do i = istart, iend
@@ -297,8 +302,8 @@ C        or to the end of the full domain array, whichever is less
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          if (descript%considerWetDry .and. 
-     &         (.not.descript%isStation) .and. 
+          if (descript%considerWetDry .and.
+     &         (.not.descript%isStation) .and.
      &         (nodecode(i).eq.0) ) then
             buf(j)     = descript % alternate_value
             buf(j + 1) = descript % alternate_value
@@ -534,8 +539,8 @@ C        or to the end of the full domain array, whichever is less
       !--------------------------------------------------------------
       end subroutine open_minmax_file
       !--------------------------------------------------------------
-      
-      
+
+
       !--------------------------------------------------------------
       !      S U B R O U T I N E  W R I T E   F U L L  F O R M A T
       !--------------------------------------------------------------
@@ -566,7 +571,7 @@ C        or to the end of the full domain array, whichever is less
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
-         open(descript%lun, file=trim(descript%file_name), 
+         open(descript%lun, file=trim(descript%file_name),
      &       access='SEQUENTIAL', position='APPEND')
          write(descript%lun, 1101) TimeLoc, it
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
@@ -574,35 +579,35 @@ C        or to the end of the full domain array, whichever is less
          return
       else
 #ifdef CMPI
-   
+
          if (myproc == 0) then
-           open(descript%lun, file=trim(descript%file_name), 
+           open(descript%lun, file=trim(descript%file_name),
      &         access='SEQUENTIAL', position='APPEND')
            write(descript%lun, 1101) TimeLoc, it
          endif
-   
+
          bufsize = min(BUFSIZE_MAX,
      &       descript % num_items_per_record * descript % num_fd_records)
          num     = bufsize / descript % num_items_per_record
          iend    = num
          istart  = 1
-   
+
          if (tagbase == 5000) then
            tagbase = 6000
          else
            tagbase = 5000
          endif
          ibucket = 0
-   
+
          do while (istart < iend)
-   
+
            !------------------------------------------------------------
            ! Initialize
            !------------------------------------------------------------
            buf(:)  = descript % initial_value
            ibucket = ibucket + 1
            tag     = tagbase + mod(ibucket, 8)
-   
+
            call write_cmd(descript%lun, descript, istart, iend)
            if(descript%isInteger)then
                call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_integer, MPI_SUM, 0,
@@ -614,7 +619,7 @@ C        or to the end of the full domain array, whichever is less
            if (myproc == 0) then
              do i = istart, iend
                j = 1 + (i-istart)*descript % num_items_per_record
-   
+
                if(descript%isInteger)then
                  write(descript % lun, 1001) labels_g(i), (integerResultBuffer(k), k = j, j +
      &              descript % num_items_per_record - 1)
@@ -624,7 +629,7 @@ C        or to the end of the full domain array, whichever is less
                endif
              end do
            end if
-   
+
            istart = iend + 1
            iend   = min(istart + num - 1, descript % num_fd_records)
            num    = iend - istart + 1
@@ -636,7 +641,7 @@ C        or to the end of the full domain array, whichever is less
       endif
 
  1000 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
- 1001 FORMAT(2x, i8, 2x, i8, 2X, i8, 2X, i8, 2X, i8) 
+ 1001 FORMAT(2x, i8, 2x, i8, 2X, i8, 2X, i8, 2X, i8)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
@@ -674,7 +679,7 @@ C        or to the end of the full domain array, whichever is less
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
-         open(descript%lun, file=trim(descript%file_name), 
+         open(descript%lun, file=trim(descript%file_name),
      &       access='SEQUENTIAL', position='APPEND')
          nLWetNodes=0
          do i=1,np
@@ -726,40 +731,40 @@ C        or to the end of the full domain array, whichever is less
      &        MPI_SUM, 0, comm)
 
          if (myproc == 0) then
-           open(descript%lun, file=trim(descript%file_name), 
+           open(descript%lun, file=trim(descript%file_name),
      &         access='SEQUENTIAL', position='APPEND')
            write(descript%lun, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
          endif
-   
+
          bufsize = min(BUFSIZE_MAX,
      &       descript % num_items_per_record * descript % num_fd_records)
          num     = bufsize / descript % num_items_per_record
          iend    = num
          istart  = 1
-   
+
          if (tagbase == 5000) then
            tagbase = 6000
          else
            tagbase = 5000
          endif
          ibucket = 0
-   
+
          do while (istart < iend)
-   
+
            !------------------------------------------------------------
            ! Initialize
            !------------------------------------------------------------
            buf(:)  = descript % initial_value
            ibucket = ibucket + 1
            tag     = tagbase + mod(ibucket, 8)
-   
+
            call write_cmd(descript%lun, descript, istart, iend)
            call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM, 0,
      &       COMM)
            if (myproc == 0) then
              do i = istart, iend
                j = 1 + (i-istart)*descript % num_items_per_record
-   
+
                !If values are eqaul to the default value, skip this node
                if(descript%num_items_per_record.eq.2)then
                    if(resultBuf(j  ).eq.descript % alternate_value .and.
@@ -767,12 +772,12 @@ C        or to the end of the full domain array, whichever is less
                else
                    if(resultBuf(j).eq.descript % alternate_value) cycle
                endif
-   
+
                write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &           descript % num_items_per_record - 1)
              end do
            end if
-   
+
            istart = iend + 1
            iend   = min(istart + num - 1, descript % num_fd_records)
            num    = iend - istart + 1
@@ -945,7 +950,7 @@ C        or to the end of the full domain array, whichever is less
       !--------------------------------------------------------------
       end subroutine storeTwo
       !--------------------------------------------------------------
-      
+
       !--------------------------------------------------------------
       ! These are the store, header routines. For each file (fort.61, ...)
       ! that is being globalize, there is a pair of routines : header61 and
@@ -1327,7 +1332,7 @@ C        or to the end of the full domain array, whichever is less
 C     Open the file
       open(lun, file=filename, status='UNKNOWN')
       write(lun, 1000) rundes, runid, agrid
-      
+
 C     Unless we are processor 0 or we are supposed to write local
 C     files, there is nothing to do but *** RETURN EARLY ***
       if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return
@@ -1338,7 +1343,7 @@ C     Set the appropriate number of nodes
       else
          nstations = numSta_g
       endif
-C    
+C
       select case(trim(typeStr))
       case("Elev")
           write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
@@ -1469,7 +1474,7 @@ C     Open the file
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
       case("dynamicWaterlevelCorrection")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1,
      &    FileFmtVersion
       case default
           write(ScreenUnit,*)
@@ -1527,24 +1532,24 @@ C----------------------------------------------------------------------
       read(descript%lun,*,end=3990,err=3990) skipline   ! 1st header line
       !tcm v51.20.01 added specific reading of 2nd header line
       read(descript%lun,*,end=3990,err=3990) ndsetmax,size_this,
-     &                       time_this,nspoolmax,irtype,dmstr,ffv   
+     &                       time_this,nspoolmax,irtype,dmstr,ffv
       !
       ! jgf52.08.20: Read time and timestep and reject min/max data that correspond
       ! to a future time. This can happen when an analyst hotstarts a run,
-      ! allows it to complete, then makes some adjustments to the input and 
-      ! then tries to re-run it while forgetting to remove or replace the 
-      ! min/max file from the previous attempt. 
+      ! allows it to complete, then makes some adjustments to the input and
+      ! then tries to re-run it while forgetting to remove or replace the
+      ! min/max file from the previous attempt.
       !
-      ! It is hard to imagine a scenario where someone would want to keep 
+      ! It is hard to imagine a scenario where someone would want to keep
       ! the min/max record from the previous attempt under these circumstances.
-      ! As a result, I am logging it as an error but allowing the run to 
-      ! continue if non-fatal override is enabled, since it would be 
+      ! As a result, I am logging it as an error but allowing the run to
+      ! continue if non-fatal override is enabled, since it would be
       ! annoying to have ADCIRC bomb out every time the analyst mistakenly
-      ! leaves a min/max file in place. 
+      ! leaves a min/max file in place.
       read(descript%lun,*,end=3990,err=3990) TimeMM, ITMM   ! TIME and IT line
       if (TimeMM.gt.TimeLoc) then
          call allMessage(ERROR,'Max/min file '//trim(descript % file_name)//
-     &     ' contains data written after the hotstart time. '// 
+     &     ' contains data written after the hotstart time. '//
      &    ' It may have been produced using different input parameters, '//
      &     ' perhaps during a previously attempted hot start run. '//
      &     ' Its values will not be read.')
@@ -1565,13 +1570,13 @@ C----------------------------------------------------------------------
       ! time period, so read the data.
       numLinesInMinMaxFile = 0
       ! set the number of records we expect to read as well as the array to
-      ! read data into 
+      ! read data into
       rdata => descript % array
       idata => descript % iarray
       if (mnproc.gt.1) then
          rdata => descript % array_g
          idata => descript % iarray_g
-      endif      
+      endif
       !
       !
       do I=1, descript % num_fd_records
@@ -1594,10 +1599,10 @@ C----------------------------------------------------------------------
       enddo
       !
       ! If this max/min file has two time records then the second
-      ! record contains the time stamp (sec) relative to cold start 
+      ! record contains the time stamp (sec) relative to cold start
       ! at which the max/min was recorded
       if ((ndsetmax.gt.1).and.
-     &    (descript % minmax_timestamp.eqv..true.)) then  
+     &    (descript % minmax_timestamp.eqv..true.)) then
          ! In file and asking for them, set the arrays to read data into
          rdata => descript % array2
          if (mnproc.gt.1) then
@@ -1627,13 +1632,13 @@ C----------------------------------------------------------------------
       endif
       ! time stamps are found in file but not asking for them
       if ( (ndsetmax.gt.1).and.
-     &      (descript % minmax_timestamp.eqv..false.) ) then  
+     &      (descript % minmax_timestamp.eqv..false.) ) then
             call logMessage(INFO,'Max/min timestamps present in "'//
      &      trim(descript % file_name)//' but not needed. ')
       endif
 
  3990 CONTINUE ! jump to here if end of file is reached
-      WRITE(scratchMessage,450) numLinesInMinMaxFile, 
+      WRITE(scratchMessage,450) numLinesInMinMaxFile,
      &   trim(descript % file_name)
       CALL logMessage(INFO,scratchMessage)
       IF (numLinesInMinMaxFile.lt.(descript % num_fd_records)) THEN
@@ -1654,9 +1659,9 @@ C       S U B R O U T I N E   N D D T 2 R E A D
 C----------------------------------------------------------------------
 C
 C     tcm v50.66.02 Subroutine to read in new bathymetry values.
-C        Time records are separated by a # symbol located in 
+C        Time records are separated by a # symbol located in
 C        column 2.  This format is similar to those for NWS = 4
-C       
+C
 C----------------------------------------------------------------------
       SUBROUTINE NDDT2GET(lun,RVAL,defval)
       USE SIZES
@@ -1677,7 +1682,7 @@ C...  other nodes keep their current value
          IF(CDUM80(2:2).NE.'#') EXIT
       ENDDO
       DO WHILE (.TRUE.)
-         READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
+         READ(CDUM80,'(I8,E13.5)') IJK,tmpval
          if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
          READ(lun,'(A80)',end=172) CDUM80
          IF(CDUM80(2:2).EQ.'#') EXIT
@@ -1691,13 +1696,13 @@ C----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
 C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
-C                M A X  A N D  M I N 
+C                M A X  A N D  M I N
 C-----------------------------------------------------------------------
 C     TCM v51.20.01 Reads a fulldomain array in ascii format and maps
 C     to a subdomain array.  Modeled after readAndMapToSubdomain2D
 C     jgf52.08.03: Reduced subroutine arguments to OutputDataDescript_t
 C     and an indicator of whether the file was found; removed hardwired
-C     variables. 
+C     variables.
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)
 #ifdef CMPI
@@ -1722,7 +1727,7 @@ C-----------------------------------------------------------------------
 3333     format('Values from ',(a),
      &       ' will not reflect the solution prior to this hotstart.')
          call allMessage(INFO,scratchMessage)
-         if (descript % minmax_timestamp.eqv..true.) then 
+         if (descript % minmax_timestamp.eqv..true.) then
             descript % array2(:) = -99999.d0  !tcm v51.20.06
          endif
          close(descript%lun)
@@ -1734,14 +1739,14 @@ C-----------------------------------------------------------------------
      &       ' will be reflected from the solution prior to this hotstart.')
          call allMessage(INFO,scratchMessage)
       endif
-       
-      ! serial 
+
+      ! serial
       if(myproc.eq.0)then
-        call readMinMax(descript, timeloc)      
+        call readMinMax(descript, timeloc)
       endif
 
       ! parallel
-#ifdef CMPI      
+#ifdef CMPI
       if (mnproc.gt.1) then
         if(descript%isInteger)then
           allocate(itmp0(1:np_g))
@@ -1757,7 +1762,7 @@ C-----------------------------------------------------------------------
           if(myproc.eq.0)then
             tmp0(:) = descript%array_g(:)
           endif
-          call mapToSubdomainRealMPI(np_g,np,tmp1,descript%imap,tmp0) 
+          call mapToSubdomainRealMPI(np_g,np,tmp1,descript%imap,tmp0)
         endif
       endif
 #endif

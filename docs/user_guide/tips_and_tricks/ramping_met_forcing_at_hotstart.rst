@@ -41,4 +41,4 @@ Usage Notes
 1. This feature is particularly useful when initializing meteorological forcing at hotstart time
 2. The ramping helps prevent numerical instabilities that could arise from sudden introduction of meteorological forcing
 3. The ramp duration (``DRAMPMete``) and start time (``DRAMPUnMete``) should be chosen based on your specific simulation needs
-4. Make sure the ``DRAMPUnMete`` value matches your hotstart simulation's start time 
+4. Make sure the ``DRAMPUnMete`` value matches your hotstart simulation's start time

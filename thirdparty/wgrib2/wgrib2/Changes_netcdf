@@ -1,11 +1,11 @@
- 
+
  First version submitted by Kristian Nilssen, 2007
  3/2007 1st release version, changes by Wesley Ebisuzaki
 
  List of modifications by Sergey Varlamov, inverse time order
- 
+
  See help file for "how to use" instructions and examples.
- 
+
  Version 20.02.2008 (Sergey Varlamov):
 
   -corrected code bug in the grid_template processing, need to update
@@ -17,7 +17,7 @@
      Netcdf_sup.c - netcdf library-independant functions,
      Netcdf.c - netcdf library-dependant, static-only functions,
                 except f_netcdf() function (import it only).
-                
+
  Version 31.01.2008 (Sergey Varlamov):
 
   -changed the way new netcdf file is created: it is created only if
@@ -47,7 +47,7 @@
    irregularity in grib2 data timing.
 
   -fatal_error if the level type is unsupported by wgrib2
- 
+
  Version 09.01.2008 (Sergey Varlamov):
 
   -with the help of Rich Signell added support for export
@@ -62,7 +62,7 @@
    CF convention NetCDF files are not directly compatible with GrADS v1.9b4 but
    potentially could be used with user-provided "GrADS data description file (catalog)".
    Could be used with the IDL and MATLAB data analysis tools.
-  
+
   -changed behavior for -nc_pack option: with 'float' packing option
    it does the check of data to be in valid data range, with the 'short' or 'byte'
    option the simple packing of data is also going. Data outside of valid range
@@ -77,7 +77,7 @@
    version of wgrib2 if there could be undefined values - this attribute is not checked
    or changed after the file first was created (variable added)
    and new missing values could be treated as valid data].
-  
+
  Version 13.07.2007 (Sergey Varlamov):
 
   -help file was updated; removed dublicating instructions from this code
@@ -186,7 +186,7 @@
     With '-nc_pack' option folowed by X=min:max:byte|short] all NEW input variables
     would be packed in short or byte with corresponding offset and scale fitting
     given range in specified data type with possible loss of precision.
-    packed=(unpacked-offset)/scale; default no packing    
+    packed=(unpacked-offset)/scale; default no packing
     NEW means that if some variable was already defined in the netcdf file
     and now is appended to it (in -append mode, see below), the initially defined
     packing parameters are used.
@@ -227,4 +227,3 @@
 
    -check error code on verftime as in other Wesley Ebisuzaki files
    -many other small changes...
-

@@ -70,7 +70,7 @@ int f_grid_changes(ARG0) {
     return 0;
 }
 /*
- * HEADER:100:error_final:misc:3:error if at end X=count Y=ne,eq,le,lt,gt,ge Z=integer 
+ * HEADER:100:error_final:misc:3:error if at end X=count Y=ne,eq,le,lt,gt,ge Z=integer
  */
 
 int f_error_final(ARG3) {

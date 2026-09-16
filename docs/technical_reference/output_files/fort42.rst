@@ -31,4 +31,4 @@ Notes
     * REAL(QSTA): x-component of velocity
     * AIMAG(QSTA): y-component of velocity
     * WZSTA: vertical velocity component
-* Data is recorded at multiple vertical levels defined by SIGMA values 
+* Data is recorded at multiple vertical levels defined by SIGMA values

@@ -9,7 +9,7 @@
 
 //#if USE_IPOLATES == 2
 
-/* mk_gdt.c 
+/* mk_gdt.c
  *
  * this routine takes the *sec[] and makes a g2lib igdtmpl(*) array for ipolates2 library
  *    igdt is used by NCEP grib and ipolates2 libraries
@@ -36,7 +36,7 @@ struct gdt_defn {
 const struct gdt_defn gdt_table[] = {
 // 3.0: Lat/Lon grid
 // { 0, {1,1,4,1,4,1,4,4,4,4,4,-4,4,1,-4,4,4,4,1} }
-  { 0, "\x01\x01\x04\x01\x04\x01\x04\x04\x04\x04\x04\x0c\x04\x01\x0c\x04\x04\x04\x01" }, 
+  { 0, "\x01\x01\x04\x01\x04\x01\x04\x04\x04\x04\x04\x0c\x04\x01\x0c\x04\x04\x04\x01" },
 
 // 3.1: Rotated Lat/Lon grid
 // { 1, 22, 0, {1,1,4,1,4,1,4,4,4,4,4,-4,4,1,-4,4,4,4,1,-4,4,4} },
@@ -56,12 +56,12 @@ const struct gdt_defn gdt_table[] = {
 
 // 3.40: Guassian Lat/Lon
 // {40, 19, 0, {1,1,4,1,4,1,4,4,4,4,4,-4,4,1,-4,4,4,4,1} },
-   {40, "\x01\x01\x04\x01\x04\x01\x04\x04\x04\x04\x04\x0c\x04\x01\x0c\x04\x04\x04\x01" }, 
+   {40, "\x01\x01\x04\x01\x04\x01\x04\x04\x04\x04\x04\x0c\x04\x01\x0c\x04\x04\x04\x01" },
 
 // GT: added for pywgrib2_xr
 // 3.90: Space View Perspective or orthographic
 // {90, 21, 0, {1,1,4,1,4,1,4,4,4,-4,4,1,4,4,4,4,1,4,4,4,4} },
-   {90, "\x01\x01\x04\x01\x04\x01\x04\x04\x04\x0c\x04\x01\x04\x04\x04\x04\x01\x04\x04\x04\x04" }, 
+   {90, "\x01\x01\x04\x01\x04\x01\x04\x04\x04\x0c\x04\x01\x04\x04\x04\x04\x01\x04\x04\x04\x04" },
 
 // 3.101 General unstructured grid
    {101, "\x01\x03\x01\x04\x04\x04\x04" },
@@ -138,7 +138,7 @@ int mk_gdt(unsigned char **sec, int *igdtnum, int *igdttmpl, int *igdtleni) {
 	    default: fatal_error_i("mk_gdt: illegal value in sequence %d", *in);
 	}
 	seq++;
-    } 
+    }
 
     return 0;
 }

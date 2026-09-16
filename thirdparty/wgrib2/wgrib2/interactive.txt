@@ -37,5 +37,3 @@ Neat things to consider:
 	time.
 
 	OpenDAP server based on wgrib2.
-
-

@@ -2,7 +2,7 @@
  * Copyright 1997, Regents of the University of Minnesota
  *
  * frename.c
- * 
+ *
  * This file contains some renaming routines to deal with different Fortran compilers
  *
  * Started 9/15/97
@@ -20,8 +20,8 @@ void METIS_PARTGRAPHRECURSIVE(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtyp
   METIS_PartGraphRecursive(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts, options, edgecut, part);
 }
 void metis_partgraphrecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, int *options, int *edgecut, idxtype *part)
-{ 
-  METIS_PartGraphRecursive(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts, options, edgecut, part); 
+{
+  METIS_PartGraphRecursive(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts, options, edgecut, part);
 }
 void metis_partgraphrecursive_(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, int *options, int *edgecut, idxtype *part)
 {
@@ -307,6 +307,3 @@ void metis_wpartgraphvkaway__(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtyp
 {
   METIS_WPartGraphVKway(nvtxs, xadj, adjncy, vwgt, vsize, wgtflag, numflag, nparts, tpwgts, options, volume, part);
 }
-
-
-

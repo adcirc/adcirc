@@ -53,8 +53,8 @@ int use_g2clib;		/* use g2clib/emulation code for decoding */
 int use_gctpc;		/* use gctpc for geolocation */
 int use_proj4;		/* use Proj4 for geolocation */
 
-int fix_ncep_2_flag;	
-int fix_ncep_3_flag;	
+int fix_ncep_2_flag;
+int fix_ncep_3_flag;
 int fix_ncep_4_flag;
 int fix_undef_flag;
 
@@ -218,7 +218,7 @@ int wgrib2(int argc, const char **argv) {
 
 	/* filename: either - or string that does not start with - */
 	if (new_argv[i][0] != '-' || (strcmp(new_argv[i],"-") == 0))  {
-	    if (file_arg) 
+	    if (file_arg)
 		fatal_error_ss("too many grib files .. 1st=%s 2nd=%s", new_argv[file_arg], new_argv[i]);
 	    file_arg = i;
 	    fopen_file(&in_file, new_argv[file_arg],"rb");
@@ -291,7 +291,7 @@ int wgrib2(int argc, const char **argv) {
                 new_argv[arglist[j].i_argc+2] ,new_argv[arglist[j].i_argc+3]));
 	else if (n_arg == 5) err = functions[arglist[j].fn].fn(init_ARG5(inv_out,local+j,
 		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
-                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3], 
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
                 new_argv[arglist[j].i_argc+4]));
 	else if (n_arg == 6) err = functions[arglist[j].fn].fn(init_ARG6(inv_out,local+j,
 		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
@@ -330,10 +330,10 @@ int wgrib2(int argc, const char **argv) {
 	else fatal_error("missing input file %s", new_argv[file_arg]);
     }
 
-    if (latlon == 1 && output_order_wanted != wesn) 
+    if (latlon == 1 && output_order_wanted != wesn)
            fatal_error("latitude-longitude information is only available with -order we:sn for file %s",in_file.filename);
 
-    if (input == inv_mode && (in_file.file_type != DISK && in_file.file_type != MEM)) 
+    if (input == inv_mode && (in_file.file_type != DISK && in_file.file_type != MEM))
 	fatal_error("wgrib2 cannot random access grib input file %s",in_file.filename);
 
 #ifdef DEBUG
@@ -370,13 +370,13 @@ int wgrib2(int argc, const char **argv) {
 #endif
     }
 
-    /* 
+    /*
      * submsg = 0 .. beginning of unread record
      * submsg = i .. start at ith submsg
      * num_submsgs = number of submessages in grib message
      */
 
-    /* inventory loop */ 
+    /* inventory loop */
 
     for (;last_message == 0;) {
 
@@ -590,16 +590,16 @@ int wgrib2(int argc, const char **argv) {
 	j = code_table_5_0(sec);		// type of compression
 
 	/* yes this can be simplified but want to split it up in case other decoders have problems */
-	if (j == 0 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0) 
+	if (j == 0 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0)
 		fprintf(stderr,"Warning: g2lib/g2clib/grib-api simple encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
 				   in_file.filename);
-	if ((j == 2 || j == 3) && int2(sec[5]+17) != 0 && int4(sec[5] + 31) == 0 && ieee2flt(sec[5]+11) != 0.0) 
+	if ((j == 2 || j == 3) && int2(sec[5]+17) != 0 && int4(sec[5] + 31) == 0 && ieee2flt(sec[5]+11) != 0.0)
 		fprintf(stderr,"Warning: g2lib/g2clib complex encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
 				   in_file.filename);
-	if (j == 40 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0) 
+	if (j == 40 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0)
 		fprintf(stderr,"Warning: g2lib/g2clib jpeg encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
 				   in_file.filename);
-	if (j == 41 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0) 
+	if (j == 41 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0)
 		fprintf(stderr,"Warning: g2lib/g2clib/grib-api png encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
 				   in_file.filename);
 
@@ -720,7 +720,7 @@ int wgrib2(int argc, const char **argv) {
 		    /* g2clib ignores decimal scaling for constant fields make internal decoders look like g2clib*/
                     if ( (j == 0 && sec[5][19] == 0) || ((j == 2 || j == 3) && int4(sec[5] + 31) == 0) ||
                          (j == 40 && sec[5][19] == 0) || (j == 41 && sec[5][19] == 0) ||
-                         (center == NCEP && j == 40000 && sec[5][19] == 0) || 
+                         (center == NCEP && j == 40000 && sec[5][19] == 0) ||
                          (center == NCEP && j == 40010 && sec[5][19] == 0)  ) {
 			dscale[0] = sec[5][17];
 			dscale[1] = sec[5][18];
@@ -731,11 +731,11 @@ int wgrib2(int argc, const char **argv) {
 		err = unpk_grib(sec, data);
                 if (err != 0) fatal_error_i("Fatal decode packing type %d for %s",err,in_file.filename);
 
-		if (use_g2clib == 1) {  // fix up data 
+		if (use_g2clib == 1) {  // fix up data
 		    /* restore decimal scaling */
                     if ( (j == 0 && sec[5][19] == 0) || ((j == 2 || j == 3) && int4(sec[5] + 31) == 0) ||
                          (j == 40 && sec[5][19] == 0) || (j == 41 && sec[5][19] == 0) ||
-                         (center == NCEP && j == 40000 && sec[5][19] == 0) || 
+                         (center == NCEP && j == 40000 && sec[5][19] == 0) ||
                          (center == NCEP && j == 40010 && sec[5][19] == 0)  ) {
 			sec[5][17] = dscale[0];
 			sec[5][18] = dscale[1];
@@ -913,7 +913,7 @@ int wgrib2(int argc, const char **argv) {
             else if (n_arg == 4) err |= functions[arglist[j].fn].fn(fin_ARG4(inv_out,local+j,
                 new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
                 new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3]));
-			
+
             else if (n_arg == 5) err |= functions[arglist[j].fn].fn(fin_ARG5(inv_out,local+j,
                 new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
                 new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
@@ -929,7 +929,7 @@ int wgrib2(int argc, const char **argv) {
                 new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
                 new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
                 new_argv[arglist[j].i_argc+6]));
-            
+
             else if (n_arg == 8) err |= functions[arglist[j].fn].fn(fin_ARG8(inv_out,local+j,
                 new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
                 new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],

@@ -10,7 +10,7 @@ Wind Stress
 When wind blows over the water, it exerts a shear stress at the water surface
 that transfers horizontal momentum vertically downward across the air–sea
 interface, driving circulation. In ADCIRC, wind stress is an input forcing term,
-with several different formats provided. See the :ref:`NWS Parameter <nws_parameter>` 
+with several different formats provided. See the :ref:`NWS Parameter <nws_parameter>`
 for available formats. In most cases, the exact wind stress to be applied to the
 model is not provided, therefore ADCIRC must determine how to convert a given
 wind speed to the actual stress applied at the ocean surface. This page covers
@@ -103,8 +103,8 @@ Interpolating Roughness Lengths Before v55
   localized effects on water levels in cases where there are large changes in
   neighboring roughness length bins coinciding with well-aligned winds, as in
   `this test case <:File:MaxeleDiffRun13MinusRun12View1.png>`__ with Hurricane
-  Isaac. 
-  
+  Isaac.
+
   |Video of wind speeds before (left) and after (right) adding linear
   interpolation of surface roughness.|
 

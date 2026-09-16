@@ -18,7 +18,7 @@
 /*************************************************************************
 * This function computes the initial bisection of the coarsest graph
 **************************************************************************/
-void Init2WayPartition(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfactor) 
+void Init2WayPartition(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfactor)
 {
   int dbglvl;
 
@@ -52,7 +52,7 @@ void Init2WayPartition(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfa
 /*************************************************************************
 * This function computes the initial bisection of the coarsest graph
 **************************************************************************/
-void InitSeparator(CtrlType *ctrl, GraphType *graph, float ubfactor) 
+void InitSeparator(CtrlType *ctrl, GraphType *graph, float ubfactor)
 {
   int dbglvl;
 
@@ -167,14 +167,14 @@ void GrowBisection(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfactor
     }
 
     /* Check to see if we hit any bad limiting cases */
-    if (pwgts[1] == 0) { 
+    if (pwgts[1] == 0) {
       i = RandomInRange(nvtxs);
       where[i] = 1;
       INC_DEC(pwgts[1], pwgts[0], vwgt[i]);
     }
 
     /*************************************************************
-    * Do some partition refinement 
+    * Do some partition refinement
     **************************************************************/
     Compute2WayPartitionParams(ctrl, graph);
     /*printf("IPART: %3d [%5d %5d] [%5d %5d] %5d\n", graph->nvtxs, pwgts[0], pwgts[1], graph->pwgts[0], graph->pwgts[1], graph->mincut); */
@@ -241,7 +241,7 @@ void GrowBisectionNode(CtrlType *ctrl, GraphType *graph, float ubfactor)
   graph->nrinfo   = (NRInfoType *)(graph->rdata + 3*nvtxs + 3);
   graph->id       = graph->rdata + 3*nvtxs + 3;
   graph->ed       = graph->rdata + 4*nvtxs + 3;
-  
+
   where = graph->where;
   bndind = graph->bndind;
 
@@ -267,7 +267,7 @@ void GrowBisectionNode(CtrlType *ctrl, GraphType *graph, float ubfactor)
         if (first == last) { /* Empty. Disconnected graph! */
           if (nleft == 0 || drain)
             break;
-  
+
           k = RandomInRange(nleft);
           for (i=0; i<nvtxs; i++) {
             if (touched[i] == 0) {
@@ -308,17 +308,17 @@ void GrowBisectionNode(CtrlType *ctrl, GraphType *graph, float ubfactor)
     }
 
     /*************************************************************
-    * Do some partition refinement 
+    * Do some partition refinement
     **************************************************************/
     Compute2WayPartitionParams(ctrl, graph);
     Balance2Way(ctrl, graph, tpwgts, ubfactor);
     FM_2WayEdgeRefine(ctrl, graph, tpwgts, 4);
 
     /* Construct and refine the vertex separator */
-    for (i=0; i<graph->nbnd; i++) 
+    for (i=0; i<graph->nbnd; i++)
       where[bndind[i]] = 2;
 
-    Compute2WayNodePartitionParams(ctrl, graph); 
+    Compute2WayNodePartitionParams(ctrl, graph);
     FM_2WayNodeRefine(ctrl, graph, ubfactor, 6);
 
     /* printf("ISep: [%d %d %d] %d\n", graph->pwgts[0], graph->pwgts[1], graph->pwgts[2], bestcut); */
@@ -332,7 +332,7 @@ void GrowBisectionNode(CtrlType *ctrl, GraphType *graph, float ubfactor)
   graph->mincut = bestcut;
   idxcopy(nvtxs, bestwhere, where);
 
-  Compute2WayNodePartitionParams(ctrl, graph); 
+  Compute2WayNodePartitionParams(ctrl, graph);
 
   GKfree(&bestwhere, &queue, &touched, LTERM);
 }
@@ -392,7 +392,7 @@ void RandomBisection(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfact
     }
 
     /*************************************************************
-    * Do some partition refinement 
+    * Do some partition refinement
     **************************************************************/
     Compute2WayPartitionParams(ctrl, graph);
     /* printf("IPART: %3d [%5d %5d] [%5d %5d] %5d\n", graph->nvtxs, pwgts[0], pwgts[1], graph->pwgts[0], graph->pwgts[1], graph->mincut); */
@@ -416,7 +416,3 @@ void RandomBisection(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfact
 
   GKfree(&bestwhere, &perm, LTERM);
 }
-
-
-
-

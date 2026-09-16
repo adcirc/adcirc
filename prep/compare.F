@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -24,7 +24,7 @@ C
       SUBROUTINE COMPARE61(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare data at the elevation stations from two different directories.   C
 C  This version is compatible with ADCIRC version 33.04                     C
 C                                                                           C
@@ -42,9 +42,9 @@ C
       INTEGER NSTEMP1,NSTEMP2
       INTEGER ITSE1,ITSE2
       INTEGER ITEMPE1,ITEMPE2
-      INTEGER NSTAE1,NSTAE2 
+      INTEGER NSTAE1,NSTAE2
       INTEGER NUMSTNS1, NUMSTNS2
-      INTEGER NSPOOLE1,NSPOOLE2 
+      INTEGER NSPOOLE1,NSPOOLE2
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
       REAL(8) DTE1,DTE2
@@ -159,9 +159,9 @@ C
             IF (ERR.GT.TOL) WRITE(71,*) TIMEOUTSE1,I,ETA1(I),ETA2(I)
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.61 files
@@ -292,7 +292,7 @@ C
          IREC1 = IREC1 + NSTAE1
          IREC2 = IREC2 + NSTAE2
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.61 Files
 C
@@ -311,7 +311,7 @@ C
       SUBROUTINE COMPARE62(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare data at the velocity stations from two different directories.    C
 C  This version is compatible with ADCIRC version 33.04                     C
 C                                                                           C
@@ -329,9 +329,9 @@ C
       INTEGER NSTEMP1,NSTEMP2
       INTEGER ITSV1,ITSV2
       INTEGER ITEMPV1,ITEMPV2
-      INTEGER NSTAV1,NSTAV2 
+      INTEGER NSTAV1,NSTAV2
       INTEGER NUMSTNS1, NUMSTNS2
-      INTEGER NSPOOLV1,NSPOOLV2 
+      INTEGER NSPOOLV1,NSPOOLV2
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
       REAL(8) DTV1,DTV2
@@ -450,9 +450,9 @@ C
      &        I,UU1(I),UU2(I),VV1(I),VV2(I)
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.62 files
@@ -586,7 +586,7 @@ C
          IREC1 = IREC1 + 2*NSTAV1
          IREC2 = IREC2 + 2*NSTAV2
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.61 Files
 C
@@ -605,7 +605,7 @@ C
       SUBROUTINE COMPARE63(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare elevation data at all nodes from two different directories.      C
 C  This version is compatible with ADCIRC version 33.04                     C
 C                                                                           C
@@ -738,9 +738,9 @@ C
             IF (ERR.GT.TOL) WRITE(73,*) TIMEOUTE1,I,ETA1(I),ETA2(I)
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.63 files
@@ -872,7 +872,7 @@ C
          IREC1 = IREC1 + NNODG
          IREC2 = IREC2 + NNODG
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.63 Files
 C
@@ -891,7 +891,7 @@ C
       SUBROUTINE COMPARE64(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare velocity data at all nodes from two different directories.       C
 C  This version is compatible with ADCIRC version 33.04                     C
 C                                                                           C
@@ -909,7 +909,7 @@ C
       INTEGER NSTEMP1,NSTEMP2
       INTEGER ITV1,ITV2
       INTEGER ITEMPV1,ITEMPV2
-      INTEGER NP1,NP2 
+      INTEGER NP1,NP2
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
       REAL(8) DTV1,DTV2
@@ -1028,9 +1028,9 @@ C
      &        I,UU1(I),UU2(I),VV1(I),VV2(I)
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.64 files
@@ -1164,7 +1164,7 @@ C
          IREC1 = IREC1 + 2*NNODG
          IREC2 = IREC2 + 2*NNODG
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.64 Files and Differences Log file
 C
@@ -1183,7 +1183,7 @@ C
       SUBROUTINE COMPARE51(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare the harmonic data at the elevation stations from two different   C
 C  directories.                                                             C
 C  This version is compatible with ADCIRC version 33.04                     C
@@ -1293,7 +1293,7 @@ C
       SUBROUTINE COMPARE52(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare the harmonic data at the velocity stations from two different    C
 C  directories.                                                             C
 C  This version is compatible with ADCIRC version 33.04                     C
@@ -1344,9 +1344,9 @@ C
       INQUIRE(FILE=FNAME1,EXIST=FOUND1)
       INQUIRE(FILE=FNAME2,EXIST=FOUND2)
       IF (FOUND1.AND.FOUND2) THEN
-        OPEN(UNIT=52,FILE=FNAME1)    
-        OPEN(UNIT=62,FILE=FNAME2)    
-        OPEN(UNIT=72,FILE=FNAME3)    
+        OPEN(UNIT=52,FILE=FNAME1)
+        OPEN(UNIT=62,FILE=FNAME2)
+        OPEN(UNIT=72,FILE=FNAME3)
       ELSE
         print *, "No fort.52 files found"
         RETURN
@@ -1407,7 +1407,7 @@ C
       SUBROUTINE COMPARE53(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare the harmonic constituent elevations at all nodes from two        C
 C  different directories.                                                   C
 C  This version is compatible with ADCIRC version 33.04                     C
@@ -1457,9 +1457,9 @@ C
       INQUIRE(FILE=FNAME1,EXIST=FOUND1)
       INQUIRE(FILE=FNAME2,EXIST=FOUND2)
       IF (FOUND1.AND.FOUND2) THEN
-        OPEN(UNIT=53,FILE=FNAME1)    
-        OPEN(UNIT=63,FILE=FNAME2)    
-        OPEN(UNIT=73,FILE=FNAME3)    
+        OPEN(UNIT=53,FILE=FNAME1)
+        OPEN(UNIT=63,FILE=FNAME2)
+        OPEN(UNIT=73,FILE=FNAME3)
       ELSE
         print *, "No fort.53 files found"
         RETURN
@@ -1482,8 +1482,8 @@ C
          READ(53,'(A80)') HEADER1
          READ(63,'(A80)') HEADER2
       ENDDO
-      READ(53,*) NP1     
-      READ(63,*) NP2 
+      READ(53,*) NP1
+      READ(63,*) NP2
 C
       DO J=1,NNODG
          READ(53,*) IDUM
@@ -1517,7 +1517,7 @@ C
       SUBROUTINE COMPARE54(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare the harmonic constituent velocities at all nodes from two        C
 C  different directories.                                                   C
 C  This version is compatible with ADCIRC version 33.04                     C
@@ -1568,9 +1568,9 @@ C
       INQUIRE(FILE=FNAME1,EXIST=FOUND1)
       INQUIRE(FILE=FNAME2,EXIST=FOUND2)
       IF (FOUND1.AND.FOUND2) THEN
-        OPEN(UNIT=54,FILE=FNAME1)    
-        OPEN(UNIT=64,FILE=FNAME2)    
-        OPEN(UNIT=74,FILE=FNAME3)    
+        OPEN(UNIT=54,FILE=FNAME1)
+        OPEN(UNIT=64,FILE=FNAME2)
+        OPEN(UNIT=74,FILE=FNAME3)
       ELSE
         print *, "No fort.54 files found"
         RETURN
@@ -1594,8 +1594,8 @@ C
          READ(64,'(A80)') HEADER2
       ENDDO
 C
-      READ(54,*) NP1     
-      READ(64,*) NP2 
+      READ(54,*) NP1
+      READ(64,*) NP2
 C
       DO J=1,NNODG
          READ(54,*) IDUM
@@ -1628,7 +1628,7 @@ C
       SUBROUTINE COMPARE55(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  4/13/98  )                         C 
+C                     (  Serial Version  4/13/98  )                         C
 C  Compare the harmonic constituent comparison files from two directories.  C
 C  This version is compatible with ADCIRC version 33.04                     C
 C                                                                           C
@@ -1692,20 +1692,20 @@ C
       INQUIRE(FILE=FNAME1,EXIST=FOUND1)
       INQUIRE(FILE=FNAME2,EXIST=FOUND2)
       IF (FOUND1.AND.FOUND2) THEN
-        OPEN(UNIT=55,FILE=FNAME1)    
-        OPEN(UNIT=65,FILE=FNAME2)    
-        OPEN(UNIT=75,FILE=FNAME3)    
+        OPEN(UNIT=55,FILE=FNAME1)
+        OPEN(UNIT=65,FILE=FNAME2)
+        OPEN(UNIT=75,FILE=FNAME3)
       ELSE
         print *, "No fort.55 files found"
         RETURN
       ENDIF
 C
-      READ(55,*) NP1     
-      READ(65,*) NP2 
+      READ(55,*) NP1
+      READ(65,*) NP2
 C
       DO J=1,NNODG
-         READ(55,*) IDUM 
-         READ(65,*) IDUM 
+         READ(55,*) IDUM
+         READ(65,*) IDUM
 C
          READ(55,'(A114)') ELEV1
          READ(ELEV1,*) ELAV1,EAV1,EAVDIF1,ELVA1,ESQ1,EVADIF1
@@ -1714,14 +1714,14 @@ C
          READ(ELEV2,*) ELAV2,EAV2,EAVDIF2,ELVA2,ESQ2,EVADIF2
 C
          IF ((ABS(ELAV1-ELAV2).GT.TOL)
-     &   .OR.(ABS(EAV1-EAV2).GT.TOL)      
+     &   .OR.(ABS(EAV1-EAV2).GT.TOL)
      &   .OR.(ABS(EAVDIF1-EAVDIF2).GT.TOL)
      &   .OR.(ABS(ELVA1-ELVA2).GT.TOL)
      &   .OR.(ABS(ESQ1-ESQ2).GT.TOL)
      &   .OR.(ABS(EVADIF1-EVADIF2).GT.TOL)) THEN
            WRITE(75,*) "elevation difference at node ",J
-           WRITE(75,'(A114)') ELEV1       
-           WRITE(75,'(A114)') ELEV2       
+           WRITE(75,'(A114)') ELEV1
+           WRITE(75,'(A114)') ELEV2
          ENDIF
       ENDDO
 C
@@ -1732,31 +1732,31 @@ C
          READ(UU1,*) XVELAV1,UAV1,UAVDIF1,XVELVA1,USQ1,UVADIF1
          READ(VV1,*) YVELAV1,VAV1,VAVDIF1,YVELVA1,VSQ1,VVADIF1
 C
-         READ(65,*) IDUM 
+         READ(65,*) IDUM
          READ(65,'(A114)') UU2
          READ(65,'(A114)') VV2
          READ(UU2,*) XVELAV2,UAV2,UAVDIF2,XVELVA2,USQ2,UVADIF2
          READ(VV2,*) YVELAV2,VAV2,VAVDIF2,YVELVA2,VSQ2,VVADIF2
 C
          IF ((ABS(XVELAV1-XVELAV2).GT.TOL)
-     &   .OR.(ABS(UAV1-UAV2).GT.TOL)      
+     &   .OR.(ABS(UAV1-UAV2).GT.TOL)
      &   .OR.(ABS(UAVDIF1-UAVDIF2).GT.TOL)
      &   .OR.(ABS(XVELVA1-XVELVA2).GT.TOL)
      &   .OR.(ABS(USQ1-USQ2).GT.TOL)
      &   .OR.(ABS(UVADIF1-UVADIF2).GT.TOL)
 C
      &   .OR.(ABS(YVELAV1-YVELAV2).GT.TOL)
-     &   .OR.(ABS(VAV1-VAV2).GT.TOL)      
+     &   .OR.(ABS(VAV1-VAV2).GT.TOL)
      &   .OR.(ABS(VAVDIF1-VAVDIF2).GT.TOL)
      &   .OR.(ABS(YVELVA1-YVELVA2).GT.TOL)
      &   .OR.(ABS(VSQ1-VSQ2).GT.TOL)
      &   .OR.(ABS(VVADIF1-VVADIF2).GT.TOL)) THEN
 C
            WRITE(75,*) "velocity difference at node ",J
-           WRITE(75,'(A114)') UU1         
-           WRITE(75,'(A114)') VV1         
-           WRITE(75,'(A114)') UU2         
-           WRITE(75,'(A114)') VV2         
+           WRITE(75,'(A114)') UU1
+           WRITE(75,'(A114)') VV1
+           WRITE(75,'(A114)') UU2
+           WRITE(75,'(A114)') VV2
          ENDIF
       ENDDO
 C
@@ -1773,7 +1773,7 @@ C
       SUBROUTINE COMPARE74(DIR1,DIR2,TOL)
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  3/28/98  )                         C 
+C                     (  Serial Version  3/28/98  )                         C
 C  Compare Wind Stress data at all nodes from two different directories.    C
 C  This version is compatible with ADCIRC version 33.04                     C
 C                                                                           C
@@ -1791,7 +1791,7 @@ C
       INTEGER NSTEMP1,NSTEMP2
       INTEGER ITV1,ITV2
       INTEGER ITEMPV1,ITEMPV2
-      INTEGER NP1,NP2 
+      INTEGER NP1,NP2
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
       REAL(8) DTV1,DTV2
@@ -1909,9 +1909,9 @@ C
             IF (ERR.GT.TOL) WRITE(74,*) I,UU1(I),UU2(I),VV1(I),VV2(I)
          ENDDO
 C
-      ENDDO                 
+      ENDDO
       GO TO 9999
-C 
+C
 2000  CONTINUE
 C
 C--Open Both Global Direct Access Binary fort.64 files
@@ -2044,7 +2044,7 @@ C
          IREC1 = IREC1 + 2*NNODG
          IREC2 = IREC2 + 2*NNODG
 C
-      ENDDO                 
+      ENDDO
 C
 C--Close both Global fort.64 Files and Differences Log file
 C

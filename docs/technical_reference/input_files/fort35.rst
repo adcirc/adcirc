@@ -24,4 +24,4 @@ Notes
 
 - The elevation changes should be specified for all ocean boundary nodes
 - Each dataset should include a comment line with the date
-- The elevation changes are used to adjust the level of no motion boundary condition 
+- The elevation changes are used to adjust the level of no motion boundary condition

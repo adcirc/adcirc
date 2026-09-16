@@ -140,7 +140,7 @@ int f_ncep_norm(ARG1) {
             same_sec1(sec,save->clone_sec) == 0 ||
             same_sec3(sec,save->clone_sec) == 0 ||
             same_sec4_diff_ave_period(sec,save->clone_sec) == 0) {
-	
+
                if (mode == 98) fprintf(stderr,
 		    "ncep_norm: test sec same_sec0=%d same_sec1=%d same_sec3=%d same_sec4_diff_ave_period=%d\n",
   		same_sec0(sec,save->clone_sec), same_sec1(sec,save->clone_sec), same_sec3(sec,save->clone_sec),

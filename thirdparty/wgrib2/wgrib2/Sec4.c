@@ -24,7 +24,7 @@ int f_Sec4(ARG0) {
 	calc_pdtsize = pdt_len(sec, -1);
         pdtsize =  GB2_Sec4_size(sec);
 
-	sprintf(inv_out,"Sec4 len=%u #vert coordinate=%u Product Defn Template=4.%d size=%d expected size=%d", 
+	sprintf(inv_out,"Sec4 len=%u #vert coordinate=%u Product Defn Template=4.%d size=%d expected size=%d",
           pdtsize, vert_coor, GB2_ProdDefTemplateNo(sec), pdtsize, calc_pdtsize);
 	inv_out += strlen(inv_out);
     }
@@ -82,13 +82,13 @@ int f_0xSec(ARG1) {
             sprintf(inv_out,"sec%d is missing", sec_no);
             return 0;
         }
-        if (sec_no == 0) { 
+        if (sec_no == 0) {
 	    len = GB2_Sec0_size;
 	}
 	else if (sec_no == 8) {
 	    len = GB2_Sec8_size;
         }
-        else { 
+        else {
             len = uint4(&(sec[sec_no][0]));
         }
 
@@ -182,7 +182,7 @@ int f_varX(ARG0) {
                 return 0;
             }
             if (parmnum < 192) {
-                sprintf(inv_out,"var discipline=%d master_table=%d parmcat=%d parm=%d", 
+                sprintf(inv_out,"var discipline=%d master_table=%d parmcat=%d parm=%d",
                       discipline, mastertab, parmcat, parmnum);
 	    }
             else {

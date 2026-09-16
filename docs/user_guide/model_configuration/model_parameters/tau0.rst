@@ -199,7 +199,7 @@ Negative TAU0
 | *Spatially varying, temporally constant*
 | \*\ ``TAU0 = -1``, :math:`\tau_0` is computed as follows:
 
--  
+-
 
    -  ``If depth >= 10; then``\ :math:`\tau_0`\ ``= 0.005``
    -  ``If depth < 10; then``\ :math:`\tau_0`\ ``= 0.020``

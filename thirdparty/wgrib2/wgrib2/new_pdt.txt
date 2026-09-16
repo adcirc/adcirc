@@ -36,7 +36,7 @@ if the flag X.Y is not defined in FlagTable.c, you need to define:
      name = name of option, option calls f_(name)
      type = type of option: inv, output, inv_output, misc, setup
 
-     f_flage_table_X_Y(ARG0) writes a text output on the value 
+     f_flage_table_X_Y(ARG0) writes a text output on the value
      of the flag.
 
    d) optional: if you want the ability to set flag X.Y, from wgrib2
@@ -57,7 +57,7 @@ if the code table X.Y is not defined in CodeTable.c, you need to define it.
    c) int f_code_table_X_Y(ARG0);
    optional: if you want the ability to set code table X.Y, from wgrib2
        modify int f_set(ARG2)  in Mod_grib.c
-  
+
    Note: in the old standard, code_table_X_Y_location() was optional.
 
 
@@ -66,14 +66,14 @@ Step 3:
 
 Sometimes the pdt has values that are not flags or code tables. They can be added
 in Code_Values.c  I have been using long names which correspond to the GRIB
-documentation.  
+documentation.
 
 
 Note: File name Convention for *.c files.  If they start with a capital, they
 include an option (f_*) otherwise they start with a lower case.
 
 Note: try to keep the details of the PDTs in the FlagTable.c CodeTable.c
-and Code_Values.c 
+and Code_Values.c
 
 
 After step 1, 2 and 3, wgrib2 should work in a minimal way.  Of course there
@@ -88,8 +88,8 @@ With grib1, the variable name was a good descriptor of the field.
 
 With grib2, the variable name can be modified by tables.  So the
 variable name is no longer a unique identifier.  For example
-with aerosols, every species is identified by mass concentration.  
-For probabilistic precip forecasts, the different forecasts have 
+with aerosols, every species is identified by mass concentration.
+For probabilistic precip forecasts, the different forecasts have
 the same grib identifier.  Having unique identifiers is
 convenient, so wgrib2 can generate full/extended names.  This
 is done by taking the grib name and appending selected fields
@@ -103,7 +103,3 @@ Aerosols:
    Since aerosols alter the definition of the variable, it was added to
 
    f_misc() in ExtName.c
-
-    
-
-

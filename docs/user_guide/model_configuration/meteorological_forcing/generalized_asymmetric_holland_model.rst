@@ -683,7 +683,7 @@ than the simple vortex models do.
    * - .. figure:: /_static/images/model_configuration/meteorological_forcing/generalized_asymmetric_holland_model/Fig_4._GAHM.png
 
      - .. figure:: /_static/images/model_configuration/meteorological_forcing/generalized_asymmetric_holland_model/Fig_5._GAHM.png
-     
+
      - .. figure:: /_static/images/model_configuration/meteorological_forcing/generalized_asymmetric_holland_model/Fig_6._GAHM.png
 
 .. raw:: html
@@ -1000,7 +1000,3 @@ References
 .. [5]
    Queensland Government, 2011: Queensland Climate Change and Community
    Vulnerability to Tropical Cyclone, *Ocean Hazards Assessment – Stage 1*.
-
-
-
-

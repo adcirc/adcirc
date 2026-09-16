@@ -4,7 +4,7 @@
 #include "wgrib2.h"
 #include "fnlist.h"
 
-/* 
+/*
  * Check_pdt_size.c     10/2024 Public Domain Wesley Ebisuzaki
  *
  * check_pdt_size(..) checks the size of the pdt

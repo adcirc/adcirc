@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -27,8 +27,8 @@ C    concentration values that range from 0.0 to 100.0 percent.  A value
 C    of -1.0 is used to signal that either the cell is over land, or no ice
 C    data was available.
 C
-C****************************************************************************** 
-C 
+C******************************************************************************
+C
       MODULE OWI_ICE
 C
       USE SIZES,ONLY : MYPROC
@@ -93,7 +93,7 @@ C***********************************************************************
 
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
-      
+
 ! Read meta info -------------------------------------------------
 
       OPEN(25,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.25',STATUS='OLD',
@@ -120,9 +120,9 @@ C***********************************************************************
         numSkipSnaps = ABS(numBlankSnaps)
         numBlankSnaps = 0
 
-      ! v48.4628 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0 
+      ! v48.4628 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0
       else
-        numSkipSnaps = 0 
+        numSkipSnaps = 0
       endif
 
       close(25)
@@ -246,7 +246,7 @@ C***********************************************************************
       isnapB = isnapB+1
 
       ! Read grid specifications/date in ice file
-      read (225,11,end=10000,err=99999) 
+      read (225,11,end=10000,err=99999)
      &      iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
 
@@ -260,15 +260,15 @@ C***********************************************************************
           updateB = 0
         endif
       endif
-      
+
       iCYMDHB = iCYMDHc
       iMinB = iMinc
-      
+
       ! Update coordinate mapping coefficients if necessary
       if(updateB.eq.1) then
         call ncice1_interp_basin(np)
       endif
-      
+
       ! Read ice concentrations
       read(225,22,end=9999,err=99999) ((CiceB(i,j),i=1,iLongB),j=1,iLatB)
 
@@ -287,12 +287,12 @@ C***********************************************************************
         isnapR = isnapR+1
 
         ! Read grid specifications/date in ice file
-        read (227,11,end=10000,err=99999) 
+        read (227,11,end=10000,err=99999)
      &       iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
         ! Check if header info has changed from the previous snapshot
         if(isnapR.gt.1) then
-          if(iLatc.ne.iLatR.or.iLongc.ne.iLongR.or.dxc.ne.dxR.or. 
+          if(iLatc.ne.iLatR.or.iLongc.ne.iLongR.or.dxc.ne.dxR.or.
      &         dyc.ne.dyR.or.swlatc.ne.swlatR.or.
      &         swlongc.ne.swlongR) then
             updateR = 1
@@ -320,13 +320,13 @@ C***********************************************************************
         endif
 
         ! Read ice concentrations
-        read(227,22,end=9999,err=99999) 
+        read(227,22,end=9999,err=99999)
      &    ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
 
       endif
 
 ! Interpolate onto ADCIRC grid and write to file -------------------------
-      
+
       rampfrac = isnapB-1
 c      if (rampfrac<36) then
 c        ramp = tanh(18d0*rampfrac/36d0)
@@ -481,9 +481,9 @@ c      end if
  14   format(/,1X,'PROCESSING BASIN-SCALE ICE DATA',i12,' ',i2)
  15   format(/,1X,'PROCESSING BASIN&REGION-SCALE DATA',i12,' ',i2)
  16   format(/,1X,'INSERTING A BLANK ICE SNAP, COUNT=',i4)
- 
+
  22   format(8f10.0)
-      
+
 99999 CONTINUE
 
       if(myproc.eq.0)write(*,'(a)') 'OWI_ICE READ ERROR (2)'
@@ -511,14 +511,14 @@ C***********************************************************************
       WRITE(16,*) ''
       WRITE(16,*) 'BASIN-SCALE ICE MAPPING UPDATED'
       WRITE(16,*) ''
-        
+
       iLatB = iLatc
       iLongB = iLongc
       dxB = dxc
       dyB = dyc
       swlatB = swlatc
       swlongB = swlongc
-        
+
       ! Allocate and create matrices
       if(allocated(CiceB))    deallocate(CiceB)
       if(allocated(longB)) deallocate(longB)
@@ -526,7 +526,7 @@ C***********************************************************************
 
       allocate(CiceB(iLongB,iLatB))
       allocate(longB(iLongB),latB(iLatB))
-        
+
       ! Generate long&lat on each grid point
       do i=1,iLatB
         latB(i) = swlatB+(i-1)*dyB
@@ -534,39 +534,39 @@ C***********************************************************************
       do i=1,iLongB
         longB(i) = swlongB+(i-1)*dxB
       enddo
-        
+
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
         adcLat  = RAD2DEG*SFEA(i)
         adcLong = RAD2DEG*SLAM(i)
 
-        if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and. 
+        if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and.
      &       adcLat>=latB(1).and.adcLat<latB(iLatB)) then
           do j=1,iLongB-1
-            if (adcLong>=longB(j) .and.  
+            if (adcLong>=longB(j) .and.
      &           adcLong<longB(j+1)) then
               xi=j
               exit
             endif
           enddo
-            
+
           do k=1,iLatB-1
-            if (adcLat>=latB(k) .and. 
+            if (adcLat>=latB(k) .and.
      &           adcLat<latB(k+1)) then
               yi=k
               exit
             endif
           enddo
-            
+
           swpointsB(i,1) = xi
           swpointsB(i,2) = yi
-            
+
           w=(longB(xi+1)-longB(xi))*(latB(yi+1)-latB(yi))
           w1=(longB(xi+1)-adcLong)*(latB(yi+1)-adcLat)
           w2=(adcLong-longB(xi))*(latB(yi+1)-adcLat)
           w3=(adcLong-longB(xi))*(adcLat-latB(yi))
           w4=(longB(xi+1)-adcLong)*(adcLat-latB(yi))
-            
+
           wB(i,1)=w1/w
           wB(i,2)=w2/w
           wB(i,3)=w3/w
@@ -575,7 +575,7 @@ C***********************************************************************
         else
           swpointsB(i,1) = 0
           swpointsB(i,2) = 0
-            
+
         endif
       enddo
       END SUBROUTINE
@@ -600,14 +600,14 @@ C***********************************************************************
       WRITE(16,*) ''
       WRITE(16,*) 'REGION-SCALE ICE MAPPING UPDATED'
       WRITE(16,*) ''
-        
+
       iLatR = iLatc
       iLongR = iLongc
       dxR = dxc
       dyR = dyc
       swlatR = swlatc
       swlongR = swlongc
- 
+
       ! Allocate and create matrices
       if(allocated(CiceR))    deallocate(CiceR)
       if(allocated(longR)) deallocate(longR)
@@ -629,7 +629,7 @@ C***********************************************************************
         adcLat  = RAD2DEG*SFEA(i)
         adcLong = RAD2DEG*SLAM(i)
 
-        if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and. 
+        if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and.
      &       adcLat>=latR(1).and.adcLat<latR(iLatR)) then
           do j=1,iLongR-1
             if (adcLong>=longR(j).and.adcLong<longR(j+1)) then
@@ -667,4 +667,3 @@ C***********************************************************************
 
 
       END MODULE OWI_ICE
-

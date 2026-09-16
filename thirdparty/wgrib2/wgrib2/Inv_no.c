@@ -81,11 +81,10 @@ int f_if_n(ARG1)  {
     }
     if (mode >= 0) {
 	save = (struct local_struct *) *local;
-	if (inv_no >= save->start && inv_no <= save->end && ((inv_no - save->start) % save->step) 
+	if (inv_no >= save->start && inv_no <= save->end && ((inv_no - save->start) % save->step)
 		== 0) run_flag=1;
 	else run_flag = 0;
         return 0;
     }
     return 0;
 }
-

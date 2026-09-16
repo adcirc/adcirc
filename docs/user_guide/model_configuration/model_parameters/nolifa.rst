@@ -48,5 +48,3 @@ Usage Notes
 When the finite amplitude terms are turned on, the time derivative portion of
 the advective terms should also be turned on for proper mass conservation and
 consistency (i.e., when NOLIFA > 0, then `NOLICA <NOLICA>`__ = 1).
-
-

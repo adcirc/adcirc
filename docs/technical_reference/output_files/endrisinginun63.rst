@@ -27,4 +27,4 @@ Notes
 * Output may be in ascii or netCDF format depending on how :ref:`NOUTGE <NOUTGE>` is set in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`
 * The endrisinginun.63 file is written at the very end of the simulation, after timestepping is complete
 * The values only reflect the current run, even if the run was hotstarted
-* The data only flag rising water surface elevation in areas that are initially dry, according to the :doc:`initiallydry.63 <initiallydry63>` file 
+* The data only flag rising water surface elevation in areas that are initially dry, according to the :doc:`initiallydry.63 <initiallydry63>` file

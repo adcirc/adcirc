@@ -159,10 +159,10 @@ if (mode == 99)  fprintf(stderr,"merge_fcst: save->has_val=%d\n",save->has_val);
 
 //	    save last_end_time
 	    memcpy(save->last_end_time,sec[4]+idx+35-42,7);
-	    
+
             save->has_val = 1;
             save->n = 1;
-	    save->fhour = forecast_time_in_units(sec); 
+	    save->fhour = forecast_time_in_units(sec);
 	    save->dt = int4(sec[4]+idx+50-42);		// delta-time
 	    save->nx = nx;
 	    save->ny = ny;
@@ -177,8 +177,8 @@ if (mode == 99)  fprintf(stderr,"merge_fcst: save->has_val=%d\n",save->has_val);
 	    save->n_idx = idx;
 
 	    if (save->num_to_merge == 0) {
-                grib_wrt(save->clone_sec, data_tmp, save->ndata, save->nx, save->ny, save->use_scale, 
-		    save->dec_scale, save->bin_scale, save->wanted_bits, save->max_bits, 
+                grib_wrt(save->clone_sec, data_tmp, save->ndata, save->nx, save->ny, save->use_scale,
+		    save->dec_scale, save->bin_scale, save->wanted_bits, save->max_bits,
 		    save->grib_type, &(save->out));
                 if (flush_mode) fflush_file(&(save->out));
 	    }
@@ -242,8 +242,8 @@ if (mode == 99)  fprintf(stderr,"merge_fcst: save->has_val=%d\n",save->has_val);
             // grib_wrt wants data in original order
             undo_output_order(data_tmp, save->val, ndata);
 
-            grib_wrt(save->clone_sec, data_tmp, save->ndata, save->nx, save->ny, save->use_scale, 
-		save->dec_scale, save->bin_scale, save->wanted_bits, save->max_bits, 
+            grib_wrt(save->clone_sec, data_tmp, save->ndata, save->nx, save->ny, save->use_scale,
+		save->dec_scale, save->bin_scale, save->wanted_bits, save->max_bits,
 		save->grib_type, &(save->out));
             if (flush_mode) fflush_file(&(save->out));
 

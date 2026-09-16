@@ -18,8 +18,8 @@
  *  writes out jpeg2000 compressed grib message
  */
 
-int jpeg2000_grib_out(unsigned char **sec, float *data, unsigned int ndata, 
-  int nx, int ny, int use_scale, int dec_scale, int bin_scale, int wanted_bits, 
+int jpeg2000_grib_out(unsigned char **sec, float *data, unsigned int ndata,
+  int nx, int ny, int use_scale, int dec_scale, int bin_scale, int wanted_bits,
   int max_bits, struct seq_file *out) {
 
     unsigned int n_defined, j;
@@ -145,7 +145,7 @@ int jpeg2000_grib_out(unsigned char **sec, float *data, unsigned int ndata,
 	    }
         }
         else if (nbytes > 0) {
-            p = cdata; 
+            p = cdata;
             for (j = 0; j < n_defined; j++) {
 	        i = (int) floor(data[j]+0.5);
 	        for (k = 1; k <= nbytes; k++) {
@@ -200,7 +200,7 @@ int jpeg2000_grib_out(unsigned char **sec, float *data, unsigned int ndata,
     sec5[20] = 0;			// 0 - float 1=int
     sec5[21] = 0;			//code 5.40 -lossless
     sec5[22] = 255;			// undefined
-    
+
     sec7 = (unsigned char *) malloc(i+5);
     if (sec7 == NULL) fatal_error("grib_out jpeg memory allocation sec7","");
     uint_char(i+5, sec7);

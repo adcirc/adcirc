@@ -37,4 +37,3 @@ int f_scale(ARG0) {
     }
     return 0;
 }
-

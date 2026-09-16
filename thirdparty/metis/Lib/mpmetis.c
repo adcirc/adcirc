@@ -21,8 +21,8 @@
 * This function is the entry point for PWMETIS that accepts exact weights
 * for the target partitions
 **************************************************************************/
-void METIS_mCPartGraphRecursive(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy, 
-       idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_mCPartGraphRecursive(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy,
+       idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
        int *options, int *edgecut, idxtype *part)
 {
   int i, j;
@@ -75,8 +75,8 @@ void METIS_mCPartGraphRecursive(int *nvtxs, int *ncon, idxtype *xadj, idxtype *a
 * This function is the entry point for PWMETIS that accepts exact weights
 * for the target partitions
 **************************************************************************/
-void METIS_mCHPartGraphRecursive(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy, 
-       idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_mCHPartGraphRecursive(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy,
+       idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
        float *ubvec, int *options, int *edgecut, idxtype *part)
 {
   int i, j;
@@ -134,7 +134,7 @@ void METIS_mCHPartGraphRecursive(int *nvtxs, int *ncon, idxtype *xadj, idxtype *
 * This function is the entry point for PWMETIS that accepts exact weights
 * for the target partitions
 **************************************************************************/
-void METIS_mCPartGraphRecursiveInternal(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy, 
+void METIS_mCPartGraphRecursiveInternal(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy,
        float *nvwgt, idxtype *adjwgt, int *nparts, int *options, int *edgecut, idxtype *part)
 {
   int i, j;
@@ -181,8 +181,8 @@ void METIS_mCPartGraphRecursiveInternal(int *nvtxs, int *ncon, idxtype *xadj, id
 * This function is the entry point for PWMETIS that accepts exact weights
 * for the target partitions
 **************************************************************************/
-void METIS_mCHPartGraphRecursiveInternal(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy, 
-       float *nvwgt, idxtype *adjwgt, int *nparts, float *ubvec, int *options, int *edgecut, 
+void METIS_mCHPartGraphRecursiveInternal(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy,
+       float *nvwgt, idxtype *adjwgt, int *nparts, float *ubvec, int *options, int *edgecut,
        idxtype *part)
 {
   int i, j;
@@ -235,7 +235,7 @@ void METIS_mCHPartGraphRecursiveInternal(int *nvtxs, int *ncon, idxtype *xadj, i
 /*************************************************************************
 * This function takes a graph and produces a bisection of it
 **************************************************************************/
-int MCMlevelRecursiveBisection(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part, 
+int MCMlevelRecursiveBisection(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part,
        float ubfactor, int fpart)
 {
   int i, j, nvtxs, ncon, cut;
@@ -261,7 +261,7 @@ int MCMlevelRecursiveBisection(CtrlType *ctrl, GraphType *graph, int nparts, idx
   for (i=0; i<nvtxs; i++)
     part[label[i]] = where[i] + fpart;
 
-  if (nparts > 2) 
+  if (nparts > 2)
     SplitGraphPart(ctrl, graph, &lgraph, &rgraph);
 
   /* Free the memory of the top level graph */
@@ -287,7 +287,7 @@ int MCMlevelRecursiveBisection(CtrlType *ctrl, GraphType *graph, int nparts, idx
 /*************************************************************************
 * This function takes a graph and produces a bisection of it
 **************************************************************************/
-int MCHMlevelRecursiveBisection(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part, 
+int MCHMlevelRecursiveBisection(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part,
       float *ubvec, int fpart)
 {
   int i, j, nvtxs, ncon, cut;
@@ -371,7 +371,7 @@ void MCMlevelEdgeBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
 
   MocInit2WayPartition(ctrl, cgraph, tpwgts, ubfactor);
 
-  MocRefine2Way(ctrl, graph, cgraph, tpwgts, ubfactor); 
+  MocRefine2Way(ctrl, graph, cgraph, tpwgts, ubfactor);
 
 }
 
@@ -395,8 +395,6 @@ void MCHMlevelEdgeBisection(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
 
   MocInit2WayPartition2(ctrl, cgraph, tpwgts, ubvec);
 
-  MocRefine2Way2(ctrl, graph, cgraph, tpwgts, ubvec); 
+  MocRefine2Way2(ctrl, graph, cgraph, tpwgts, ubvec);
 
 }
-
-

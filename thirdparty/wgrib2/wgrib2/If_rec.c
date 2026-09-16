@@ -41,11 +41,10 @@ int f_if_rec(ARG1)  {
     }
     if (mode >= 0) {
 	save = (struct local_struct *) *local;
-	if (msg_no >= save->start && msg_no <= save->end && ((msg_no - save->start) % save->step) 
+	if (msg_no >= save->start && msg_no <= save->end && ((msg_no - save->start) % save->step)
 		== 0) run_flag=1;
 	else run_flag = 0;
         return 0;
     }
     return 0;
 }
-

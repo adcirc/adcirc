@@ -26,7 +26,7 @@ int f_radius(ARG0) {
        	return 0;
     }
     axes_earth(sec, &major, &minor, &is_spherical);
-    sprintf(inv_out,"code3.2=%d radius_maj=%lf radiusmin=%lf is_spherical=%d", 
+    sprintf(inv_out,"code3.2=%d radius_maj=%lf radiusmin=%lf is_spherical=%d",
 	table_3_2,major,minor,is_spherical);
     return 0;
 }
@@ -170,7 +170,7 @@ double radius_earth(unsigned char **sec) {
    axes_earth(sec, &radius_major, &radius_minor, &is_spherical);
    radius = 0.5 * (radius_major + radius_minor);
 
-   if (radius < 6300000.0 || radius > 6400000.0) 
+   if (radius < 6300000.0 || radius > 6400000.0)
 	   fatal_error_i("radius of earth is %d m", (int) radius);
 
    return radius;

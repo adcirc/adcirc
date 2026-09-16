@@ -24,4 +24,3 @@ int f_if_delayed_error(ARG0)  {
     run_flag = (last_message >> 1) ? 1 : 0;
     return 0;
 }
-

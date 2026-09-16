@@ -17,7 +17,7 @@
 !        The inventory file can be a temporary file if has the name @tmp:NAME
 !        The inventory file can be a memory file if has the name @mem:N  N=0..29
 !
-!    grb2_filter :: filters a grib file by 
+!    grb2_filter :: filters a grib file by
 !        grb2_filter('IN.grb', 'OUT.grb', ...)
 !
 !    grb2_free_file :: releases files handles after next call to wgrib2
@@ -273,7 +273,7 @@ contains
 !
 !        do j = 1, m
 !            i = add_line(cmd,n,'-match')
-!            i = add_line(cmd,n,lines(j))        
+!            i = add_line(cmd,n,lines(j))
 !        enddo
 !
 !        do i = 1, n
@@ -553,14 +553,14 @@ contains
         integer (kind=8), optional, intent(in) :: verf_date, verf_edate
         integer (kind=8), optional, intent(in) :: start_date, start_edate
         integer (kind=8), optional, intent(in) :: end_date, end_edate
-        integer (kind=8), optional, intent(out) :: get_ref_edate, get_start_edate, get_end_edate 
+        integer (kind=8), optional, intent(out) :: get_ref_edate, get_start_edate, get_end_edate
 	integer (C_SIZE_T) :: buffer_size
         real, optional, intent(out) :: data1(:)
         real, optional, allocatable, intent(inout) :: data2(:,:), lat(:,:), lon(:,:)
         character (len=*), optional, intent(in):: order, close
         character (len=*), optional, intent(out):: desc, grid_desc
         integer, parameter :: string_size = 300
- 
+
         character (len=string_size) :: lines(20), cmd(80), tmpline
         character (len=71) :: grid_id
         character (len=6) :: grep
@@ -621,7 +621,7 @@ contains
 
         do j = 1, m
             i = add_line(cmd,n,grep)
-            i = add_line(cmd,n,lines(j))        
+            i = add_line(cmd,n,lines(j))
         enddo
 
 !	ref_date: add to match command
@@ -986,7 +986,7 @@ contains
 	    if (i.eq.0) return
 	    string = trim(substring) // string(i:)
 	    grb2_set_substring = 0
-	    return 
+	    return
 	endif
 
 	ilen = len(string)

@@ -80,7 +80,7 @@ int f_cress_lola(ARG4) {
         save->dlon = dx;
         save->lonn = x0 + (nx-1) * dx;
 
-        if (sscanf(arg2,"%lf:%d:%lf", &y0, &ny, &dy) != 3) 
+        if (sscanf(arg2,"%lf:%d:%lf", &y0, &ny, &dy) != 3)
             fatal_error("cress_lola parsing latitudes lat0:nx:dlat  %s", arg2);
 
         if (dy < 0) fatal_error("cress_lola: dlat < 0","");
@@ -116,7 +116,7 @@ int f_cress_lola(ARG4) {
 	save->out_x = (double *) malloc(((size_t) nxny) * sizeof(double));
 	save->out_y = (double *) malloc(((size_t) nxny) * sizeof(double));
 	save->out_z = (double *) malloc(((size_t) nxny) * sizeof(double));
-	if (save->out_x == NULL || save->out_y == NULL || save->out_z == NULL) 
+	if (save->out_x == NULL || save->out_y == NULL || save->out_z == NULL)
 		fatal_error("cress_lola: memory allocation","");
 
 	save->in_x = save->in_y = save->in_z = NULL;
@@ -286,7 +286,7 @@ fprintf(stderr,">>radias=%lf nxny %d npnts %u\n", save->Radius[iradius],nxny, np
 		    inc[k] += tmpv[k] * tmp;
 		}
 	    }
-	}		
+	}
 
 	/* make mask or update background */
 

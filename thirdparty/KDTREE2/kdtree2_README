@@ -29,5 +29,5 @@ The improvements are the most potent in the more difficult and slowest
 cases: larger data base sizes, higher dimensionality manifolds containing
 the data set, and larger numbers of neighbors to search for. The C++
 implementation requires the Standard Template Library as well as the
-BOOST C++ library be installed. 
+BOOST C++ library be installed.
 \end{abstract}

@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -51,16 +51,19 @@ C
      &    nscougc, c2ddi, iden,
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
-     &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic
+     &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic,
+     &    CInlineSAL, sal1, sal2,
+     &    ifnlfa, qx1, qy1, uu1, vv1
       use mod_io, only: openFileForRead
       use boundaries, only: csii, siii, nbv
       use mesh, only: sfcx, sfcy, ycsfac, sfmx
       use mod_normal_flow_boundary, only: rotate_normal_flux
       use mod_logging, only: t_log_scope, init_log_scope,
      &    allMessage, DEBUG, screenUnit, nscreen
+
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
-     &    agrid 
+     &    agrid
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI, NPEBC
       USE HARM
       USE WETDRY, ONLY : initializeWettingAndDrying
@@ -73,7 +76,12 @@ C
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
 
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE NODALATTRIBUTES, ONLY : outputTau0,
+     &     LoadInitialEta,  eta0_usr,
+     &     LoadInitialUU, uu0_usr,
+     &     LoadInitialVV, vv0_usr
+
+
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
@@ -81,6 +89,8 @@ C
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
+      USE mod_inline_sal, only: coldstartsal
+
       IMPLICIT NONE
 
       INTEGER I, J,IOS, IJK
@@ -114,7 +124,7 @@ C SET UP TIME VARYING WEIRS IF NECESSARY
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
       endif
-      
+
 C------------------------------------------------------------------------------
 C... tcm v50.66.01 Time Varying Bathymetry
 C------------------------------------------------------------------------------
@@ -127,7 +137,7 @@ C...    allocated in alloc_main13 called during read_input
 
          BTIME1 = STATIM*86400.D0
          BTIME2=BTIME2+BTIMINC  !new ending time for this record
-         BTIME_END = BTIME1 + BCHGTIMINC  
+         BTIME_END = BTIME1 + BCHGTIMINC
 
 C...    read in the second depth dp2 for btime2
          IOS = 0
@@ -175,18 +185,40 @@ C...
       VV2(:) = 0.D0
       QX2(:) = 0.D0
       QY2(:) = 0.D0
-      TK(:) = 0.D0     
+      TK(:) = 0.D0
       ETA1(:) = 0.D0
       ETA2(:) = 0.D0
       ETAS(:) = 0.D0
       CH1(:) = 0.d0
       EN2(:) = 0.d0
+
+C----------------- DW
+      IF ( LoadInitialEta) THEN
+         eta2 = eta0_usr ;
+         eta1 = eta0_usr ;
+      ENDIF
+      IF ( LoadInitialUU) THEN
+         UU2 = uu0_usr(I) ;
+         QX2 = (DP + IFNLFA*eta2)*uu2 ;
+
+         UU1 = UU2 ;
+         QX1 = QX2 ;
+      ENDIF
+      IF ( LoadInitialVV ) THEN
+         VV2 = vv0_usr ;
+         QY2 = (DP + IFNLFA*eta2)*vv2 ;
+
+         VV1 = VV2 ;
+         QY1 = QY2 ;
+      ENDIF
+C----------------
+
       !
       ! Set the initial wet/dry state and water surface elevation
-      call setColdWetDryStateAndWaterSurfaceElevation()  
+      call setColdWetDryStateAndWaterSurfaceElevation()
       !
       ! jgf52.08.01: Initialize inundation arrays if necessary. This
-      ! can only be called after nnodecode has been set via 
+      ! can only be called after nnodecode has been set via
       ! setColdWetDryState() in coldstart() or hstart().
       if (inundationOutput.eqv..true.) then
          call initInundationOutput()
@@ -345,20 +377,27 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
          ENDIF
       ENDIF
 
-#ifdef ADCNETCDF     
-      ! For the Coupling to 3D Baroclinic mode 
+#ifdef ADCNETCDF
+      ! For the Coupling to 3D Baroclinic mode
       IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(STATIM*86400.d0)
       endif
-#endif       
+#endif
 
 C...
 C...LINES TO USE TIDAL POTENTIAL FORCING
 C...
       if (CTIP) then
          DO I=1,NP
-            TIP2(I)=0.0
+            TIP2(I)=0.0D0
          END DO
+      endif
+
+      if ( CInlineSAL ) then
+        SAL2 = 0.0D0 ;
+        SAL1 = 0.0D0 ;
+
+        CALL coldstartSAL( eta2 ) ;
       endif
 
 C....INITIALIZE ELEVATION STATION SPOOL COUNTER
@@ -375,7 +414,7 @@ C...
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
      &       NSTAE_G, NSTAE, HEADER61)
-         else 
+         else
             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
      &       NSTAE_G, NSTAE, HEADER61)
          endif
@@ -395,7 +434,7 @@ C...
      &          NSTAV_G, NSTAV, HEADER62)
          else
             CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
-     &          NSTAV_G, NSTAV, HEADER62)         
+     &          NSTAV_G, NSTAV, HEADER62)
          endif
       ENDIF
 
@@ -414,7 +453,7 @@ C...
          else
             CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
      &          NSTAC_G, NSTAC, HEADER81)
-         endif 
+         endif
          ICSTP=2
       ENDIF
 
@@ -448,13 +487,13 @@ C...
                CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
      &             NSTAM_G, NSTAM, HEADER91)
             ENDIF
-         endif 
+         endif
       ENDIF
 
 C....tcm v50.66.01 Addition for time varying bathymetry
 C...
 C....INITIALIZE BATHYMETRY STATION SPOOL COUNTER
-C....THESE WILL BE SAVED AT THE SAME LOCATIONS AS ELEVATION STATIONS 
+C....THESE WILL BE SAVED AT THE SAME LOCATIONS AS ELEVATION STATIONS
 C....AND ARE CONTROLLED BY THE ELEVATION STATION CONTROLS
 C....OPEN BATHYMETRY STATION OUTPUT FILE
 C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH
@@ -469,7 +508,7 @@ C...
          else
             CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
      &         NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
-         endif       
+         endif
          IBSTP=2
       ENDIF
 
@@ -523,8 +562,8 @@ Casey 090302: Corrected the unit number from 10 to 90.
          endif
       ENDIF
 
-      ! jgf52.04.03: Create files for nodecode and noff output 
-      ! (wet/dry state of nodes and wet/dry state of elements)      
+      ! jgf52.04.03: Create files for nodecode and noff output
+      ! (wet/dry state of nodes and wet/dry state of elements)
       IF (ABS(NOUTGE).NE.0) then
          if (outputNodeCode.eqv..true.) then
             if (write_local_files.eqv..true.) then
@@ -546,7 +585,7 @@ Casey 090302: Corrected the unit number from 10 to 90.
          endif
       endif
 
-      ! jgf: Added init for full domain dynamic waterlevel correction output file 
+      ! jgf: Added init for full domain dynamic waterlevel correction output file
       if ( (ABS(NOUTGE).eq.1.or.ABS(NOUTGE).eq.4).and.
      &      (usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
@@ -557,12 +596,12 @@ Casey 090302: Corrected the unit number from 10 to 90.
      &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
            endif
       endif
-      ! jgf: Added init for station dynamic waterlevel correction output file 
+      ! jgf: Added init for station dynamic waterlevel correction output file
       IF( (ABS(NOUTE).EQ.1).and.(usingDynamicWaterLevelCorrection.eqv..true.)) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(109, TRIM(GLOBALDIR)//'/'//'dynamicWaterlevelCorrection.61',
      &       NSTAE_G, NSTAE, HEADER61)
-         else 
+         else
             CALL OPEN_GBL_FILE(109, TRIM(LOCALDIR)//'/'//'dynamicWaterlevelCorrection.61',
      &       NSTAE_G, NSTAE, HEADER61)
          endif
@@ -596,8 +635,8 @@ Cobell - Open the fort.77 (weir elevation change) file
                 CALL OPEN_GBL_FILE(77,TRIM(GLOBALDIR)//'/'//'fort.77',
      &              NP_G,NP,HEADER77)
             ENDIF
-         ENDIF    
-            
+         ENDIF
+
 C...
 C....INITIALIZE GLOBAL WIND and pressure SPOOL COUNTER
 C....OPEN GLOBAL WIND and pressure OUTPUT FILEs
@@ -621,7 +660,7 @@ C...
      $           NP_G, NP, HEADER93)
             ENDIF
          else
-         
+
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
      &            NP_G, NP, HEADER73)
             CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
@@ -631,7 +670,7 @@ C...
                CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
      $           NP_G, NP, HEADER93)
             ENDIF
-         
+
          endif
       ENDIF
 
@@ -679,7 +718,7 @@ C....(NO. OF GLOBAL BATHYMETRY DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGE, NSPOOLGE, IRTYPE
 C...
       NSCOUGB=0
-      
+
       IF ((NDDT.NE.0).AND.
      &       ((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4))) THEN
          if (write_local_files.eqv..false.) then
@@ -687,7 +726,7 @@ C...
      &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
          else
             CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
-     &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76 
+     &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
          endif
       ENDIF
 
@@ -1094,16 +1133,16 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
-C                      S U B R O U T I N E     
+C                      S U B R O U T I N E
 C           S E T   C O L D   W E T   D R Y   S T A T E
-C       A N D   W A T E R   S U R F A C E   E L E V A T I O N 
+C       A N D   W A T E R   S U R F A C E   E L E V A T I O N
 C----------------------------------------------------------------------
 C     jgf52.08.01: Sets value of nnodecode at cold start. The values
 C     of nnodecode are copied to the nodecode array in totalAreaCalc().
-C     This is called from subroutine hotstart() for use in producing 
+C     This is called from subroutine hotstart() for use in producing
 C     detailed inundation output only. When called from hotstart(),
 C     the hotstart wet/dry state and water surface elevation ends up
-C     overwriting the values computed here. 
+C     overwriting the values computed here.
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
@@ -1114,7 +1153,7 @@ C----------------------------------------------------------------------
      &   eta1, nolifa, EtaDisc, River_above_MSL
       use mod_logging, only : logMessage, allMessage, t_log_scope, init_log_scope,
      &   DEBUG, WARNING, INFO, ERROR
-      use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
+      use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset,
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
      &   loadManningsN, iflinbf, ifnlbf, ifhybf
@@ -1140,12 +1179,12 @@ C----------------------------------------------------------------------
       integer :: numGreater
       integer :: j
       ! jgf52.08.24: Investigate reasons why a node was dried by the
-      ! setColdWetDryState() subroutine.  
+      ! setColdWetDryState() subroutine.
       character(len=1000), allocatable :: dryReason(:)
       logical, allocatable :: dryReasonInitialized(:)
       logical :: found ! .true. if obsolete init river elevation file was found
       !
-      
+
       LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
 
       HABSMIN = h0*0.8d0
@@ -1161,7 +1200,7 @@ C----------------------------------------------------------------------
       ENDIF
       !
       ! tcm v51.27 Check to see if a fort.88 file is supplied
-      ! if so issue a warning.      
+      ! if so issue a warning.
       inquire(file=trim(inputdir)//'/'//'fort.88',exist=found)
       if (found.eqv..true.) then
          call allMessage(WARNING,
@@ -1177,17 +1216,17 @@ C----------------------------------------------------------------------
       ! tcm v51.27 20140502 Made the GeoidOffset and Initial River Elevation
       ! an additive quantity instead of the max of the two.
       !
-      ! jgf52.08.01: Simplified to just adding the initial river elevation to 
+      ! jgf52.08.01: Simplified to just adding the initial river elevation to
       ! eta2 wherever the initial river elevation is greater than zero.
       if (LoadRiver_et_WSE.eqv..true.) then
-         where (River_et_WSE.GT.0.d0) 
-            eta2 = eta2 + River_et_WSE 
+         where (River_et_WSE.GT.0.d0)
+            eta2 = eta2 + River_et_WSE
          end where
          ! tcmv51.27 20140502 Added to remove this nodal attribute
          ! as it is only used at Cold Start
          deallocate (River_et_WSE)
       endif
-      !...Set the radiation bc information 
+      !...Set the radiation bc information
       DO I=1,NVEL
          IF(LBCODEI(I).EQ.52) THEN
             EtaDisc(NBV(I))=Eta2(NBV(I))
@@ -1337,23 +1376,23 @@ C----------------------------------------------------------------------
       ! Set all nodes to wet by default.
       nnodecode(:)=1
       ! set all elements to wet by default.
-      noff(:)=1        
+      noff(:)=1
       !
       ! If wetting and drying is active, set the nodal wet dry state
       if (nolifa.eq.2) then
          !
          ! jgf52.08.23: Collect, store, and report the reasons why each
-         ! node was dried. 
+         ! node was dried.
          allocate(dryReason(np))
          allocate(dryReasonInitialized(np))
          dryReasonInitialized = .false.
-         do i=1,np      
+         do i=1,np
             ! set dry areas based on eta2
             if (dp(i)+eta2(i).le.h0) then
                nnodecode(i) = 0
                write(dryReason(i),'("node=",i0)') i
                write(scratchMessage,
-     &            '(" dp+eta2<=h0: ",f10.3," + ",f10.3," <= ",f6.3)') 
+     &            '(" dp+eta2<=h0: ",f10.3," + ",f10.3," <= ",f6.3)')
      &            dp(i), eta2(i), h0
                dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
                dryReasonInitialized(i) = .true.
@@ -1367,7 +1406,7 @@ C----------------------------------------------------------------------
                   dryReason(i) = trim(dryReason(i)) // ", "
                endif
                dryReason(i) = trim(dryReason(i)) // "startDry=1"
-            endif       
+            endif
          end do
          !
          ! Dry any landlocked nodes by checking that they are connected to at
@@ -1414,13 +1453,13 @@ C----------------------------------------------------------------------
                endif
                call logMessage(DEBUG,trim(dryReason(i)))
             endif
-         end do 
-         ! release memory 
+         end do
+         ! release memory
          deallocate(dryReason)
          deallocate(dryReasonInitialized)
          !
          ! Finish initializing water surface elevation (eta2 and eta1)
-         where (nnodecode.eq.0) 
+         where (nnodecode.eq.0)
             eta2=h0-dp
          end where
       endif
@@ -1431,4 +1470,3 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       end subroutine setColdWetDryStateAndWaterSurfaceElevation
 C----------------------------------------------------------------------
-

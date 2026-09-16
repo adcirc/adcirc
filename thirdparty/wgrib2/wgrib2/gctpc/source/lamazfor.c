@@ -1,19 +1,19 @@
 /*******************************************************************************
 NAME                  LAMBERT AZIMUTHAL EQUAL-AREA
- 
+
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Lambert Azimuthal Equal-Area projection.  The
 		longitude and latitude must be in radians.  The Easting
 		and Northing values will be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand, EROS      March, 1991   
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand, EROS      March, 1991
 
 This function was adapted from the Lambert Azimuthal Equal Area projection
 code (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -43,7 +43,7 @@ static double false_northing;	/* y offset in meters			*/
   ------------------------------------------------------*/
 long lamazforint(double r, double center_long, double center_lat,
         double false_east, double false_north) {
-//long lamazforint(r, center_long, center_lat,false_east,false_north) 
+//long lamazforint(r, center_long, center_lat,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
 //double center_lat;		/* (I) Center latitude 			*/
@@ -61,14 +61,14 @@ sincos(center_lat, &sin_lat_o, &cos_lat_o);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("LAMBERT AZIMUTHAL EQUAL-AREA"); 
+ptitle("LAMBERT AZIMUTHAL EQUAL-AREA");
 radius(r);
 cenlon(center_long);
 cenlat(center_lat);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Lambert Azimuthal Equal Area forward equations--mapping lat,long to x,y
   -----------------------------------------------------------------------*/
 long lamazfor(double lon, double lat, double *x, double *y) {
@@ -93,7 +93,7 @@ delta_lon = adjust_lon(lon - lon_center);
 sincos(lat, &sin_lat, &cos_lat);
 sincos(delta_lon, &sin_delta_lon, &cos_delta_lon);
 g = sin_lat_o * sin_lat + cos_lat_o * cos_lat * cos_delta_lon;
-if (g == -1.0) 
+if (g == -1.0)
    {
    sprintf(mess, "Point projects to a circle of radius = %lf\n", 2.0 * R);
    p_error(mess, "lamaz-forward");
@@ -101,7 +101,7 @@ if (g == -1.0)
    }
 ksp = R * sqrt(2.0 / (1.0 + g));
 *x = ksp * cos_lat * sin_delta_lon + false_easting;
-*y = ksp * (cos_lat_o * sin_lat - sin_lat_o * cos_lat * cos_delta_lon) + 
+*y = ksp * (cos_lat_o * sin_lat - sin_lat_o * cos_lat * cos_delta_lon) +
 	false_northing;
 return(OK);
 }

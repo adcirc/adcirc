@@ -55,7 +55,7 @@ subroutine SwanSumOverNodes ( rval )
 !   Local variables
 !
     integer                 :: count    ! length of array to be collect
-!PUN   integer              :: ierr     
+!PUN   integer              :: ierr
     integer, save           :: ient = 0 ! number of entries in this subroutine
     real                    :: sumval   ! sum total of all input values from all subdomains
 !

@@ -106,7 +106,7 @@ Complete parallel preparation for 16 processors::
 
    # Step 1: Partition the mesh
    adcprep --np 16 --partmesh
-   
+
    # Step 2: Prepare all input files
    adcprep --np 16 --prepall
 
@@ -127,4 +127,4 @@ Performance considerations:
 
 - The ``-W``, ``-Ws``, and ``-H`` options can improve performance by dedicating specific processes to I/O operations
 - Using the ``-L`` option reduces memory requirements but requires post-processing to combine outputs
-- For large domains with many tidal constituents, the ``-M`` option can prevent memory exhaustion 
+- For large domains with many tidal constituents, the ``-M`` option can prevent memory exhaustion

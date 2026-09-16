@@ -25,7 +25,7 @@ unsigned int *translation = NULL;
  *         -1 for error
  * 3/2008 public domain Wesley Ebisuzaki
  * 3/2008 bug fix Manfred Schwarb
- * 7/2009 bug fix Reinoud Bokhorst 
+ * 7/2009 bug fix Reinoud Bokhorst
  * 12/2014 more arguments to  to_we_sn_scan(), to_we_ns_scan(), ij2p()
  *         old int to_we_sn_scan(float *data);
  *         ij2p: "if (scan == -1)" becomes "if (scan_mode == -1)"
@@ -94,7 +94,7 @@ int to_we_sn_scan(float *data, int scan, unsigned int npnts, int nx, int ny, int
 
     if (lscan == 0 && nx > 0 && ny > 0) {	/* regular grid: convert from we:ns to we:sn */
 	row_size = ((size_t) nx) * sizeof(float);
-        if ((data2 = (float *) malloc(row_size)) == NULL) 
+        if ((data2 = (float *) malloc(row_size)) == NULL)
 	    fatal_error("translation: allocation of memory error","");
         for (iy = 0; iy < ny/2; iy++) {
 	    memcpy(data2, data + ((size_t) iy) * nx, row_size);
@@ -116,9 +116,9 @@ int to_we_sn_scan(float *data, int scan, unsigned int npnts, int nx, int ny, int
     }
 
 
-    if ((data2 = (float *) malloc( ((size_t) npnts) * sizeof(float))) == NULL) 
+    if ((data2 = (float *) malloc( ((size_t) npnts) * sizeof(float))) == NULL)
 	fatal_error("translation: allocation of memory error","");
-	
+
 //    if (lscan == 0 && nx > 0 && ny > 0) {	/* regular grid: convert from we:ns to we:sn */
 //	p0 = data;
 //	p1 = data2 + npnts - nx;

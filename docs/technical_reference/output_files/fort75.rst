@@ -23,4 +23,4 @@ Notes
 * Output format (ASCII/binary) is determined by :ref:`NOUTE <NOUTE>` in the fort.15 file
 * For binary output, the station number (k) is not included in the output
 * Time series data is recorded at stations specified for water surface elevation recording
-* The output frequency is controlled by :ref:`NSPOOLE <NSPOOLE>` parameter 
+* The output frequency is controlled by :ref:`NSPOOLE <NSPOOLE>` parameter

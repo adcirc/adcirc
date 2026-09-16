@@ -6,14 +6,14 @@ PURPOSE:	Transforms input longitude and latitude to Easting and
 		longitude and latitude must be in radians.  The Easting
 		and Northing values will be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand, EROS      May, 1991     
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand, EROS      May, 1991
 
-This function was adapted from the Sinusoidal projection code (FORTRAN) in the 
-General Cartographic Transformation Package software which is available from 
+This function was adapted from the Sinusoidal projection code (FORTRAN) in the
+General Cartographic Transformation Package software which is available from
 the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  Snyder, John P., "Map Projections--A Working Manual", U.S. Geological
@@ -36,7 +36,7 @@ static double false_northing;	/* y offset in meters			*/
   ------------------------------------*/
 long sinforint(double r, double center_long, double false_east,
         double false_north) {
-//long sinforint(r, center_long,false_east,false_north) 
+//long sinforint(r, center_long,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
 //double false_east;		/* x offset in meters			*/
@@ -51,13 +51,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("SINUSOIDAL"); 
+ptitle("SINUSOIDAL");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Sinusoidal forward equations--mapping lat,long to x,y
   -----------------------------------------------------*/
 long sinfor(double lon, double lat, double *x, double *y) {

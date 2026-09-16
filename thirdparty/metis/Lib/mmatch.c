@@ -160,7 +160,7 @@ void MCMatch_SHEM(CtrlType *ctrl, GraphType *graph)
 
   RandomPermute(nvtxs, tperm, 1);
   avgdegree = 0.7*(xadj[nvtxs]/nvtxs);
-  for (i=0; i<nvtxs; i++) 
+  for (i=0; i<nvtxs; i++)
     degrees[i] = (xadj[i+1]-xadj[i] > avgdegree ? avgdegree : xadj[i+1]-xadj[i]);
   BucketSortKeysInc(nvtxs, avgdegree, degrees, tperm, perm);
 
@@ -254,7 +254,7 @@ void MCMatch_SHEBM(CtrlType *ctrl, GraphType *graph, int norm)
 
   RandomPermute(nvtxs, tperm, 1);
   avgdegree = 0.7*(xadj[nvtxs]/nvtxs);
-  for (i=0; i<nvtxs; i++) 
+  for (i=0; i<nvtxs; i++)
     degrees[i] = (xadj[i+1]-xadj[i] > avgdegree ? avgdegree : xadj[i+1]-xadj[i]);
   BucketSortKeysInc(nvtxs, avgdegree, degrees, tperm, perm);
 
@@ -295,10 +295,10 @@ void MCMatch_SHEBM(CtrlType *ctrl, GraphType *graph, int norm)
       for (j=xadj[i]; j<xadj[i+1]; j++) {
         k = adjncy[j];
 
-        if (match[k] == UNMATCHED && 
+        if (match[k] == UNMATCHED &&
             AreAllVwgtsBelowFast(ncon, nvwgt+i*ncon, nvwgt+k*ncon, ctrl->nmaxvwgt) &&
-            (maxwgt < adjwgt[j] || 
-              (maxwgt == adjwgt[j] && 
+            (maxwgt < adjwgt[j] ||
+              (maxwgt == adjwgt[j] &&
                BetterVBalance(ncon, norm, nvwgt+i*ncon, nvwgt+maxidx*ncon, nvwgt+k*ncon) >= 0
               )
             )
@@ -355,7 +355,7 @@ void MCMatch_SBHEM(CtrlType *ctrl, GraphType *graph, int norm)
 
   RandomPermute(nvtxs, tperm, 1);
   avgdegree = 0.7*(xadj[nvtxs]/nvtxs);
-  for (i=0; i<nvtxs; i++) 
+  for (i=0; i<nvtxs; i++)
     degrees[i] = (xadj[i+1]-xadj[i] > avgdegree ? avgdegree : xadj[i+1]-xadj[i]);
   BucketSortKeysInc(nvtxs, avgdegree, degrees, tperm, perm);
 
@@ -429,7 +429,7 @@ void MCMatch_SBHEM(CtrlType *ctrl, GraphType *graph, int norm)
 
 
 /*************************************************************************
-* This function checks if v+u2 provides a better balance in the weight 
+* This function checks if v+u2 provides a better balance in the weight
 * vector that v+u1
 **************************************************************************/
 float BetterVBalance(int ncon, int norm, float *vwgt, float *u1wgt, float *u2wgt)
@@ -490,7 +490,7 @@ float BetterVBalance(int ncon, int norm, float *vwgt, float *u1wgt, float *u2wgt
 
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are below 
+* This function checks if the vertex weights of two vertices are below
 * a given set of values
 **************************************************************************/
 int AreAllVwgtsBelowFast(int ncon, float *vwgt1, float *vwgt2, float limit)
@@ -503,4 +503,3 @@ int AreAllVwgtsBelowFast(int ncon, float *vwgt1, float *vwgt2, float limit)
 
   return 1;
 }
-

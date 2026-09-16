@@ -1,6 +1,6 @@
 ADCIRC Software License
 =======================
-    
+
 ADCIRC - The ADvanced CIRCulation model
 Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
 

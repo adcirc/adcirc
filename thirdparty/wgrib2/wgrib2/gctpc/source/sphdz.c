@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                           SPHDZ 
+NAME                           SPHDZ
 
 PURPOSE:	This function assigns values to the semimajor axis, semiminor
 		axis, and radius of sphere.  If the spheroid code is negative,
@@ -8,7 +8,7 @@ PURPOSE:	This function assigns values to the semimajor axis, semiminor
 
 		--If parm[0] is a non-zero value and parm[1] is greater than
 		  one, the semimajor axis and radius are set to parm[0] and
-		  the semiminor axis is set to parm[1]. 
+		  the semiminor axis is set to parm[1].
 
 		--If parm[0] is nonzero and parm[1] is greater than zero but
 		  less than or equal to one, the semimajor axis and radius
@@ -42,7 +42,7 @@ PURPOSE:	This function assigns values to the semimajor axis, semiminor
 		      semiminor = sqrt(1.0 - ES) * semimajor   where
 		      ES = eccentricity squared
 
-		
+
 
 PROGRAMMER              DATE
 ----------              ----
@@ -157,8 +157,8 @@ if (isph < 0)
    {
    t_major = fabs(parm[0]);
    t_minor = fabs(parm[1]);
-   
-   if (t_major  > 0.0) 
+
+   if (t_major  > 0.0)
      {
      /* The semimajor axis and the semiminor axis are in the array, assign
 	them directly
@@ -168,7 +168,7 @@ if (isph < 0)
         *r_major = t_major;
   	*r_minor = t_minor;
 	*radius = t_major;
-        } 
+        }
      /* The semimajor axis and the eccentricity squared values are in the array,
 	therefore, the semiminor axis is computed from the eccentricity
 	squared value parm[1]
@@ -178,7 +178,7 @@ if (isph < 0)
         {
         *r_major = t_major;
 	*radius = t_major;
-        *r_minor = (sqrt(1.0 - t_minor)) * t_major; 
+        *r_minor = (sqrt(1.0 - t_minor)) * t_major;
         }
      /* The semiminor axis is zero or less, assign the semimajor axis to
 	the semiminor axis.

@@ -77,7 +77,7 @@ int f_import_netcdf(ARG3) {
     if (mode == -2) {		// finalize
 	/* close netcdf file */
         status = nc_close(save->ncid);
-        if (status != NC_NOERR) fprintf(stderr, 
+        if (status != NC_NOERR) fprintf(stderr,
 	    "*** ERROR import_netcdf end-of-processing: could not close netcdf file: %s\n", arg1);
 	free(save);
 	return 0;
@@ -184,7 +184,7 @@ int f_import_netcdf(ARG3) {
 	}
     }
     if (*arg3 == 0 && npnts0 != ndata) {
-	fprintf(stderr, "import_netcdf: dimension mismatch hypercube size=%d grib grid size=%d\nhyper cube data=\n", 
+	fprintf(stderr, "import_netcdf: dimension mismatch hypercube size=%d grib grid size=%d\nhyper cube data=\n",
 		npnts0, ndata);
 	/* read the data
 	 *
@@ -210,7 +210,7 @@ int f_import_netcdf(ARG3) {
 		/* this is C89 code, not thread safe */
 		unix_time_code = ddata[i];
 		tmp_tm = gmtime(&unix_time_code);
-		if (tmp_tm != NULL) 
+		if (tmp_tm != NULL)
 	        fprintf(stderr, "   time = %4.4d%2.2d%2.2d%2.2d %2.2d%2.2d\n",
                     tmp_tm->tm_year+1900, tmp_tm->tm_mon+1,
                     tmp_tm->tm_mday, tmp_tm->tm_hour,

@@ -67,7 +67,7 @@ Building wgrib2 requires, CMake (version 3.15+), a C compiler, a Fortran compile
 - A Fortran compiler is only required to build the Fortran API (MAKE_FTN_API=ON) or for grid interpolation (USE_IPOLATES=ON).
 - wgrib2 optionally depends on netcdf-c to read and write NetCDF files (USE_NETCDF=ON)
 - [NCEPLIBS-ip](https://github.com/NOAA-EMC/NCEPLIBS-ip) library (version 5.1.0+) is required for grid interpolation (USE_IPOLATES=ON).
-- [libaec.a](https://gitlab.dkrz.de/k202009/libaec) (version 1.0.6+) is required to support files with AEC compression (USE_AEC=ON). 
+- [libaec.a](https://gitlab.dkrz.de/k202009/libaec) (version 1.0.6+) is required to support files with AEC compression (USE_AEC=ON).
 - [NCEPLIBS-g2c](https://github.com/NOAA-EMC/NCEPLIBS-g2c) library (version 1.9.0+) is required to use wgrib2 with JPEG (USE_JASPER=ON or USE_OPENJPEG=ON) and PNG (USE_PNG=ON) compression. Make sure that the library is built with the appropriate build options enabled (some are not enabled by default). For example, to use wgrib2 with OpenJPEG, g2c must be built with OpenJPEG enabled and Jasper disabled. Please refer to [g2c's readme file](https://github.com/NOAA-EMC/NCEPLIBS-g2c?tab=readme-ov-file) for more detail.
 
 

@@ -7,4 +7,3 @@ https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credit
 
 Note: some minor changes to the source code for compatibility with newer Linux
 compilers were make by Wesley Ebisuzaki and these changes are also in the Public Domain.
-

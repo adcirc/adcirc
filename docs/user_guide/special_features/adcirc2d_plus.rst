@@ -6,7 +6,7 @@ ADCIRC2D+
 =========
 
 \ **⚠ This page is still under development. Content may change or be
-incomplete.**\ 
+incomplete.**\
 
 **ADCIRC2D+**, is a mode which allows for the inclusion of baroclinic
 (density-driven) effects into the traditionally barotropic (depth-averaged)
@@ -51,7 +51,7 @@ The internal tide drag tensor is scaled using a dissipation ratio
 :math:`\gamma_D` defined by:
 
 .. math::
-   
+
    \gamma_D = \frac{\text{Diss}_{\text{tidal}}}{\text{Diss}_{\text{total}}} = \frac{\mathbf{U}_{\text{tidal}} \cdot \mathbf{C} \cdot \mathbf{U}_{\text{tidal}}}{\mathbf{U} \cdot \mathbf{C} \cdot \mathbf{U}}
 
 Tidal velocity is estimated using a lagged 25-hour filter and removing the

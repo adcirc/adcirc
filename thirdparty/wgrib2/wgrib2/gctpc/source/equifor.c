@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                             EQUIRECTANGULAR 
+NAME                             EQUIRECTANGULAR
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Equirectangular projection.  The
@@ -35,7 +35,7 @@ static double false_easting;	/* x offset in meters			*/
 
 long equiforint(double r_maj, double center_lon, double lat1,
         double false_east, double false_north) {
-// long equiforint(r_maj,center_lon,lat1,false_east,false_north) 
+// long equiforint(r_maj,center_lon,lat1,false_east,false_north)
 
 // double r_maj;			/* major axis			*/
 // double center_lon;		/* center longitude		*/
@@ -54,14 +54,14 @@ false_easting = false_east;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("EQUIRECTANGULAR"); 
+ptitle("EQUIRECTANGULAR");
 radius(r_major);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Equirectangular forward equations--mapping lat,long to x,y
   ---------------------------------------------------------*/

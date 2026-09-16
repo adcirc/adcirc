@@ -55,7 +55,7 @@ int f_irr_grid(ARG3) {
 	// basic limit is 2**32 - 1  for all grids
 	// max size of sec3 is 2**32 - 1
         // for gdt=130: size fo Sec3 is 30+npnts*8
-	// max value for npnts = 536870908     
+	// max value for npnts = 536870908
 
         save->ngrid = (i + 1)/2;
 	if (save->ngrid > 536870908) fatal_error_i("irr_grid: grid points %d > 536870908", save->ngrid);
@@ -168,7 +168,7 @@ int f_irr_grid(ARG3) {
  * grid_130.c
  * Public Domain 6/2011 Wesley Ebisuzaki
  *
- * support for grid #130 
+ * support for grid #130
  *  irregular grid defined by lat-lon values
  *
  *  v1.0 6-2011
@@ -202,4 +202,3 @@ int irr_grid2ll(unsigned char **sec, double **lat, double **lon) {
     }
     return 0;
 }
-

@@ -22,11 +22,11 @@ c  PROGRAM  owi22
 c
 c  owi22 will produce ADCIRC wind file from basin-scale/regional wind/pressure field
 c  provided by OWI.  It will require a grid file, two wind field files and two
-c  pressure field files. The output file will contain wind velocity in knots and 
+c  pressure field files. The output file will contain wind velocity in knots and
 c  srface atmospheric pressure in hPa.    sb 8/15/2006
 c
       program owi22
-      
+
 ! Declare variables ----------------------------------------------------
 
       implicit none
@@ -106,7 +106,7 @@ c
 
 
 ! Create ADCIRC output file --------------------------------------------
-      
+
   41  WRITE(*,*) 'Enter the name of the output unit 22 file:'
       READ(*,'(A60)') FNAME
 
@@ -230,22 +230,22 @@ c
       do while(.true.)
 !Process Basin Info  ---------------------------------------------------------
 
-         ! Increment counter         
+         ! Increment counter
          isnapB = isnapB+1
 
 11       format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
      &        t44,f8.0,t58,f8.0,t69,i10,i2)
 
          ! Read Grid Specifications/Date
-         read (31,11,end=9999) 
+         read (31,11,end=9999)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
          ! Read Grid Specifications/Date
-         read (41,11,end=9999) 
+         read (41,11,end=9999)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
-         if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or. 
-     &         dyw.ne.dyp.or.swlatw.ne.swlatp.or.swlongw.ne.swlongp.or. 
+         if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or.
+     &         dyw.ne.dyp.or.swlatw.ne.swlatp.or.swlongw.ne.swlongp.or.
      &         iCYMDHw.ne.iCYMDHp.or.iMinw.ne.iMinp) then
             print *, 'SNAPSHOT HEADER IN WIN AND PRE FILES DO NOT MATCH'
             print *, 'EXECUTION WILL BE TERMINATED'
@@ -276,7 +276,7 @@ c
             dyB = dyw
             swlatB = swlatw
             swlongB = swlongw
- 
+
             ! Number of grid points
             nnB=iLatB*iLongB
 
@@ -299,20 +299,20 @@ c
 
             ! Generate interpolation info (south west point and weights)
             do i=1,nnAtl
-               if (Atlonglat(i,1)>=longB(1) .and. 
-     &                Atlonglat(i,1)<longB(iLongB) .and. 
-     &                Atlonglat(i,2)>=latB(1) .and. 
+               if (Atlonglat(i,1)>=longB(1) .and.
+     &                Atlonglat(i,1)<longB(iLongB) .and.
+     &                Atlonglat(i,2)>=latB(1) .and.
      &                Atlonglat(i,2)<latB(iLatB)) then
                   do j=1,iLongB-1
-                     if (Atlonglat(i,1)>=longB(j) .and.  
+                     if (Atlonglat(i,1)>=longB(j) .and.
      &                      Atlonglat(i,1)<longB(j+1)) then
                         xi=j
                         exit
                      endif
                   enddo
-                  
+
                   do k=1,iLatB-1
-                     if (Atlonglat(i,2)>=latB(k) .and. 
+                     if (Atlonglat(i,2)>=latB(k) .and.
      &                      Atlonglat(i,2)<latB(k+1)) then
                         yi=k
                         exit
@@ -344,7 +344,7 @@ c
             enddo
          endif
 
-      
+
          ! Read u/v components of the wind
 12       format(8f10.0)
          read(31,12) ((uB(i,j),i=1,iLongB),j=1,iLatB)
@@ -359,7 +359,7 @@ c
 
 
 !Process Region Info  --------------------------------------------------------
-         
+
          regionExists = 1
 
 !         print *, iCYMDHB, date1R
@@ -370,15 +370,15 @@ c
          if(iCYMDHB.gt.date2R) regionExists = 0
 
          if (regionExists .eq. 1) then
-            ! Increment counter         
+            ! Increment counter
             isnapR = isnapR+1
 
             ! Read Grid Specifications/Date
-            read (32,11,end=9999) 
+            read (32,11,end=9999)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
             ! Read Grid Specifications/Date
-            read (42,11,end=9999) 
+            read (42,11,end=9999)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
             if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or.
@@ -392,7 +392,7 @@ c
 
             ! Check if header info has changed from the previous snapshot
             if(isnapR.gt.1) then
-               if(iLatw.ne.iLatR.or.iLongw.ne.iLongR.or.dxw.ne.dxR.or. 
+               if(iLatw.ne.iLatR.or.iLongw.ne.iLongR.or.dxw.ne.dxR.or.
      &            dyw.ne.dyR.or.swlatw.ne.swlatR.or.
      &            swlongw.ne.swlongR) then
                   updateR = 1
@@ -412,7 +412,7 @@ c
                print *, '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
                print *, 'EXECUTION WILL BE TERMINATED'
                stop
-            
+
             endif
 
             if(updateR.eq.1) then
@@ -424,7 +424,7 @@ c
                dyR = dyw
                swlatR = swlatw
                swlongR = swlongw
- 
+
                ! Number of grid points
                nnR=iLatR*iLongR
 
@@ -447,20 +447,20 @@ c
 
                ! Generate interpolation info (south west point and weights)
                do i=1,nnAtl
-                  if (Atlonglat(i,1)>=longR(1) .and. 
-     &                Atlonglat(i,1)<longR(iLongR) .and. 
-     &                Atlonglat(i,2)>=latR(1) .and. 
+                  if (Atlonglat(i,1)>=longR(1) .and.
+     &                Atlonglat(i,1)<longR(iLongR) .and.
+     &                Atlonglat(i,2)>=latR(1) .and.
      &                Atlonglat(i,2)<latR(iLatR)) then
                      do j=1,iLongR-1
-                        if (Atlonglat(i,1)>=longR(j) .and. 
+                        if (Atlonglat(i,1)>=longR(j) .and.
      &                      Atlonglat(i,1)<longR(j+1)) then
                            xi=j
                            exit
                         endif
                      enddo
-                  
+
                      do k=1,iLatR-1
-                        if (Atlonglat(i,2)>=latR(k) .and. 
+                        if (Atlonglat(i,2)>=latR(k) .and.
      &                      Atlonglat(i,2)<latR(k+1)) then
                            yi=k
                            exit
@@ -493,9 +493,9 @@ c
                enddo
             endif
 
-      
+
             ! Read u/v components of the wind
-            read(32,12) ((uR(i,j),i=1,iLongR),j=1,iLatR) 
+            read(32,12) ((uR(i,j),i=1,iLongR),j=1,iLatR)
             read(32,12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
 
             uR(:,:) = 1.943844492d0*uR(:,:)
@@ -505,10 +505,10 @@ c
             read(42,12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
 
          endif ! regionExists .eq. 1
-         
+
 
 !Interpolate onto ADCIRC grid and write to file -------------------------
-      
+
 
          rampfrac = isnapB-1
          if (rampfrac<36) then
@@ -588,7 +588,7 @@ c
                vv = vv * 1.1076
 
                write(2,1000) nAtl(i),uu,vv,PP
-            
+
                if(umax(i).lt.sqrt(uu*uu+vv*vv)) then
                   umax(i)=sqrt(uu*uu+vv*vv)
                endif
@@ -640,7 +640,7 @@ c
          write(10,3330) nAtl(i),umax(i)
       end do
       close(10)
-1110  format(a80) 
+1110  format(a80)
 3645  FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 2120  FORMAT(2X,E20.10,5X,I10)
 3330  format(2x,i8,2x,e15.8)

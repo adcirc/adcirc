@@ -10,7 +10,7 @@
  * Set_percentile.c
  *
  * converts PDT 0..6 -> 6    8..15 -> 10
- *   
+ *
  *
  * 2/2015: Public Domain: Wesley Ebisuzaki
  *

@@ -74,7 +74,7 @@ int f_v2(ARG0) {
 }
 
 /*
- * HEADER:-1:v97:misc:0:verbose mode for debugging only (v=97) 
+ * HEADER:-1:v97:misc:0:verbose mode for debugging only (v=97)
  */
 
 int f_v97(ARG0) {
@@ -83,7 +83,7 @@ int f_v97(ARG0) {
 }
 
 /*
- * HEADER:-1:v98:misc:0:verbose mode for debugging only (v=98) 
+ * HEADER:-1:v98:misc:0:verbose mode for debugging only (v=98)
  */
 
 int f_v98(ARG0) {
@@ -92,7 +92,7 @@ int f_v98(ARG0) {
 }
 
 /*
- * HEADER:-1:v99:misc:0:verbose mode for debugging only (v=99) 
+ * HEADER:-1:v99:misc:0:verbose mode for debugging only (v=99)
  */
 
 int f_v99(ARG0) {
@@ -149,7 +149,7 @@ int f_nl_out(ARG1) {
     }
     else if (mode >= 0) {
 	save = *local;
-	if (fwrite_file(&nl, sizeof(char), 1, save) != 1) 
+	if (fwrite_file(&nl, sizeof(char), 1, save) != 1)
 		fatal_error("nl_out: write error %s", arg1);
     }
     return 0;
@@ -285,4 +285,3 @@ int f_g2clib(ARG1) {
     fatal_error("illegal g2clib option %s", arg1);
     return 0;
 }
-

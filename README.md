@@ -16,7 +16,7 @@ unstructured grids. Typical ADCIRC applications have included:
 * Dredging feasibility and material disposal studies
 
 ADCIRC has been used around the world for various studies, including those conducted by the United States Army Corps of
-Engineers (USACE), Federal Emergency Management Agency (FEMA), National Oceanographic and Atmospheric Administration 
+Engineers (USACE), Federal Emergency Management Agency (FEMA), National Oceanographic and Atmospheric Administration
 (NOAA), and many others.
 
 ## Authors
@@ -45,7 +45,7 @@ ADCIRC mesh in the Chesapeake Bay area used for the FEMA Coastal Storm Surge Stu
 # Versions
 
 Code versions are published based on semantic versioning as of version 56. Prior to that, ADCIRC used a two level
-versioning scheme, though it approximately mirrors semantic versioning. 
+versioning scheme, though it approximately mirrors semantic versioning.
 
 # Documentation
 
@@ -59,8 +59,8 @@ Contributors are actively consolidating information from [ADCIRC website](https:
 
 # Contributing
 
-ADCIRC is an open source project and contributions are welcome. 
-Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information 
+ADCIRC is an open source project and contributions are welcome.
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information
 on how to contribute to the project.
 
 The high-level summary is:
@@ -89,16 +89,16 @@ Additional features, including MPI parallelism and netCDF output require additio
 # Docker Containers
 
 To help new users get spun up quickly with the ADCIRC model, ADCIRC is provided as Linux Docker containers and pushed to DockerHub.
-New images are published either when a new version is released or the main branch has changes. The DockerHub repository is 
+New images are published either when a new version is released or the main branch has changes. The DockerHub repository is
 located [here](https://hub.docker.com/r/adcircorg/adcirc). Images may be used with Docker Desktop or Singularity on x86 or ARM CPUs
 on Windows, Mac, and Linux.
 
-Images are tagged for release versions (using semantic versioning) as well as the current state of the main branch as "latest". 
-By default, a release tag should be used and only use latest to try the newest version of the code. The ADCIRC Docker images are 
-distributed under the same license and conditions as this repository. 
+Images are tagged for release versions (using semantic versioning) as well as the current state of the main branch as "latest".
+By default, a release tag should be used and only use latest to try the newest version of the code. The ADCIRC Docker images are
+distributed under the same license and conditions as this repository.
 
-Images built for x86 systems use the IntelLLVM compiler while images build for ARM CPUs use the GCC compiler, version 14.2. The 
-x86 base image is the same used to build ADCIRC during continuous integration testing. 
+Images built for x86 systems use the IntelLLVM compiler while images build for ARM CPUs use the GCC compiler, version 14.2. The
+x86 base image is the same used to build ADCIRC during continuous integration testing.
 
 # Examples
 

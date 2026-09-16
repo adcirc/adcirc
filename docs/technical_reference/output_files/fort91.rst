@@ -24,4 +24,4 @@ Notes
 * For binary output, the station number (k) is not included in the output
 * Time series data is recorded at stations specified for meteorological recording
 * The output frequency is controlled by :ref:`NSPOOLM <NSPOOLM>` parameter
-* The variable RMICE00 represents the ice coverage field value at each recording station 
+* The variable RMICE00 represents the ice coverage field value at each recording station

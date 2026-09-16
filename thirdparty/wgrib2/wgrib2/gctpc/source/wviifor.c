@@ -6,16 +6,16 @@ PURPOSE:	Transforms input longitude and latitude to Easting and
 		longitude and latitude must be in radians.  The Easting
 		and Northing values will be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand, EROS      May, 1991     
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand, EROS      May, 1991
 
 This function was implemented with formulas supplied by John P. Snyder.
- 
+
 ALGORITHM REFERENCES
 
-1.  Snyder, John P. and Voxland, Philip M., "An Album of Map Projections", 
-    U.S. Geological Survey Professional Paper 1453 , United State Government 
+1.  Snyder, John P. and Voxland, Philip M., "An Album of Map Projections",
+    U.S. Geological Survey Professional Paper 1453 , United State Government
     Printing Office, Washington D.C., 1989.
 
 2.  Snyder, John P., Personal correspondence, January 1991.
@@ -33,7 +33,7 @@ static double false_northing;	/* y offset				*/
   ------------------------------------*/
 long wviiforint(double r, double center_long, double false_east,
         double false_north) {
-//long wviiforint(r, center_long,false_east,false_north) 
+//long wviiforint(r, center_long,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //double center_long;		/* (I) Center longitude */
 //double false_east;		/* x offset				*/
@@ -48,13 +48,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("WAGNER VII"); 
+ptitle("WAGNER VII");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Wagner VII forward equations--mapping lat,long to x,y
   -----------------------------------------------------*/
 long wviifor(double lon, double lat, double *x, double *y) {

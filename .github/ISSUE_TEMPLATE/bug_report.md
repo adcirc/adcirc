@@ -14,7 +14,7 @@ A clear and concise description of what the bug is including any useful graphics
 Is there a relevant topic from the discussion boards?
 
 **To Reproduce**
-Please provide a minimum working example to trigger the behavior - this should be a relatively small problem (if possible) which can trigger the behavior 
+Please provide a minimum working example to trigger the behavior - this should be a relatively small problem (if possible) which can trigger the behavior
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.

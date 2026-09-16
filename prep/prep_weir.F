@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -28,14 +28,14 @@ C
 C******************************************************************************
 C
 C
-        MODULE PREP_WEIR    
+        MODULE PREP_WEIR
             USE PRE_GLOBAL,ONLY: NVELL,IBCONNR,LBCODE,NBOU,MNVEL,NBVV,X,
-     &                           Y,NVEL,NPROC,NNODG 
+     &                           Y,NVEL,NPROC,NNODG
             USE KDTREE2_MODULE
             USE mod_logging,ONLY: SCREENUNIT
 
             IMPLICIT NONE
-            
+
             REAL(8),ALLOCATABLE       :: BAR_LOCATIONS(:,:)
             INTEGER,ALLOCATABLE        :: LNBV(:)
             INTEGER,ALLOCATABLE        :: LIBCONN(:)
@@ -48,11 +48,11 @@ C
             CHARACTER(400),ALLOCATABLE :: TIMEVARYINGWEIRMSSG(:)
 
             CONTAINS
-            
+
             SUBROUTINE ALLOCATE_WEIRBOUNDARY()
-                
+
                 IMPLICIT NONE
-                
+
                 INTEGER :: I
                 INTEGER :: JG
                 INTEGER :: K
@@ -66,12 +66,12 @@ C
 
                 XY(1,:) = X(:)
                 XY(2,:) = Y(:)
-                
+
                 GLOBAL_SEARCHTREE => KDTREE2_CREATE(XY,REARRANGE=.TRUE.,
      &               SORT=.TRUE.)
 
             END SUBROUTINE ALLOCATE_WEIRBOUNDARY
-            
+
             SUBROUTINE FIND_BOUNDARY_NODES(LAT,LON,IDX)
                 IMPLICIT NONE
                 REAL(8),INTENT(IN)  :: LAT
@@ -83,7 +83,7 @@ C
                 TYPE(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
 
                 EPS = EPSILON(1.0D0)
-                
+
                 X = LAT
                 Y = LON
 
@@ -95,9 +95,9 @@ C
      &                  "GLOBAL NODE NOT FOUND FOR "//
      &                  "X=",X," Y=",Y
                     CALL EXIT(1)
-                ENDIF    
+                ENDIF
 
-                IDX = KDRESULTS(1)%IDX 
+                IDX = KDRESULTS(1)%IDX
 
                 RETURN
 
@@ -118,7 +118,7 @@ C
                 INTEGER  :: IOS
                 INTEGER  :: I
                 LOGICAL  :: exists
-                
+
                 NAMELIST /TimeVaryingWeir/ X1,Y1,X2,Y2,VaryType,ZF,
      &                                     ETA_MAX,TimeStartDay,
      &                                     TimeStartHour,TimeStartSec,
@@ -134,8 +134,8 @@ C...............OPEN THE TIME VARYING WEIR FILE IF FOUND
                     USE_TVW = .FALSE.
                     TVW_FILE= 'none'
                     RETURN
-                ENDIF    
-                OPEN(FILE=TRIM(TVW_FILE),UNIT=98,ACTION="READ")        
+                ENDIF
+                OPEN(FILE=TRIM(TVW_FILE),UNIT=98,ACTION="READ")
                 READ(98,*) NTIMEVARYINGWEIR
                 ALLOCATE(TIMEVARYINGWEIRMSSG(NTIMEVARYINGWEIR))
                 ALLOCATE(NODES_TVW(NTIMEVARYINGWEIR))
@@ -159,14 +159,14 @@ C...............WRITE NAMELIST INPUT TO SCRATCH FILE
                     READ(99,NML=TimeVaryingWeir,IOSTAT=IOS)
                     CALL FIND_BOUNDARY_NODES(X1,Y1,IDX)
                     NODES_TVW(I) = IDX
-                ENDDO    
+                ENDDO
                 CLOSE(99,STATUS="DELETE")
                 RETURN
 200             WRITE(SCREENUNIT,'(A)') "FATAL ERROR: ERROR WHILE "//
      &              "READING TIME VARYING BOUNDARY INFORMATION!"
                 CALL EXIT(1)
 
-            
+
             END SUBROUTINE PARSE_TIME_VARYING_WEIR_INFO
 
             LOGICAL FUNCTION ISNULL(CHECKNUMBER)
@@ -178,11 +178,6 @@ C...............WRITE NAMELIST INPUT TO SCRATCH FILE
                 IF(ABS(CHECKNUMBER+99999D0).LE.EPS)THEN
                     ISNULL = .TRUE.
                 ENDIF
-            END FUNCTION ISNULL    
+            END FUNCTION ISNULL
 
         END MODULE PREP_WEIR
-
-            
-            
-            
-            

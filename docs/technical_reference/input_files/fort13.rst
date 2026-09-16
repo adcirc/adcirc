@@ -62,11 +62,11 @@ primitive_weighting_in_continuity_equation – Tau0
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    **Description**: Same as existing TAU0.
-   
+
    **Requirement**: Required, but not necessarily in the fort.13 file as there is a choice of specification methods. Can be specified in the Model Parameter and Periodic Boundary Condition File as a positive constant, in which case it is spatially uniform; or a negative constant, in which case it is spatially varying according to a hardcoded scheme based on depth. Can also be specified as a nodal attribute in the Nodal Attributes File (fort.13), in which case any value specified in the Model Parameter and Periodic Boundary Condition File is ignored (nodal attributes take precedence).
-   
+
    **Units**: Unitless. (Units for nodal attributes are specified by the user).
-   
+
    **Number of values per node**: 1.
 
    **Values**: Suggested range specified in description of TAU0.
@@ -94,13 +94,13 @@ surface_submergence_state – StartDry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    **Description**: This attribute can force a node to be categorized as dry at the start of the simulation, even if it is below the geoid. This is important for simulating places like New Orleans that are below sea level but are not underwater.
-   
+
    **Requirement**: Optional.
-   
+
    **Units**: Unitless.
-   
+
    **Number of values per node**: 1.
-   
+
    **Values**: If set to 1, the node is categorized as dry at the cold start of the simulation. If set to zero, the node is categorized as wet or dry depending on whether its depth is below or above the geoid.
 
 .. _quadratic_friction_coefficient_at_sea_floor:
@@ -109,13 +109,13 @@ quadratic_friction_coefficient_at_sea_floor – Fric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    **Description**: See the description of CF in the Model Parameter and Periodic Boundary Condition File. If the user elects to load this from the fort.13 file, NOLIBF must be set to 1 or the run will terminate.
-   
+
    **Requirement**: Optional.
-   
+
    **Units**: Unitless.
-   
+
    **Number of values per node**: 1.
-   
+
    **Values**: Same as CF.
 
 .. _surface_directional_effective_roughness_length:
@@ -124,13 +124,13 @@ surface_directional_effective_roughness_length – z0Land
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    **Description**: A measure of the "roughness" of the land that can impede wind flow and reduce the surface stress that the wind applies. The ocean would be considered very smooth, and skyscrapers would be considered very rough. This attribute is directional, and the twelve values represent the roughness lengths "seen" by winds blowing from twelve different compass directions at each node. The orientation of the twelve values follows the trigonometric convention, that is, zero degrees represents due east, and the values proceed counter clockwise. In other words, the first value at a node is applied to winds blowing from west to east, the second value applies to winds blowing East-Northeast, etc.
-   
+
    **Requirement**: Optional.
-   
+
    **Units**: Specified by the user, as is the case for all nodal attributes. The data we use is provided in meters.
-   
+
    **Number of values per node**: 12.
-   
+
    **Values**: Greater than or equal to zero.
 
 .. _surface_canopy_coefficient:
@@ -139,13 +139,13 @@ surface_canopy_coefficient – VCanopy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    **Description**: This attribute allows the user to turn off wind stress in heavily forested areas that have been flooded, like a swamp. The canopy shields the water from the effect of the wind.
-   
+
    **Requirement**: Optional.
-   
+
    **Units**: Unitless.
-   
+
    **Number of values per node**: 1.
-   
+
    **Values**: Zero if the wind stress should be zero because of a canopy. One otherwise.
 
 .. _bridge_pilings_friction_paramenters:
@@ -156,11 +156,11 @@ bridge_pilings_friction_paramenters – BK, BAlpha, BDelX, POAN
    **Description**: Extra friction from bridge pilings. See Note below.
 
    **Requirement**: Very optional.
-   
+
    **Units**: Vary, see note below and BK, BALPHA, BDELX and POAN.
 
    **Number of values per node**: 4.
-   
+
    **Values**: Vary, see note below and BK, BALPHA, BDELX and POAN.
 
    **Note**: Special considerations must be used when designing a grid for an ADCIRC application that includes the effects of bridge pilings. Specifically, it is necessary to build the grid to provide at least three rows of nodes that parallel the bridge span. One row of nodes (centerline nodes) should lie along the approximate centerline of the bridge while the second and third rows of nodes (adjacent nodes) should lie on either side of the centerline nodes in the along steam direction. An initial implementation of obstruction drag in ADCIRC placed this drag entirely at the row of centerline nodes. However, tests showed that this arrangement led to significant oscillations in the numerical solution. The oscillations abated when the obstruction drag was distributed in the along stream direction so that 25 percent was located at each row of adjacent nodes and 50 percent was located at the row of centerline nodes. Node numbers and coefficient values at all nodes on the centerline and two adjacent rows must be entered in this input file. It is not necessary for centerline nodes to correspond to actual piling positions, (i.e., in the cross stream direction), since the overall effect of the pilings on the large scale circulation is all that is being represented. It is important, however, to construct a grid that is as uniform as possible in the vicinity of the bridge.
@@ -174,11 +174,11 @@ mannings_n_at_sea_floor – ManningsN
    **Description**: Manning's n. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate. During execution, the Manning's n value specified here is converted to an equivalent quadratic friction coefficient before the bottom stress is calculated. The equivalent quadratic friction coefficient is calculated according to the following formula at each node at each time step: Cd(t)=(g*n^2)/cuberoot(depth[+eta(t)]) where depth is the bathymetric depth and [eta(t)] is the water surface elevation. The addition of the water surface elevation is conditional upon the setting of NOLIFA: eta(t) is treated as zero if NOLIFA is set to zero in the fort.15 file. Finally, the value of CF in the fort.15 is used to set a lower limit on the resulting equivalent quadratic friction coefficient, since the Cd calculated from this formula tends to become small in deep water.
 
    **Requirement**: Optional.
-   
+
    **Units**: Specified by user.
-   
+
    **Number of values per node**: 1.
-   
+
    **Values**: Greater than zero.
 
 .. _chezy_friction_coefficient_at_sea_floor:
@@ -186,14 +186,14 @@ mannings_n_at_sea_floor – ManningsN
 chezy_friction_coefficient_at_sea_floor – ChezyFric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   **Description**: Chezy friction coefficient. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate. 
+   **Description**: Chezy friction coefficient. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate.
 
    **Requirement**: Optional.
-   
+
    **Units**: Specified by user.
-   
+
    **Number of values per node**: 1.
-   
+
    **Values**: Greater than zero.
 
 .. _sea_surface_height_above_geoid:
@@ -204,11 +204,11 @@ sea_surface_height_above_geoid – GeoidOffset
    **Description**: Creates an initial offset of the sea surface from the geoid. If the offset is also specified at the boundaries, it will remain throughout the simulation. This has been used to simulate a steric effect, where water levels are higher in warm seasons because of thermal expansion.
 
    **Requirement**: Optional.
-   
+
    **Units**: Specified by the user (length).
-   
+
    **Number of values per node**: 1.
-   
+
    **Values**: Any.
 
 .. _bottom_roughness_length:
@@ -219,7 +219,7 @@ bottom_roughness_length – Z0b_var
    **Description**: Roughness length for 3D bottom friction calculations. Has no effect on a 2DDI ADCIRC run.
 
    **Requirement**: Optional.
-   
+
    **Units**: Length (m)
 
    **Number of values per node**: 1.
@@ -234,11 +234,11 @@ average_horizontal_eddy_viscosity_in_sea_water_wrt_depth – EVC
    **Description**: See description of ESLC in the Model Parameter and Periodic Boundary Condition File.
 
    **Requirement**: Optional.
-   
+
    **Units**: Specified by the user. ((length**2)/time).
 
    **Number of values per node**: 1.
-   
+
    **Values**: Greater than or equal to zero.
 
 .. _elemental_slope_limiter:
@@ -319,11 +319,11 @@ wave_refraction_in_swan – SwanWaveRefrac
    **Description**: To turn wave refraction on or off in the SWAN calculations during a coupled ADCIRC+SWAN run. In an ADCIRC-only run, this nodal attribute is ignored.
 
    **Requirement**: Optional.
-   
+
    **Units**: Unitless.
 
    **Number of values per node**: 1.
-   
+
    **Values**: If set to 1 at a node, wave refraction will be active at that node in the SWAN calculations during a coupled ADCIRC+SWAN run. If set to 0, wave refraction will be deactivated at that node in a coupled ADCIRC+SWAN run.
 
 .. _sponge_generator_layer:
@@ -334,10 +334,10 @@ sponge_generator_layer
    **Requirement**: Optional.
 
    **Units**: Unitless.
-   
+
    **Number of values per node**: 1.
-   
-   **Values**: 
+
+   **Values**:
 
 .. _condensed_nodes:
 

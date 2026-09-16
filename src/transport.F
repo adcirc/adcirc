@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -32,7 +32,7 @@ c  DTAlp4      = DelT*Alp4        - weights vert disp term in LHS matrix      *
 c  DT1MAlp4    = DelT*(1.-Alp4)   - weights vert disp term in RHS forcing     *
 c                                                                             *
 c  Note in this subroutine, we utilize two arrays to pass in and out the      *
-c  arrays associated with the salinity and temperature fields so this         * 
+c  arrays associated with the salinity and temperature fields so this         *
 c  subroutine can be utilized for both fields.                                *
 c                                                                             *
 c                                                                             *
@@ -43,17 +43,17 @@ c******************************************************************************
 C   kmd48.33bc added time to information passed into subroutine
       SUBROUTINE TRANS_3D(inarray,diffhoriz,diffvert,outarray,field,TimeLoc)
 
-C     Include the variables needed from the GLOBAL subroutine. 
+C     Include the variables needed from the GLOBAL subroutine.
 C         NODELE, NODECODE, NOFF : used in Casey's wet/dry
-C                                  additions (left in for additions later) 
-C         NBD, NETA : used in the weak implementation of the 
+C                                  additions (left in for additions later)
+C         NBD, NETA : used in the weak implementation of the
 C                     boundary conditions on the ocean boundary.
 C
 C  kmd48.33bc add variables from global for boundary conditions and
 C             removed ScreenUnit
-      USE GLOBAL, ONLY: NODECODE, NOFF,  
+      USE GLOBAL, ONLY: NODECODE, NOFF,
      &                  HFLUX, sponge, TTBCTIME1, TTBCTIME2,TTBCRATIO,
-     &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP 
+     &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP
 Casey 140701: Avoid zero depths.
      &                 ,H0
       USE GLOBAL_3DVS
@@ -82,9 +82,9 @@ C     Additional local variables that are passed into or out of the subroutine
       REAL(8), DIMENSION(MNP,MNFEN), INTENT(IN) :: inarray
       REAL(8), DIMENSION(MNP,MNFEN), INTENT(OUT) :: outarray
       REAL(8), INTENT(IN) :: diffhoriz, diffvert, TimeLoc
-      INTEGER, INTENT(IN) :: field 
+      INTEGER, INTENT(IN) :: field
 
-C     Local variables 
+C     Local variables
       INTEGER :: IT
       INTEGER :: NEle           !local value of NetTabEle
       INTEGER :: k              !vertical node loop counter (1-bottom, NFEN-surf)
@@ -107,7 +107,7 @@ C     Local variables used again from the vsmy.F subroutine
       REAL(8) :: EtaN1,EtaN2,EtaN3,EtaNFirst !nodal values of NolIFA(Eta1+Eta2)/2
       REAL(8) :: hN1,hN2,hN3,hNFirst !nodal values of DP
       REAL(8) :: Un,Vn         !real,imaginary components of qn
-      REAL(8) :: RCLtrans       
+      REAL(8) :: RCLtrans
 
       REAL(8) :: SFacAvg  !  kmd48.33bc add in spherical factors
 
@@ -115,13 +115,13 @@ C     Local variables used again from the vsmy.F subroutine
       REAL(8) :: KNVnm(MNFEN,3) !integral used in vertical diffusion term for the salinity field
       REAL(8) :: DEtaDT         !time derivative of water surface elev
       REAL(8) :: DEtaDX,DEtaDY  !horizontal derivatives of water surface elev at time level s
-      REAL(8) :: DEtaDX2A,DEtaDY2A !(DEtaDX,DEtaDY)*2*Element Area 
+      REAL(8) :: DEtaDX2A,DEtaDY2A !(DEtaDX,DEtaDY)*2*Element Area
       REAL(8) :: DhDX,DhDY      !horizontal derivatives of DP
       REAL(8) :: DhDX2A,DhDY2A  !(DhDX,DhDY)*2*Element Area
       REAL(8) :: TotalArea2     !2*Area of all elements around a node
       REAL(8) :: a1,a2,a3,b1,b2,b3 !elemental coefficients used in horizontal FE method
 
-C     Local variables 
+C     Local variables
       REAL(8) :: Hstrans             !Total water depth at time level s
       REAL(8) :: HsN2trans           !Total water depth at time level s at local node N2
       REAL(8) :: HsOAMBtrans         !Hs/(a-b)
@@ -132,7 +132,7 @@ C     Local variables
 !      REAL(8) :: NTVTot(MNFEN)      ! transport diffusion coefficients
       REAL(8) :: tempbcskp1,tempbcsk,topbcs ! top boundary conditions variables for temperature
       REAL(8) :: cpwater=4000.0d0          ! variable utilized in the top boundary condition for temperature
-      REAL(8) :: saltbcskp1,saltbcsk        ! top boundary conditions variables for salinity (later implementation) 
+      REAL(8) :: saltbcskp1,saltbcsk        ! top boundary conditions variables for salinity (later implementation)
 
       REAL(8) :: Frtrans(MNFEN)     !right side forcing vector
       REAL(8) :: Mkm1trans(MNFEN)   !1st column (k-1) in left side compact storage matrix
@@ -152,7 +152,7 @@ C     Local variables
       REAL(8) :: WSave(MNP,MNFEN) !Used in the testing of the transport equation (remove if works correctly)
 
 C     Variables for the weak implementation of the open ocean boundary condtion
-      REAL(8) :: WBC(MNP,MNFEN) 
+      REAL(8) :: WBC(MNP,MNFEN)
       REAL(8) :: RESWBC(MNP,MNFEN)
       REAL(8) :: NORM1(3)
       REAL(8) :: TOTRES, RESWBCN
@@ -161,7 +161,7 @@ C     Variables for the weak implementation of the open ocean boundary condtion
       REAL(8) :: Hsp1N1, Hsp1N2
       REAL(8) :: XDIST1, YDIST1, ZDIST1, XDIST2, YDIST2, ZDIST2
       REAL(8) :: ZVN1, ZVN2, ZVN3, ZVN4
-      REAL(8) :: XSQUARE, YSQUARE, LENGTHEDGE, ref 
+      REAL(8) :: XSQUARE, YSQUARE, LENGTHEDGE, ref
       INTEGER :: NM1, NM2, VM1, VM2
       INTEGER :: NBC, BCSEC             !output loop counter
 
@@ -176,7 +176,7 @@ C  kmd48.33bc added in variables used in the heat flux boundary condition
       Real(8) :: diff_tol = 1.0d-5
       Real(8) :: minimum_diffusion
       Real(8) :: max_diffusion
-      REAL(8) :: inarray_vertical(NFEN) 
+      REAL(8) :: inarray_vertical(NFEN)
       REAL(8) :: diffusion_ratio = 0.20d0
 
 ! af 01/04/2016: Biharmonic viscosity for transport
@@ -243,28 +243,28 @@ C     Compute 3D transport equation
                ! For vertex of interest
                Zk = HsOAMB * ( Sigma(k) - B ) - DP(N1)
                SalOrTempN1_z = inarray(N1,k)
-               ! For first neighbor vertex 
+               ! For first neighbor vertex
                HsN2 = DP(N2) + IFNLFA * Eta1(N2)
                IF(HsN2.LT.H0) HsN2 = H0
                SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2
                inarray_vertical (:) = inarray(N2,:)
 !Casey 221103 : User control over cubic interpolation
                IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
-                  CALL linear_vertical_interpolation_real ( 
+                  CALL linear_vertical_interpolation_real (
      &                 inarray_vertical,
      &                 SigmaNN, SalOrTempN2_z, k )
                ELSE ! Default
-                  CALL cubic_vertical_interpolation( inarray_vertical, 
+                  CALL cubic_vertical_interpolation( inarray_vertical,
      &                 SigmaNN, SalOrTempN2_z, N2, k )
                ENDIF
-               ! For second neighbor vertex 
+               ! For second neighbor vertex
                HsN2 = DP(N3) + IFNLFA * Eta1(N3)
                IF(HsN2.LT.H0) HsN2 = H0
                SigmaNN = B + AMB * ( Zk + DP(N3) ) / HsN2
                inarray_vertical (:) = inarray(N3,:)
 !Casey 221103 : User control over cubic interpolation
                IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
-                  CALL linear_vertical_interpolation_real ( 
+                  CALL linear_vertical_interpolation_real (
      &                 inarray_vertical,
      &                 SigmaNN, SalOrTempN3_z, k )
                ELSE ! Default
@@ -301,22 +301,22 @@ C     Compute 3D transport equation
 ! end computing Biharmonic_auxiliary_var(:,:)
 ! -------------------------------------------------------------------------------------------------
 
-C     Initial step for transport is to determine the weak implementation 
+C     Initial step for transport is to determine the weak implementation
 C     of the boundary condition for the ocean. This portion determines the
 C     values utilized in the equations based on the previous time step values
 C     for salinity or temperature. In the implementation of these boundary
 C     conditions, we must determine if we have a influx or outflux boundary
-C     conditions. For outflux boundary conditions, we do nothing to the 
+C     conditions. For outflux boundary conditions, we do nothing to the
 C     boundary however, on the influx boundary we evaluate both the boundary
-C     condition of the ocean and that of the equations. 
-      
+C     condition of the ocean and that of the equations.
+
 C     Reset boundary conditions.
       DO NH=1,NP
          DO k=1,NFEN
             RESWBC(NH,k)=0.d0
          END DO
-      END DO 
-      
+      END DO
+
 C     Determine the weak boundary conditions that will be used in the
 C     assembly process later. Note that the boundary conditions will
 C     be utilized in both the salinity and temperature fields.
@@ -342,7 +342,7 @@ Casey 140701: Avoid zero depths.
          ZVN2=Hsp1OAMBN2*(Sigma(VM1)-B)-DP(NM2)
          ZVN3=Hsp1OAMBN2*(Sigma(VM2)-B)-DP(NM2)
          ZVN4=Hsp1OAMBN1*(Sigma(VM2)-B)-DP(NM1)
-         
+
 C     Compute the distance used in the calculations of the normal
 C     vector.
          XDIST1=X(NM1)-X(NM2)
@@ -352,7 +352,7 @@ C     vector.
          ZVN2=Hsp1OAMBN2*(Sigma(VM1)-B)-DP(NM2)
          ZVN3=Hsp1OAMBN2*(Sigma(VM2)-B)-DP(NM2)
          ZVN4=Hsp1OAMBN1*(Sigma(VM2)-B)-DP(NM1)
-         
+
 C     Compute the distance used in the calculations of the normal
 C     vector.
          XDIST1=X(NM1)-X(NM2)
@@ -361,14 +361,14 @@ C     vector.
          XDIST2=X(NM2)-X(NM2)
          YDIST2=Y(NM2)-Y(NM2)
          ZDIST2=ZVN3-ZVN2
-         
+
 C     Determine normal vector
          CALL CROSSPRODUCT(XDIST1,YDIST1,ZDIST1,XDIST2,
      &        YDIST2,ZDIST2,NORM1)
-         
+
 C     Now develop the average velocity values for the dot product
 C     to be determined later.
-         
+
          DO k=1,NFEN
             IF (k.NE.NFEN) THEN
                AVEUN=0.25d0*(REAL(Q(NM1,k))+REAL(Q(NM2,k))+
@@ -390,7 +390,7 @@ C     to be determined later.
             XSQUARE=(X(NM1)-X(NM2))*(X(NM1)-X(NM2))
             YSQUARE=(Y(NM1)-Y(NM2))*(Y(NM1)-Y(NM2))
             LENGTHEDGE=SQRT(XSQUARE+YSQUARE)
-            IF (field.EQ.2) THEN 
+            IF (field.EQ.2) THEN
                IF (k.NE.NFEN) THEN
                    ref=0.25d0*(RESSAL(NBC,k)+RESSAL(NBC,k+1)+
      &                RESSAL(NBC+1,k)+RESSAL(NBC+1,k+1))
@@ -399,7 +399,7 @@ C     to be determined later.
      &                RESSAL(NBC+1,k-1)+RESSAL(NBC+1,k))
                END IF
                !ref=32.d0   ! kmd48.33bc changed to 32 as the salinity reference
-            ELSE IF (field.EQ.3) THEN 
+            ELSE IF (field.EQ.3) THEN
                IF (k.NE.NFEN) THEN
                    ref=0.25d0*(RESTEMP(NBC,k)+RESTEMP(NBC,k+1)+
      &                RESTEMP(NBC+1,k)+RESTEMP(NBC+1,k+1))
@@ -408,7 +408,7 @@ C     to be determined later.
      &                RESTEMP(NBC+1,k-1)+RESTEMP(NBC+1,k))
                END IF
                !ref=10.d0
-            END IF  
+            END IF
             IF (VELDOTNORM.LE.0.d0) THEN
                IF (k.NE.NFEN) THEN
                   AVERESN=0.25d0*(inarray(NM1,k)+inarray(NM2,k)+
@@ -427,10 +427,10 @@ C   kmd48.33bc changed this from previous version
                RESWBC(NM2,k)=RESWBC(NM2,k)+0.d0
             END IF
          END DO
-        END DO 
+        END DO
       END DO
 
-C   kmd48.33 add information for the top temperature boundary condition 
+C   kmd48.33 add information for the top temperature boundary condition
       IF (field.EQ.3) THEN
          IF (BCFLAG_TEMP.EQ.1) THEN
            IF (TimeLoc.GT.TTBCTIME2) THEN
@@ -637,8 +637,8 @@ C   kmd48.33bc changed this from previous version
           END DO
         END DO
       END IF
-      
-C     
+
+C
 C     Loop over each horizontal and vertical nodes to compute the transport concentrations
 C
 
@@ -654,21 +654,21 @@ Corbitt 120328: Applies Advection Locally
          ENDIF
 Casey 140829
 C        IFNLCT = 1
-         
+
 C     Set up some values at the node being worked on
-         
+
 Casey 140701: Avoid zero depths.
          Hstrans  = DP(NH)+IFNLFA*Eta1(NH) !Total depth at previous (s) timestep
          IF(Hstrans.LT.H0) Hstrans=H0
          HsOAMBtrans=Hstrans/AMB
          HsHsOAMBAMBtrans=HsOAMBtrans*HsOAMBtrans
-         
+
          Hsp1trans= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
 !Casey 220207 from Rosemary
          IF(Hsp1trans.LT.H0) Hsp1trans = H0
          Hsp1OAMBtrans=Hsp1trans/AMB
          Hsp1Hsp1OAMBAMBtrans=Hsp1OAMBtrans*Hsp1OAMBtrans
-         
+
 Casey: Solve for "TEMPNCELE," which is the sum of the "NCELE" values
 C     for the elements attached to the current horizontal node.  Note that,
 C     for some reason, the k neighbor elements are not contained in the first
@@ -676,7 +676,7 @@ C     k registers of "NEITABELE."  (For instance, if a node is connected to four
 C     elements, those element numbers might be contained in registers
 C     1, 2, 4, and 5.)  So we have to be cute about pulling element numbers
 C     from "NEITABELE."
-C     
+C
          TEMPNCELE = 0
          TEMPSTOP = 0
          DO K=1,NODELE(NH)
@@ -689,7 +689,7 @@ C
      &           NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))
      &           *NOFF(NEITABELE(NH,K+TEMPSTOP))
          END DO
-         
+
 Casey: If "TEMPNCELE" is equal to zero, then the current horizontal node is
 C     not attached to any active elements.  Thus, the horizontal velocities
 C     must be zero, and we can set up the matrix immediately and skip to the
@@ -704,7 +704,7 @@ C
             END DO
             GOTO 989
          END IF
-         
+
 C        Changed this to the vertical matrix for the vertical diffusion term
 C        for both salinity and temperature replaces the EV values.
 C        First develop the NTVTot values - Currently only using a constant value
@@ -712,15 +712,15 @@ C        First develop the NTVTot values - Currently only using a constant value
 C  kmd48.33bc changed to use either a constant value or the value obtained
 C             from the Mellor-Yamada turbulence subroutine
          DO k=1,NFEN
-           IF ((IEVC.EQ.50).or.(IEVC.EQ.51)) THEN 
+           IF ((IEVC.EQ.50).or.(IEVC.EQ.51)) THEN
             NTVTot(k)=DV(NH,k)
            ELSE
             NTVTot(k)=diffvert
-           END IF 
+           END IF
          END DO
 
 C        Integrals for the vertical diffusion terms for both the temperature
-C        and salinity values 
+C        and salinity values
 
          KNVnm(1,1)=0.d0
          KNVnm(1,3)=-0.5d0*(NTVTot(2)+NTVTot(1))/(Sigma(2)-Sigma(1))
@@ -732,13 +732,13 @@ C        and salinity values
             KNVnm(k,2)=-(KNVnm(k,1)+KNVnm(k,3))
          ENDDO
          KNVnm(NFEN,1)=KNVnm(NFEN-1,3)
-         KNVnm(NFEN,3)=0.d0      
+         KNVnm(NFEN,3)=0.d0
          KNVnm(NFEN,2)=-(KNVnm(NFEN,1)+KNVnm(NFEN,3))
-         
+
 C     Compute time derivative of water surface position
 
          DEtaDT=(Eta2(NH)-Eta1(NH))/DelT
-         
+
 C     Start computing horizontal derivatives of water level, bathymetric
 C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
 
@@ -813,7 +813,7 @@ C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
 C     Finished computing horizontal derivatives of water level,
 C     bathymetric depth.
 
-C     Compute the "sigma" vertical velocity from the "z" vertical velocity 
+C     Compute the "sigma" vertical velocity from the "z" vertical velocity
 
          DO k=1,NFEN
             SigmaMAOAMB=(Sigma(k)-A)/AMB
@@ -826,7 +826,7 @@ C     Compute the "sigma" vertical velocity from the "z" vertical velocity
 
 C     Start computing advection and diffusion terms in the transport
 C     equation at each level in the vertical. The inarray can be either
-C     temperature or salinity. 
+C     temperature or salinity.
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 ! vertical integration
@@ -862,7 +862,7 @@ C     Compute the vertical advection and vertical diffusion terms
                VDiffusion(k)=(inarray(NH,k-1)*KNVnm(k,1)+inarray(NH,k)*
      &              KNVnm(k,2))/HsHsOAMBAMBtrans
             ENDIF
-            
+
 C      kmd48.33bc added sponge layer for the vertical advective term
             VAdvectrans(k)=sponge(NH)*IFNLCT*VAdvectrans(k)
 
@@ -915,7 +915,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                qN1=q(N1,k)
                transN1   = inarray(N1,k)
                transN1_z = transN1
-               Biharmonic_SalOrTempN1_z = 
+               Biharmonic_SalOrTempN1_z =
      &            Biharmonic_auxiliary_var_SalOrTemp(N1,k)
                ! For first neighbor vertex
                qN2=q(N2,k)
@@ -929,7 +929,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 !             used, not sure why they would be disabled here. Let's try them.
 !Casey 221103 : User control over cubic interpolation
                IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
-                  CALL linear_vertical_interpolation_real( 
+                  CALL linear_vertical_interpolation_real(
      &                inarray_vertical, SigmaNN, transN2_z, k )
                ELSE ! Default
                   CALL cubic_vertical_interpolation( inarray_vertical,
@@ -939,7 +939,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
      &            Biharmonic_auxiliary_var_SalOrTemp(N2,:)
 !Casey 221103 : User control over cubic interpolation
                IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
-                  CALL linear_vertical_interpolation_real( 
+                  CALL linear_vertical_interpolation_real(
      &                inarray_vertical,
      &                SigmaNN, Biharmonic_SalOrTempN2_z, k )
                ELSE ! Default
@@ -956,7 +956,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 !Casey 220207 from Rosemary : Same thing here?
 !Casey 221103 : User control over cubic interpolation
                IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
-                  CALL linear_vertical_interpolation_real( 
+                  CALL linear_vertical_interpolation_real(
      &                inarray_vertical,
      &                SigmaNN, transN3_z, k )
                ELSE ! Default
@@ -967,7 +967,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
      &            Biharmonic_auxiliary_var_SalOrTemp(N3,:)
 !Casey 221103 : User control over cubic interpolation
                IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
-                  CALL linear_vertical_interpolation_real( 
+                  CALL linear_vertical_interpolation_real(
      &                inarray_vertical,
      &                SigmaNN, Biharmonic_SalOrTempN3_z, k )
                ELSE ! Default
@@ -986,7 +986,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                b1=(Y(N2)-Y(N3))*SFacAvg
                b2=(Y(N3)-Y(N1))*SFacAvg
                b3=(Y(N1)-Y(N2))*SFacAvg
-               UnDtransDX2A = UnDtransDX2A 
+               UnDtransDX2A = UnDtransDX2A
      &            + Un*( transN1*b1 + transN2*b2 + transN3*b3 )
                VnDtransDY2A = VnDtransDY2A
      &            + Vn*( transN1*a1 + transN2*a2 + transN3*a3 )
@@ -1000,7 +1000,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                ENDIF
                IF(Biharmonic_SalOrTempN2_z.GT.-990.D0.AND.
      &            Biharmonic_SalorTempN3_z.GT.-998.D0)THEN
-                  Biharmonic_DSalOrTempDXDPhiDX2A = 
+                  Biharmonic_DSalOrTempDXDPhiDX2A =
      &               Biharmonic_DSalOrTempDXDPhiDX2A
      &               + ( Biharmonic_SalOrTempN1_z*b1
      &                 + Biharmonic_SalOrTempN2_z*b2
@@ -1068,8 +1068,8 @@ c     equation at each level in the vertical
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 
 C     Need to add the boundary condition for the top layer for
-C     temperature and salinity. Currently, I have only included the 
-C     temperature term. 
+C     temperature and salinity. Currently, I have only included the
+C     temperature term.
 C  kmd48.33bc changed the way the top temperature is evaluated.
       IF (field.EQ.3) THEN
          IF (BCFLAG_TEMP.NE.0) THEN
@@ -1085,7 +1085,7 @@ C  kmd48.33bc changed the way the top temperature is evaluated.
       ELSE
          topbcs = 0.d0
       END IF
-!Casey 220207 from Rosemary : Heat flux was turned off at the 
+!Casey 220207 from Rosemary : Heat flux was turned off at the
 !             river boundary nodes were we are specifying an incoming flux
       IF (BNDBCRiver) THEN
          DO BCSEC=1, bcriversec
@@ -1115,8 +1115,8 @@ C     the boundary conditions where vdotn is greater than 0.d0.
       DO k=1,NFEN
          WBC(NH,k)=RESWBC(NH,k)*((3.d0*DelT)/TotalArea2)
       END DO
-      
-C     Changed the RHS forcing vector and the LHS matrix to use the 
+
+C     Changed the RHS forcing vector and the LHS matrix to use the
 C     information from the transport equations
 C     Set up the RHS forcing vector Fr and LHS matrix in compact storage
 C     (Mkm1,Mk,Mkp1)
@@ -1127,7 +1127,7 @@ C     (Mkm1,Mk,Mkp1)
      &           -DelT*(LAdvectrans(1)  +LDiffusion(1)))*Inm(1,2)
      &           + (1.d0*inarray(NH,2)
      &           -DelT*(LAdvectrans(2)  +LDiffusion(2)))*Inm(1,3)
-     &           - DelT*(VAdvectrans(1))-DT1MAlp4*VDiffusion(1)     
+     &           - DelT*(VAdvectrans(1))-DT1MAlp4*VDiffusion(1)
      &           +WBC(NH,1)
             Mkm1trans(1) = 0.d0
             Mktrans(1)   = 1.d0*Inm(1,2) + RCLtrans*KNVnm(1,2)
@@ -1165,29 +1165,29 @@ C     (Mkm1,Mk,Mkp1)
          Mktrans(NFEN)   = 1.d0*Inm(NFEN,2) + RCLtrans*KNVnm(NFEN,2)
          Mkp1trans(NFEN) = 0.d0
 
-C     Set up the boundary conditions for land boundary - currently it 
+C     Set up the boundary conditions for land boundary - currently it
 C     only does nothing to the equations. However, we will have to add
-C     other boundary condtions for the land boundary later. 
-          LBP=LBArray_Pointer(NH) 
-          IF(LBP.GT.0) THEN 
+C     other boundary condtions for the land boundary later.
+          LBP=LBArray_Pointer(NH)
+          IF(LBP.GT.0) THEN
             IF((LBCODEI(LBP).GE. 0)) THEN
 !                DO NOTHING
             END IF
-          END IF 
+          END IF
 
 C     Decompose and solve the system
- 989     CONTINUE ! This addresses the Goto statement associated with the 
+ 989     CONTINUE ! This addresses the Goto statement associated with the
                   ! wetting and drying operation
-  
+
        CALL ADC_TRIDAG2(Mkm1trans,Mktrans,Mkp1trans,Frtrans,Gammatrans,NFEN)
 
-C      Need to save the transport results by putting them into 
-C      outgoing variables 
-     
+C      Need to save the transport results by putting them into
+C      outgoing variables
+
          DO k=1,NFEN
             outarray(NH,k) = Gammatrans(k)
          END DO
-     
+
 !Casey 220227 from Rosemary
          DO k=1,NFEN
            IF(NODECODE(NH).EQ.1)THEN
@@ -1238,9 +1238,9 @@ c
       REAL(8) :: BET,GAM(N)
       CHARACTER(LEN=256) :: scratchMessage
 
-c     
+c
 c     check for zero elements on diagonal
-c     
+c
       DO J=1,N
          if(B(j).EQ.0.) then
             write(scratchMessage,*) 'Problem in Tridag Solver.  ',
@@ -1295,11 +1295,11 @@ C************************************************************************
      &             + (Y1/MAGN1) * (Y2/MAGN2)
      &             + (Z1/MAGN1) * (Z2/MAGN2)
 
-      NORM(1) = NORM(1) / ( MAGN1 * MAGN2 * SQRT( 1.D0 - 
+      NORM(1) = NORM(1) / ( MAGN1 * MAGN2 * SQRT( 1.D0 -
      &          DOTPROD * DOTPROD ) )
-      NORM(2) = NORM(2) / ( MAGN1 * MAGN2 * SQRT( 1.D0 - 
+      NORM(2) = NORM(2) / ( MAGN1 * MAGN2 * SQRT( 1.D0 -
      &          DOTPROD * DOTPROD ) )
-      NORM(3) = NORM(3) / ( MAGN1 * MAGN2 * SQRT( 1.D0 - 
+      NORM(3) = NORM(3) / ( MAGN1 * MAGN2 * SQRT( 1.D0 -
      &          DOTPROD * DOTPROD ) )
 
       RETURN
@@ -1362,7 +1362,7 @@ C*************************************************************************
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
 ! arash 150513
 !Casey 220207 from Rosemary : Skip Arash's formulation, try different
-!     IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent 
+!     IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent
 !        transN2_z=-999.0d0
 !        GOTO 100
 !     ENDIF
@@ -1421,7 +1421,7 @@ C*************************************************************************
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
 99    Continue
 
-! arash added this because of the terminations at the SURA model. 
+! arash added this because of the terminations at the SURA model.
 ! this shouldn't be needed though.
 ! 0.
 !      If ( loop_situation == 0 ) Then
@@ -1471,9 +1471,9 @@ C*************************************************************************
      &     / ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * (Sigma(k4)-Sigma(k3)))
 
 ! 3- interpolate
-      transN2_z = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2) 
+      transN2_z = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2)
      &          + f3 * inarray_vertical(k3) + f4 * inarray_vertical(k4)
-!Casey 220227 from Arash/Rosemary : They used the lines below, 
+!Casey 220227 from Arash/Rosemary : They used the lines below,
 !          which look like a linear interpolation? Let's keep the cubic.
 !     transN2_z = (inarray_vertical(LAbov) - inarray_vertical(LBelo))
 !    &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) +inarray_vertical(LBelo)
@@ -1494,4 +1494,3 @@ C*************************************************************************
 C**********************************************************************
       END SUBROUTINE cubic_vertical_interpolation
 C**********************************************************************
-

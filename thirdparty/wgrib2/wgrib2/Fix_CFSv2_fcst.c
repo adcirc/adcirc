@@ -123,7 +123,7 @@ int f_fix_CFSv2_fcst(ARG3) {
 	fcst0_minute = 0;
 	fcst0_second= 0;
    }
-   else {			// start at current month 
+   else {			// start at current month
 	fcst0_year = ref_year;
 	fcst0_month = ref_month;
 	fcst0_day = ref_day;
@@ -137,7 +137,7 @@ int f_fix_CFSv2_fcst(ARG3) {
 	}
     }
 
-    sub_time(fcst0_year, fcst0_month, fcst0_day, fcst0_hour, fcst0_minute, fcst0_second, 
+    sub_time(fcst0_year, fcst0_month, fcst0_day, fcst0_hour, fcst0_minute, fcst0_second,
 		ref_year, ref_month, ref_day, ref_hour, ref_minute, ref_second,
 		&dtime, &unit);
     // set forecast time.
@@ -183,8 +183,8 @@ int f_fix_CFSv2_fcst(ARG3) {
     }
 
     // find stat processing time
-    sub_time(fcst1_year, fcst1_month, fcst1_day, fcst1_hour, fcst1_minute, fcst1_second, 
-		fcst0_year, fcst0_month, fcst0_day, fcst0_hour, fcst0_minute, fcst0_second, 
+    sub_time(fcst1_year, fcst1_month, fcst1_day, fcst1_hour, fcst1_minute, fcst1_second,
+		fcst0_year, fcst0_month, fcst0_day, fcst0_hour, fcst0_minute, fcst0_second,
 		&dtime, &unit);
 
     // change length of processing
@@ -213,14 +213,14 @@ int f_fix_CFSv2_fcst(ARG3) {
         new_sec4[34] = 0;
         new_sec4[35] = 0;
     }
-    else { 
+    else {
         new_sec4[34] = 3;
         new_sec4[35] = save->pert;
     }
     new_sec4[36] = save->num_ensemble_members;
-   
+
     sec[4] = new_sec4;
- 
+
     save->fixed = save->fixed + 1;
     return 0;
 }

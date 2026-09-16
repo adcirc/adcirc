@@ -324,7 +324,7 @@ int f_ll2i(ARG2) {
         to_lat[0] = atof(arg2);
         i = gctpc_ll2xy_init(sec, lon, lat);
 	if (i != 0) {
-	    iptr = 0;	
+	    iptr = 0;
 	}
 	else {
             i = gctpc_ll2i(1, to_lon, to_lat, &iptr);

@@ -1,9 +1,9 @@
 !-------------------------------------------------------------------------
 ! adcirc2xdmf.f90
 !-------------------------------------------------------------------------
-! Author: Jason Fleming (jason.fleming@seahorsecoastal.com) 
+! Author: Jason Fleming (jason.fleming@seahorsecoastal.com)
 !
-! Convert ascii adcirc data file to XDMF format. 
+! Convert ascii adcirc data file to XDMF format.
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 program adcirc2xdmf
@@ -15,14 +15,14 @@ use asgsio
 use nodalattr
 use control
 implicit none
-include 'Xdmf.f' 
-! 
+include 'Xdmf.f'
+!
 character(1024) :: dataFileName ! full path name of the ascii file to be converted
-character(1024) :: controlFileName  ! full path name of the adcirc fort.15 for metadata  
-character(1024) :: convertedFileName  ! full path name of the converted files  
+character(1024) :: controlFileName  ! full path name of the adcirc fort.15 for metadata
+character(1024) :: convertedFileName  ! full path name of the converted files
 integer*8 :: xdmfFortranObj  ! represents pointer to the XdmfFortran object
 integer :: informationID     ! information object reference
-integer :: topologyID        ! topology reference 
+integer :: topologyID        ! topology reference
 integer :: geometryID        ! geometry reference
 integer :: depthID
 integer :: attributeID       ! attribute reference
@@ -31,7 +31,7 @@ integer, allocatable :: xdmf_nm(:,:)   ! 0-offset connectivity array
 logical :: convertOutputData ! .true. if output data conversion is required
 logical :: release           ! .true. to release memory after writing data to HDF5
 logical :: writeToHDF5       ! .true. if XdmfAddGrid should immediately write mesh
-integer :: unitNumber        ! fortran i/o unit number for ascii data file 
+integer :: unitNumber        ! fortran i/o unit number for ascii data file
 logical :: formatKnown       ! .true. if the ascii format has been discovered already
 logical :: sparseAsciiFile   ! .true. if the ascii file has sparse format
 real(8) :: defaultValue      ! fill value for sparse ascii format
@@ -63,7 +63,7 @@ integer :: numCoord
 integer :: ind
 integer :: nodeNum
 real(8) :: leveeHeight
-character(len=256) :: boundaryName 
+character(len=256) :: boundaryName
 !
 character(len=256) :: projection
 !
@@ -79,7 +79,7 @@ character(2048) :: dataFileExtension ! something like 13, 14, 15, 63, 222 etc
 
 character(80) :: line ! a line of data from the ascii file
 character(80) :: topcomment ! comment line at the top of ascii file
-integer :: i, j, n 
+integer :: i, j, n
 !
 ! initializations
 startingDataset = 0
@@ -116,12 +116,12 @@ do while (i.lt.argcount)
    case("--meshfile")
       i = i + 1
       call GET_COMMAND_ARGUMENT(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // & 
+      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // &
          " " // trim(cmdlinearg) // "."
       meshFileName = trim(cmdlinearg)
    case("--datafile")
       i = i + 1
-      call GET_COMMAND_ARGUMENT(i, dataFileName)     
+      call GET_COMMAND_ARGUMENT(i, dataFileName)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
          trim(dataFileName) // "."
    case("--controlfile")
@@ -132,19 +132,19 @@ do while (i.lt.argcount)
    case("--lightdatalimit")
       i = i + 1
       call GET_COMMAND_ARGUMENT(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
+      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
          trim(cmdlinearg) // "."
       read(cmdlinearg,*) lightdatalimit
    case("--starting-dataset")
       i = i + 1
       call GET_COMMAND_ARGUMENT(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
+      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
          trim(cmdlinearg) // "."
       read(cmdlinearg,*) startingDataset
    case("--ending-dataset")
       i = i + 1
       call GET_COMMAND_ARGUMENT(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
+      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
          trim(cmdlinearg) // "."
       read(cmdlinearg,*) endingDataset
    case default
@@ -180,7 +180,7 @@ if (trim(adjustl(controlFileName)).ne."none") then
 endif
 !
 ! create a 0-offset element table, i.e., one that assumes the nodes
-! are numbered starting from zero ... XDMF2 is zero offset while the 
+! are numbered starting from zero ... XDMF2 is zero offset while the
 ! ADCIRC ascii format assumes nodes are numbered starting from 1
 allocate(xdmf_nm(3,ne))
 do i=1,ne
@@ -188,16 +188,16 @@ do i=1,ne
       xdmf_nm(j,i) = nm(i,j) - 1 ! store in row major format
    end do
 end do
-! 
+!
 ! create xdmf file
 !
 ! call the XdmfFortran constructor; return a reference to the XdmfFortran object
 ! (the pointer is packaged as a long int in Fortran)
 write(6,'(A)') 'INFO: Initializing XDMF object.'
 call XdmfInit(xdmfFortranObj)
-! 
+!
 ! call the initHDF5 method; arguments include the ref to the XdmfFortran
-! object, the name of the HDF5 file, and whether to release memory after write 
+! object, the name of the HDF5 file, and whether to release memory after write
 write(6,'(A)') 'INFO: Initializing HDF5 file.'
 !
 ! read ADCIRC control data from ascii file unless otherwise specified
@@ -206,7 +206,7 @@ if (trim(adjustl(dataFileName)).eq."none") then
    convertOutputData = .false.
 endif
 !
-! If the full path to the file was given, the path to the file must 
+! If the full path to the file was given, the path to the file must
 ! trimmed off, leaving just the file name. This way the converted files
 ! will be written to the directory where the command was executed rather
 ! than the directory where the file to be converted is located (if these
@@ -246,25 +246,25 @@ if (trim(adjustl(controlFileName)).ne."none") then
    call writeControlXDMF(xdmfFortranObj)
 endif
 !
-! create a grid collection for time varying data 
+! create a grid collection for time varying data
 if (convertOutputData.eqv..true.) then
    call xdmfAddGridCollection(xdmfFortranObj, "Temporal"//CHAR(0), &
        XDMF_GRID_COLLECTION_TYPE_TEMPORAL)
 endif
 !
-! call the setTopology method; arguments include the type of the topology, 
+! call the setTopology method; arguments include the type of the topology,
 ! the number of values in the connectivity array, the numeric type of
 ! the connectivity array, and the connectivity values with a 0 offset;
 ! the call returns the topology ID in case it will be reused. The XDMF
-! library interprets the connectivity array as a series of contiguous 
-! values (i.e., as a 1D array). 
+! library interprets the connectivity array as a series of contiguous
+! values (i.e., as a 1D array).
 topologyID = xdmfSetTopology(xdmfFortranObj, XDMF_TOPOLOGY_TYPE_TRIANGLE, ne*3, XDMF_ARRAY_TYPE_INT32, xdmf_nm)
 !
 !
-! call the setGeometry method; arguments include the geometry type, the 
+! call the setGeometry method; arguments include the geometry type, the
 ! number of values in the coordinates array, the numeric type of the coordinates,
-! and the coordinates array (again, interpreted by XDMF as a series of 
-! contiguous values). 
+! and the coordinates array (again, interpreted by XDMF as a series of
+! contiguous values).
 geometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XY, np*2, XDMF_ARRAY_TYPE_FLOAT64, xyd(1:2,:))
 !
 ! add the mesh boundaries to the grid
@@ -280,7 +280,7 @@ md%coordinates = 'y x'
 md%units = 'm'
 md%positive = 'downward'
 call writeMetaData(xdmfFortranObj, md)
-! write projection info 
+! write projection info
 md%variable_name_id = XdmfAddInformation(xdmfFortranObj, 'projection'//CHAR(0), &
    trim(projection)//CHAR(0))
 
@@ -302,9 +302,9 @@ case('63','69')
       md%long_name = 'max water surface elevation above geoid'
       md%standard_name = 'max_water_surface_elevation'
       md%coordinates = 'y x'
-      md%units = 'm'   
+      md%units = 'm'
       md%ndset = 1 ! TODO: fix to also handle min/max files with time of occurrence
-   else 
+   else
       md%variable_name = 'zeta'
       md%long_name = 'water surface elevation above geoid'
       md%standard_name = 'water_surface_elevation'
@@ -379,7 +379,7 @@ if (convertOutputData.eqv..true.) then
          ' columns, but adcirc2xdmf only supports 1 or 2 column data.'
       write(6,*) 'ERROR: adcirc2xdmf cannot continue.'
       close(unitNumber)
-      stop   
+      stop
    end select
    !
    write(6,'(A)') 'INFO: Adding unstuctured mesh dataset.'
@@ -399,13 +399,13 @@ if (convertOutputData.eqv..true.) then
       !
       ! we know the format of the file, now use the appropriate read statement
       if (sparseAsciiFile.eqv..false.) then
-         read(line,*) timeSec, timeStep ! dataset time in seconds, time step number      
+         read(line,*) timeSec, timeStep ! dataset time in seconds, time step number
          numNodesNonDefault = numNodes
          defaultValue = -99999.0d0
       else
-         read(line,*) timeSec, timeStep, numNodesNonDefault, defaultValue    
+         read(line,*) timeSec, timeStep, numNodesNonDefault, defaultValue
       endif
-      ! 
+      !
       ! now read the data from the ascii ADCIRC file
       select case(nCol)
       case(1) ! scalar data
@@ -443,9 +443,9 @@ if (convertOutputData.eqv..true.) then
       call XdmfSetTime(xdmfFortranObj, timeSec)
       !
       ! set the metadata for this dataset
-      call writeMetaData(xdmfFortranObj, md)      
-      ! 
-      ! now read the data from the ascii ADCIRC file and write it to 
+      call writeMetaData(xdmfFortranObj, md)
+      !
+      ! now read the data from the ascii ADCIRC file and write it to
       ! the xdmf file according to the data type (scalar or vector)
       select case(nCol)
       case(1) ! scalar data
@@ -464,12 +464,12 @@ if (convertOutputData.eqv..true.) then
       write(timeStepString,'(i0)') timeStep
       timeStepID = XdmfAddInformation(xdmfFortranObj, 'IT'//CHAR(0), &
       trim(timeStepString)//CHAR(0))
-      ! 
+      !
       ! call the addGrid method; creates an unstructured mesh object with the
-      ! specified name (2nd arg), then associates the geometry and topology 
+      ! specified name (2nd arg), then associates the geometry and topology
       ! created above with this new unstructured mesh, also associates any
       ! informations or attributes with the new mesh, immediately writing
-      ! it to the hdf5 file if the last argument is set to .true. 
+      ! it to the hdf5 file if the last argument is set to .true.
       write(6,fmt='(I4)',advance='no') ss
       call XdmfAddGrid(xdmfFortranObj,trim(agrid)//char(0), writeToHDF5)
       ss = ss + 1
@@ -484,7 +484,7 @@ if (convertOutputData.eqv..true.) then
    2  close(unitNumber) ! jump to here when all data sets have been read.
    !
    ! close this grid collection, writing it to the heavy data (HDF5) file
-   ! if the value of writeToHDF5 is .true.; further grids cannot 
+   ! if the value of writeToHDF5 is .true.; further grids cannot
    ! be added to this collection
    call XdmfCloseGridCollection(xdmfFortranObj, writeToHDF5)
 else
@@ -494,7 +494,7 @@ else
    call XdmfAddGrid(xdmfFortranObj,trim(agrid)//char(0), writeToHDF5)
 endif
 !
-! call the write method; arguments include the name of the xml file, 
+! call the write method; arguments include the name of the xml file,
 ! the max number of light data values, and whether to release memory
 ! after writing. This actually writes both the light and heavy data.
 write(6,'(/,A)') 'INFO: Writing data to file and releasing memory.'
@@ -510,9 +510,9 @@ call XdmfClose(xdmfFortranObj)
 ! for visualization
 write(6,'(A)') 'INFO: Initializing XDMF object.'
 call XdmfInit(xdmfFortranObj)
-! 
+!
 ! call the initHDF5 method; arguments include the ref to the XdmfFortran
-! object, the name of the HDF5 file, and whether to release memory after write 
+! object, the name of the HDF5 file, and whether to release memory after write
 write(6,'(A)') 'INFO: Initializing HDF5 file.'
 if (trim(adjustl(dataFileName)).eq.'none') then
    convertedFileName = trim(adjustl(meshFileName))//'_viz_boundaries'
@@ -522,9 +522,9 @@ endif
 !
 call XdmfInitHDF5(xdmfFortranObj, trim(convertedFileName)//'.h5'//char(0), release)
 !
-! create a grid collection for visualizing spatial data     
+! create a grid collection for visualizing spatial data
 call xdmfAddGridCollection(xdmfFortranObj, "Levees and Boundaries"//CHAR(0), &
-    XDMF_GRID_COLLECTION_TYPE_SPATIAL)   
+    XDMF_GRID_COLLECTION_TYPE_SPATIAL)
 
 
 !
@@ -540,7 +540,7 @@ do b = 1, numSimpleFluxBoundaries
    ind = 1
    do i=1,n
       nodeNum = simpleFluxBoundaries(b)%nodes(i) + 1
-      simpleFluxBoundaries(b)%bGeom(ind)   = xyd(1,nodeNum) ! x 
+      simpleFluxBoundaries(b)%bGeom(ind)   = xyd(1,nodeNum) ! x
       simpleFluxBoundaries(b)%bGeom(ind+1) = xyd(2,nodeNum) ! y
       simpleFluxBoundaries(b)%bGeom(ind+2) = - xyd(3,nodeNum) ! depth
       ind = ind + 3
@@ -548,9 +548,9 @@ do b = 1, numSimpleFluxBoundaries
    do i=1,n
       ! height
       nodeNum = simpleFluxBoundaries(b)%nodes(i) + 1
-      simpleFluxBoundaries(b)%bGeom(ind)   = xyd(1,nodeNum) ! x 
+      simpleFluxBoundaries(b)%bGeom(ind)   = xyd(1,nodeNum) ! x
       simpleFluxBoundaries(b)%bGeom(ind+1) = xyd(2,nodeNum) ! y
-      simpleFluxBoundaries(b)%bGeom(ind+2) = 1.d0 ! hard code to 1m arbitrarily 
+      simpleFluxBoundaries(b)%bGeom(ind+2) = 1.d0 ! hard code to 1m arbitrarily
       ind = ind + 3
    end do
    leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
@@ -558,15 +558,15 @@ do b = 1, numSimpleFluxBoundaries
       XDMF_ARRAY_TYPE_FLOAT64, simpleFluxBoundaries(b)%bGeom)
 
    !allocate(ibtypeGeom(2*product(leveeDimensions)))
-   !ibtypeGeom(:) = ibtype_orig(simpleFluxBoundaries(b)%indexNum)  
+   !ibtypeGeom(:) = ibtype_orig(simpleFluxBoundaries(b)%indexNum)
    !boundaryID = xdmfAddAttribute(xdmfFortranObj, 'ibtype'//CHAR(0), &
    !   XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, 2*product(leveeDimensions), &
-   !   XDMF_ARRAY_TYPE_INT32, ibtypeGeom ) 
+   !   XDMF_ARRAY_TYPE_INT32, ibtypeGeom )
    !deallocate(ibtypeGeom)
-          
+
    write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
-      simpleFluxBoundaries(b)%indexNum, ibtype_orig(simpleFluxBoundaries(b)%indexNum)  
-      
+      simpleFluxBoundaries(b)%indexNum, ibtype_orig(simpleFluxBoundaries(b)%indexNum)
+
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
 
@@ -584,7 +584,7 @@ do b = 1, numExternalFluxBoundaries
    ind = 1
    do i=1,n
       nodeNum = externalFluxBoundaries(b)%nodes(i) + 1
-      externalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      externalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       externalFluxBoundaries(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
       externalFluxBoundaries(b)%leveeGeom(ind+2) = - xyd(3,nodeNum) ! depth
       ind = ind + 3
@@ -593,16 +593,16 @@ do b = 1, numExternalFluxBoundaries
       ! height
       leveeHeight = externalFluxBoundaries(b)%barlanht(i)
       nodeNum = externalFluxBoundaries(b)%nodes(i) + 1
-      externalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      externalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       externalFluxBoundaries(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
-      externalFluxBoundaries(b)%leveeGeom(ind+2) = leveeHeight 
+      externalFluxBoundaries(b)%leveeGeom(ind+2) = leveeHeight
       ind = ind + 3
    end do
    leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
    leveeGeometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XYZ, numCoord, &
-      XDMF_ARRAY_TYPE_FLOAT64, externalFluxBoundaries(b)%leveeGeom)    
+      XDMF_ARRAY_TYPE_FLOAT64, externalFluxBoundaries(b)%leveeGeom)
    write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
-      externalFluxBoundaries(b)%indexNum, ibtype_orig(externalFluxBoundaries(b)%indexNum)  
+      externalFluxBoundaries(b)%indexNum, ibtype_orig(externalFluxBoundaries(b)%indexNum)
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
 !
@@ -621,7 +621,7 @@ do b = 1, numInternalFluxBoundaries
    ! front side
    do i=1,n
       nodeNum = internalFluxBoundaries(b)%nodes(i) + 1
-      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundaries(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
       internalFluxBoundaries(b)%leveeGeom(ind+2) = - xyd(3,nodeNum) ! depth
       ind = ind + 3
@@ -629,22 +629,22 @@ do b = 1, numInternalFluxBoundaries
    do i=1,n
       ! height
       nodeNum = internalFluxBoundaries(b)%nodes(i) + 1
-      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundaries(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
-      internalFluxBoundaries(b)%leveeGeom(ind+2) = internalFluxBoundaries(b)%barinht(i) 
+      internalFluxBoundaries(b)%leveeGeom(ind+2) = internalFluxBoundaries(b)%barinht(i)
       ind = ind + 3
    end do
    ! back face
    do i=1,n
       nodeNum = internalFluxBoundaries(b)%ibconn(i) + 1
-      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundaries(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
-      internalFluxBoundaries(b)%leveeGeom(ind+2) = internalFluxBoundaries(b)%barinht(i) 
+      internalFluxBoundaries(b)%leveeGeom(ind+2) = internalFluxBoundaries(b)%barinht(i)
       ind = ind + 3
    end do
    do i=1,n
       nodeNum = internalFluxBoundaries(b)%ibconn(i) + 1
-      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundaries(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundaries(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
       internalFluxBoundaries(b)%leveeGeom(ind+2) = - xyd(3,nodeNum) ! depth
       ind = ind + 3
@@ -652,12 +652,12 @@ do b = 1, numInternalFluxBoundaries
 
    leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
    leveeGeometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XYZ, numCoord, &
-      XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundaries(b)%leveeGeom)    
+      XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundaries(b)%leveeGeom)
    !attributeID = XdmfAddAttribute(xdmfFortranObj, 'ibtype'//CHAR(0), &
    !      XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, &
-   !      numCoord, XDMF_ARRAY_TYPE_INT32, internalFluxBoundaries(b)%ibtypeAttribute)   
+   !      numCoord, XDMF_ARRAY_TYPE_INT32, internalFluxBoundaries(b)%ibtypeAttribute)
    write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
-      internalFluxBoundaries(b)%indexNum, ibtype_orig(internalFluxBoundaries(b)%indexNum)  
+      internalFluxBoundaries(b)%indexNum, ibtype_orig(internalFluxBoundaries(b)%indexNum)
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
 !
@@ -674,7 +674,7 @@ do b = 1, numInternalFluxBoundariesWithPipes
    ! front side
    do i=1,n
       nodeNum = internalFluxBoundariesWithPipes(b)%nodes(i) + 1
-      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundariesWithPipes(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
       internalFluxBoundariesWithPipes(b)%leveeGeom(ind+2) = - xyd(3,nodeNum) ! depth
       ind = ind + 3
@@ -682,22 +682,22 @@ do b = 1, numInternalFluxBoundariesWithPipes
    do i=1,n
       ! height
       nodeNum = internalFluxBoundariesWithPipes(b)%nodes(i) + 1
-      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundariesWithPipes(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
-      internalFluxBoundariesWithPipes(b)%leveeGeom(ind+2) = internalFluxBoundariesWithPipes(b)%barinht(i) 
+      internalFluxBoundariesWithPipes(b)%leveeGeom(ind+2) = internalFluxBoundariesWithPipes(b)%barinht(i)
       ind = ind + 3
    end do
    ! back face
    do i=1,n
       nodeNum = internalFluxBoundariesWithPipes(b)%ibconn(i) + 1
-      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundariesWithPipes(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
-      internalFluxBoundariesWithPipes(b)%leveeGeom(ind+2) = internalFluxBoundariesWithPipes(b)%barinht(i)  
+      internalFluxBoundariesWithPipes(b)%leveeGeom(ind+2) = internalFluxBoundariesWithPipes(b)%barinht(i)
       ind = ind + 3
    end do
    do i=1,n
       nodeNum = internalFluxBoundariesWithPipes(b)%ibconn(i) + 1
-      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x 
+      internalFluxBoundariesWithPipes(b)%leveeGeom(ind)   = xyd(1,nodeNum) ! x
       internalFluxBoundariesWithPipes(b)%leveeGeom(ind+1) = xyd(2,nodeNum) ! y
       internalFluxBoundariesWithPipes(b)%leveeGeom(ind+2) = - xyd(3,nodeNum) ! depth
       ind = ind + 3
@@ -705,9 +705,9 @@ do b = 1, numInternalFluxBoundariesWithPipes
 
    leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
    leveeGeometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XYZ, numCoord, &
-      XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundariesWithPipes(b)%leveeGeom)    
+      XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundariesWithPipes(b)%leveeGeom)
    write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
-      internalFluxBoundariesWithPipes(b)%indexNum, ibtype_orig(internalFluxBoundariesWithPipes(b)%indexNum)  
+      internalFluxBoundariesWithPipes(b)%indexNum, ibtype_orig(internalFluxBoundariesWithPipes(b)%indexNum)
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
 !
@@ -726,7 +726,7 @@ END PROGRAM adcirc2xdmf
 !----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!                        S U B R O U T I N E    
+!                        S U B R O U T I N E
 !       W R I T E   N O D A L   A T T R I B U T E S   X D M F
 !-----------------------------------------------------------------------
 ! jgf: Writes all nodal attributes to an XDMF file.
@@ -765,10 +765,10 @@ do i=1,numNodalAttributes
       write(6,*) 'ERROR: The nodal attribute "',trim(adjustl(na(i)%attrName)), &
          '" has ',na(i)%numVals,' values at each node, but adcirc2xdmf ', &
          'does not recognize this nodal attribute.'
-      stop   
+      stop
    end select
-   ! 
-   ! now read the data from the ascii ADCIRC file and write it to 
+   !
+   ! now read the data from the ascii ADCIRC file and write it to
    ! the xdmf file according to the data type (scalar or vector)
    select case(na(i)%numVals)
    case(1) ! scalar data
@@ -787,7 +787,7 @@ do i=1,numNodalAttributes
       end do
       do j=1,na(i)%numNodesNotDefault
          na(i)%xdmfMatrix(:,na(i)%nonDefaultNodes(j)) = na(i)%nonDefaultVals(:,j)
-      end do  
+      end do
       attributeID = XdmfAddAttribute(xdmfFortranObj, trim(adjustl(na(i)%attrName))//CHAR(0), &
          XDMF_ATTRIBUTE_CENTER_NODE, attributeType, numValues, &
          XDMF_ARRAY_TYPE_FLOAT64, na(i)%xdmfMatrix)
@@ -801,16 +801,16 @@ informationID = XdmfAddInformation(xdmfFortranObj, &
       'nodalAttributesComment'//char(0), trim(adjustl(nodalAttributesComment))//char(0))
 write(numMeshNodesString,'(i0)') numMeshNodes
 informationID = XdmfAddInformation(xdmfFortranObj, &
-      'numMeshNodes'//char(0), trim(adjustl(numMeshNodesString))//char(0))      
+      'numMeshNodes'//char(0), trim(adjustl(numMeshNodesString))//char(0))
 
 do i=1,numNodalAttributes
    write(6,'(A)') 'INFO: Adding nodal attribute to XDMF.'
    ! set the metadata for this nodal attribute
    unitsID = XdmfAddInformation(xdmfFortranObj, &
       trim(adjustl(na(i)%attrName)) // ' units' // CHAR(0), &
-      trim(adjustl(na(i)%units))//CHAR(0)) 
-   write(numValsString,*) na(i)%numVals 
-   numValsID = XdmfAddInformation(xdmfFortranObj, & 
+      trim(adjustl(na(i)%units))//CHAR(0))
+   write(numValsString,*) na(i)%numVals
+   numValsID = XdmfAddInformation(xdmfFortranObj, &
       trim(adjustl(na(i)%attrName)) // ' number_of_values'//CHAR(0), &
       trim(adjustl(numValsString))//CHAR(0))
    write(defaultValsString,*) (na(i)%defaultVals(j), j=1,na(i)%numVals)
@@ -830,14 +830,14 @@ end subroutine writeNodalAttributesXDMF
 
 
 !----------------------------------------------------------------------
-!       S U B R O U T I N E    W R I T E   M E T A   D A T A 
+!       S U B R O U T I N E    W R I T E   M E T A   D A T A
 !----------------------------------------------------------------------
 ! Write the metadata for the variable of interest.
 !----------------------------------------------------------------------
 subroutine writeMetaData(xdmfFortranObj, md)
 use adcmesh
 implicit none
-include 'Xdmf.f' 
+include 'Xdmf.f'
 !
 integer*8, intent(in) :: xdmfFortranObj
 type(xdmfMetaData_t), intent(inout) :: md
@@ -875,21 +875,21 @@ end subroutine writeMetaData
 !----------------------------------------------------------------------
 !       S U B R O U T I N E   A D D   B O U N D A R I E S
 !----------------------------------------------------------------------
-! Add the boundaries as XdmfSet objects; if any attribute or 
+! Add the boundaries as XdmfSet objects; if any attribute or
 ! information objects have been created, they are added to the set and
 ! then cleared. We can use XdmfAttribute and XdmfInformation objects
-! to set boundary types, etc. 
+! to set boundary types, etc.
 !----------------------------------------------------------------------
 subroutine addBoundaries(xdmfFortranObj)
 use adcmesh
 implicit none
-include 'Xdmf.f' 
+include 'Xdmf.f'
 !
 integer*8, intent(in) :: xdmfFortranObj
 character(1024) :: fluxBoundaryType ! character represenation of IBTYPE
 !
 !integer, allocatable :: xdmfElevB(:) ! 0-offset elevation boundary array
-!integer, allocatable :: xdmfFluxB(:) ! 0-offset flux boundary array 
+!integer, allocatable :: xdmfFluxB(:) ! 0-offset flux boundary array
 integer :: i, j  ! loop counter
 !
 write(6,'(A)') 'INFO: Adding boundary data.'
@@ -897,7 +897,7 @@ write(6,'(A)') 'INFO: Adding boundary data.'
 !allocate(xdmfElevB(nvdll_max))
 ! create a zero offset boundary array long enough to hold any flux boundary
 !allocate(xdmfFluxB(nvell_max))
-do i=1, nope 
+do i=1, nope
    elevationBoundaries(i)%nodes(:) = elevationBoundaries(i)%nodes(:) - 1
    !xdmfElevB(1:nvdll(i)) = elevationBoundaries(i)%nodes(:) - 1
    !do j=1,nvdll(i)
@@ -905,7 +905,7 @@ do i=1, nope
    !end do
    ! jgftodo: this is hardcoded to 0 since this is the only type that ADCIRC
    ! supports, and most or all mesh files don't even have this value, although
-   ! the documentation calls for it 
+   ! the documentation calls for it
    elevationBoundaries(i)%informationID = XdmfAddInformation(xdmfFortranObj, &
       'IBTYPEE'//CHAR(0), '0'//CHAR(0))
    elevationBoundaries(i)%setID = XdmfAddSet(xdmfFortranObj, &
@@ -915,9 +915,9 @@ end do
 sfCount = 1
 efCount = 1
 ifCount = 1
-ifwpCount = 1 
-do i=1, nbou 
-   write(fluxBoundaryType,'(i0)') ibtype_orig(i) 
+ifwpCount = 1
+do i=1, nbou
+   write(fluxBoundaryType,'(i0)') ibtype_orig(i)
    select case(ibtype_orig(i))
    case(0,1,2,10,11,12,20,21,22,30,52)
       !xdmfFluxB(1:nvell(i)) = simpleFluxBoundaries(sfCount)%nodes(:) - 1
@@ -975,9 +975,9 @@ do i=1, nbou
          internalFluxBoundaries(ifCount)%nodes, nvell(i), XDMF_ARRAY_TYPE_INT32)
       ifCount = ifCount + 1
    case(5,25)
-      !xdmfFluxB(1:nvell(i)) = internalFluxBoundariesWithPipes(ifwpCount)%ibconn(:) - 1   
+      !xdmfFluxB(1:nvell(i)) = internalFluxBoundariesWithPipes(ifwpCount)%ibconn(:) - 1
       internalFluxBoundariesWithPipes(ifwpCount)%ibconn(:) = &
-         internalFluxBoundariesWithPipes(ifwpCount)%ibconn(:) - 1   
+         internalFluxBoundariesWithPipes(ifwpCount)%ibconn(:) - 1
       internalFluxBoundariesWithPipes(ifwpCount)%attributeIDs(1) = &
          XdmfAddAttribute(xdmfFortranObj, 'IBCONN'//CHAR(0), &
          XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, nvell(i), &
@@ -993,7 +993,7 @@ do i=1, nbou
       internalFluxBoundariesWithPipes(ifwpCount)%attributeIDs(4) = &
          XdmfAddAttribute(xdmfFortranObj, 'BARINCFSP'//CHAR(0), &
          XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, nvell(i), &
-         XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundariesWithPipes(ifwpCount)%barincfsp)   
+         XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundariesWithPipes(ifwpCount)%barincfsp)
       internalFluxBoundariesWithPipes(ifwpCount)%attributeIDs(5) = &
          XdmfAddAttribute(xdmfFortranObj, 'PIPEHT'//CHAR(0), &
          XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, nvell(i), &
@@ -1013,7 +1013,7 @@ do i=1, nbou
       internalFluxBoundariesWithPipes(ifwpCount)%nodes(:) = &
          internalFluxBoundariesWithPipes(ifwpCount)%nodes(:) - 1
       internalFluxBoundariesWithPipes(ifwpCount)%setID = &
-         XdmfAddSet(xdmfFortranObj,'flux_specified_boundary'//char(0), & 
+         XdmfAddSet(xdmfFortranObj,'flux_specified_boundary'//char(0), &
          XDMF_SET_TYPE_NODE, internalFluxBoundariesWithPipes(ifwpCount)%nodes, &
          nvell(i), XDMF_ARRAY_TYPE_INT32)
       ifwpCount = ifwpCount + 1
@@ -1034,13 +1034,13 @@ end subroutine addBoundaries
 subroutine addBoundaryReferences(xdmfFortranObj)
 use adcmesh
 implicit none
-include 'Xdmf.f' 
+include 'Xdmf.f'
 !
 integer*8, intent(in) :: xdmfFortranObj
 character(len=256) :: fluxBoundaryType
 integer :: i, j  ! loop counter
 !
-do i=1, nope 
+do i=1, nope
    elevationBoundaries(i)%informationID = XdmfAddInformation(xdmfFortranObj, &
       'IBTYPEE'//CHAR(0), '0'//CHAR(0))
    elevationBoundaries(i)%setID = XdmfAddSet(xdmfFortranObj, &
@@ -1050,11 +1050,11 @@ end do
 sfCount = 1
 efCount = 1
 ifCount = 1
-ifwpCount = 1 
-do i=1, nbou 
+ifwpCount = 1
+do i=1, nbou
    write(fluxBoundaryType,'(i0)') ibtype_orig(i)
    select case(ibtype_orig(i))
-   case(0,1,2,10,11,12,20,21,22,30,52)  
+   case(0,1,2,10,11,12,20,21,22,30,52)
       simpleFluxBoundaries(sfCount)%informationID = &
          XdmfAddInformation(xdmfFortranObj, 'IBTYPE'//CHAR(0), &
          trim(fluxBoundaryType)//CHAR(0))
@@ -1094,7 +1094,7 @@ do i=1, nbou
          XdmfAddInformation(xdmfFortranObj, 'IBTYPE'//CHAR(0), &
          trim(fluxBoundaryType)//CHAR(0))
       internalFluxBoundariesWithPipes(ifwpCount)%setID = &
-         XdmfAddSet(xdmfFortranObj,'flux_specified_boundary'//char(0), & 
+         XdmfAddSet(xdmfFortranObj,'flux_specified_boundary'//char(0), &
          XDMF_SET_TYPE_NODE, internalFluxBoundariesWithPipes(ifwpCount)%nodes, &
          nvell(i), XDMF_ARRAY_TYPE_INT32)
       ifwpCount = ifwpCount + 1
@@ -1105,4 +1105,3 @@ end do
 !----------------------------------------------------------------------
 end subroutine addBoundaryReferences
 !----------------------------------------------------------------------
-

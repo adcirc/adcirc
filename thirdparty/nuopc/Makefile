@@ -6,7 +6,7 @@
 ##!! @author Panagiotis Velissariou (panagiotis.velissariou@noaa.gov)
 
 ##! LOG !
-##! 
+##!
 ################################################################################
 
 
@@ -25,33 +25,33 @@ include $(ESMFMKFILE)
 
 ifneq ($(origin ADCDIR), environment)
   $(warning Environment variable ADCDIR was not set.)
-  # this var is coming from NEMS/src/incmake/component_ADCIRC.mk  
+  # this var is coming from NEMS/src/incmake/component_ADCIRC.mk
   ADCDIR := $(COMP_SRCDIR)
   # ADCDIR := $(abspath ../../)           # this is same as above but independent
-  $(info Setting to $(ADCDIR) ) 
+  $(info Setting to $(ADCDIR) )
 endif
 
 INCDIRS := -I. -I$(ADCDIR)/work/odircp -I$(ADCDIR)/prep
-LIBDIRS := -L. -L$(ADCDIR) 
+LIBDIRS := -L. -L$(ADCDIR)
 LIBSS   := -ladc  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
 
-INCDIRS += -I${NETCDFHOME}/include   
+INCDIRS += -I${NETCDFHOME}/include
 LIBDIRS += -L${NETCDFHOME}/lib
 
 ifneq ($(origin HDF5HOME), environment)
-  INCDIRS += -I${HDF5HOME}/include   
+  INCDIRS += -I${HDF5HOME}/include
   LIBDIRS += -L${HDF5HOME}/lib
 endif
 
 # unremark this line to define petlists
-LIBDIRS += -DWITHPETLISTS_on 
+LIBDIRS += -DWITHPETLISTS_on
 
 ifeq ($(compiler),gnu)
-  LIBDIRS +=  -g -O0 -fbacktrace 
+  LIBDIRS +=  -g -O0 -fbacktrace
 endif
 
 ifeq ($(compiler),intel)
-  LIBDIRS += -g -traceback 
+  LIBDIRS += -g -traceback
 endif
 ################################################################################
 ################################################################################
@@ -78,7 +78,7 @@ vars:
 	@echo "ESMF_F90LINKOPTS $(ESMF_F90LINKOPTS)"
 	@echo "ESMF_F90LINKPATHS  $(ESMF_F90LINKPATHS)"
 	@echo "ESMF_F90LINKRPATHS $(ESMF_F90LINKRPATHS)"
-	@echo "ESMF_F90ESMFLINKLIBS $(ESMF_F90ESMFLINKLIBS)"	
+	@echo "ESMF_F90ESMFLINKLIBS $(ESMF_F90ESMFLINKLIBS)"
 
 
 # -----------------------------------------------------------------------------
@@ -87,9 +87,9 @@ PWDDIR     := $(shell pwd)
 INSTALLDIR := $(INSTDIR)    # coming from NEMS/src/incmake/component_ADCIRC.mk
 
 LIBRARY  = libadc_cap.a
-MODULES  = adc_cap.o adc_mod.o couple2swan_modif.o 
+MODULES  = adc_cap.o adc_mod.o couple2swan_modif.o
 
-nuopc: $(LIBRARY) 
+nuopc: $(LIBRARY)
 
 $(LIBRARY): $(MODULES)
 	$(AR) $(ARFLAGS) $@ $?

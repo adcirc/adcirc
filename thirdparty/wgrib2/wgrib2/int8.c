@@ -52,16 +52,16 @@ unsigned int uint4_missing(unsigned const char *p) {
 
 unsigned long int uint8(unsigned const char *p) {
 
-#if (ULONG_MAX == 4294967295UL) 
+#if (ULONG_MAX == 4294967295UL)
 	if (p[0] || p[1] || p[2] || p[3]) {
-		fatal_error("unsigned value (8 byte integer) too large for machine\n" 
+		fatal_error("unsigned value (8 byte integer) too large for machine\n"
 		   "fatal error .. run on 64-bit machine","");
 	}
-	return  ((unsigned long int)p[4] << 24) + ((unsigned long int)p[5] << 16) + 
+	return  ((unsigned long int)p[4] << 24) + ((unsigned long int)p[5] << 16) +
                 ((unsigned long int)p[6] << 8) + (unsigned long int)p[7];
 #else
-	return  ((unsigned long int)p[0] << 56) + ((unsigned long int)p[1] << 48) + 
-                ((unsigned long int)p[2] << 40) + ((unsigned long int)p[3] << 32) + 
+	return  ((unsigned long int)p[0] << 56) + ((unsigned long int)p[1] << 48) +
+                ((unsigned long int)p[2] << 40) + ((unsigned long int)p[3] << 32) +
                 ((unsigned long int)p[4] << 24) + ((unsigned long int)p[5] << 16) +
 		((unsigned long int)p[6] << 8) + (unsigned long int)p[7];
 #endif
@@ -324,4 +324,3 @@ int is_uint(const char *p) {
     }
     return 1;
 }
-

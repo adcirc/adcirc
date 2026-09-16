@@ -116,4 +116,4 @@ Notes
 - For 3D runs, j=1 represents the bottom layer and j=NVN represents the surface layer
 - The file structure depends on the value of IDEN specified in the fort.15 file
 - Baroclinic 2DDI runs are not yet supported
-- Baroclinic 3D runs occur when IDEN is not equal to 0 
+- Baroclinic 3D runs occur when IDEN is not equal to 0

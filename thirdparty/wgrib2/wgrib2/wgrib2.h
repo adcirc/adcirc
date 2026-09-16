@@ -245,7 +245,7 @@ int rewind_file(const char *filename);
 int ffclose_finished(void);
 void status_ffopen(void);
 void set_io_buffer_size(int n);
- 
+
 unsigned char *seek_grib2(FILE *file, long int *pos, unsigned long int *len_grib,
         unsigned char *buffer, unsigned int buf_len, long int *n_bytes);
 
@@ -258,7 +258,7 @@ int parse_next_msg(unsigned char **sec);
 int fopen_file(struct seq_file *file, const char *filename, const char *open_mode);
 void fclose_file(struct seq_file *file);
 int fseek_file(struct seq_file *file, long position, int whence);
-long ftell_file(struct seq_file *file); 
+long ftell_file(struct seq_file *file);
 size_t fread_file(void *ptr, size_t size, size_t nmemb, struct seq_file *file);
 size_t fwrite_file(const void *ptr, size_t size, size_t nmemb, struct seq_file *file);
 int fgetc_file(struct seq_file *file);
@@ -268,7 +268,7 @@ void fflush_file(struct seq_file *file);
 
 unsigned char *rd_grib2_msg_seq_file(unsigned char **sec, struct seq_file *input, long int *pos,
         unsigned long int *len, int *num_submsgs);
- 
+
 unsigned int missing_points(unsigned char *bitmap, unsigned int n);
 
 void BDS_unpack(float *flt, unsigned char *bits, unsigned char *bitmap,
@@ -520,11 +520,11 @@ unsigned char *mk_bms(float *data, unsigned int *ndata);
 
 int g2c_dec_png(unsigned char *pngbuf, int *width, int *height, unsigned char *cout);
 int ieee_grib_out(unsigned char **sec, float *data, unsigned int ndata, struct seq_file *out);
-int jpeg_grib_out(unsigned char **sec, float *data, unsigned int ndata, 
+int jpeg_grib_out(unsigned char **sec, float *data, unsigned int ndata,
     int nx, int ny, int use_scale, int dec_scale, int bin_scale, FILE *out);
-int jpeg2000_grib_out(unsigned char **sec, float *data, unsigned int ndata, int nx, int ny, 
+int jpeg2000_grib_out(unsigned char **sec, float *data, unsigned int ndata, int nx, int ny,
     int use_scale, int dec_scale, int bin_scale, int wanted_bits, int max_bits, struct seq_file *out);
-int aec_grib_out(unsigned char ** sec, float *data, unsigned int ndata, int use_scale, int dec_scale, 
+int aec_grib_out(unsigned char ** sec, float *data, unsigned int ndata, int use_scale, int dec_scale,
     int bin_scale, int wanted_bits, int max_bits, struct seq_file *out);
 int grib_out(unsigned char **sec, float *data, unsigned int ndata, FILE *out);
 int complex_grib_out(unsigned char **sec, float *data, unsigned int ndata,
@@ -540,11 +540,11 @@ int mk_sec5and7(float *data, unsigned int n, unsigned char **sec5, unsigned char
         int use_scale, int dec_scale, int bin_scale, int wanted_bits, int max_bits);
 
 unsigned char *sec3_lola(int nx, double x0, double dx, int ny, double y0, double dy, unsigned char **old_sec);
-unsigned char *sec3_lc(double lov, double lad, double latin1, double latin2, int proj, 
+unsigned char *sec3_lc(double lov, double lad, double latin1, double latin2, int proj,
 	int nx, double x0, double dx, int ny, double y0, double dy, unsigned char **old_sec);
-unsigned char *sec3_polar_stereo(double lov, double lad, int proj, int nx, double x0, double dx, 
+unsigned char *sec3_polar_stereo(double lov, double lad, int proj, int nx, double x0, double dx,
 	int ny, double y0, double dy, unsigned char **old_sec);
-unsigned char *sec3_mercator(double lad, int nx, double x0, double dx, double xn, int ny, 
+unsigned char *sec3_mercator(double lad, int nx, double x0, double dx, double xn, int ny,
         double y0, double dy, double yn, unsigned char **old_sec);
 unsigned char *sec3_gaussian(int nx, double x0, double dx, int ny, double y0, unsigned char **old_sec);
 unsigned char *sec3_rot_ll(int nx, double x0, double dx, int ny, double y0, double dy,

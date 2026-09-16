@@ -26,12 +26,12 @@
  *
  * parse_1st_msg .. returns 1st message starting at sec[0], fills in sec[]
  *   note sec[9] is used to store pointer to last valid bitmap
- */ 
+ */
 
 int parse_1st_msg(unsigned char **sec) {
 
 	unsigned char *p;
- 
+
 	if (sec[0] == NULL) fatal_error("parse_1st_msg .. sec[0] == NULL","");
 	sec[2] = sec[6] = NULL;
 	sec[9] = NULL;			/* last valid bitmap */
@@ -67,7 +67,7 @@ int parse_1st_msg(unsigned char **sec) {
 int parse_next_msg(unsigned char **sec) {
 
 	unsigned char *p, *end_of_msg;
- 
+
 	end_of_msg = sec[0] + GB2_MsgLen(sec);
 	p = sec[7];
 	if (p[4] != 7) {

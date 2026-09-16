@@ -44,11 +44,11 @@ int f_ens(ARG0) {
 	    switch(*type) {
 	        case 0: sprintf(inv_out,"ENS=hi-res ctl"); break;
 	        case 1: sprintf(inv_out,"ENS=low-res ctl"); break;
-	        case 2: 
+	        case 2:
 			sprintf(inv_out,"ENS=-%d", pert); break;
-	        case 3: 
+	        case 3:
 			sprintf(inv_out,"ENS=+%d", pert); break;
-	        case 4: 
+	        case 4:
 			sprintf(inv_out,"MM-ENS=%d", pert); break;
 		case 192:
 			if (center == NCEP) {
@@ -119,7 +119,7 @@ int f_N_ens(ARG0) {
 	if (p) {
 	    n = *p;
 	    if (n == 255) n = -1;
-	    sprintf(inv_out,"%d ens members", n); 
+	    sprintf(inv_out,"%d ens members", n);
 	}
     }
     return 0;

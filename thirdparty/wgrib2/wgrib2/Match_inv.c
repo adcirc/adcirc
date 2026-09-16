@@ -56,7 +56,7 @@ int f_match_inv_add(ARG3) {
 	    // initialize fn(..)
             match_extra_fn[match_extra_fn_n](init_ARG1(inv_out, &(match_extra_fn_local[match_extra_fn_n]),arg1));
             i = strlen(arg1) + 1;
-            if ((match_extra_fn_arg1[match_extra_fn_n] = (char *) malloc(i)) == NULL) 
+            if ((match_extra_fn_arg1[match_extra_fn_n] = (char *) malloc(i)) == NULL)
 		fatal_error("match_inv_add: memory allocation","");
             strncpy(match_extra_fn_arg1[match_extra_fn_n], arg1, i);
         }
@@ -64,11 +64,11 @@ int f_match_inv_add(ARG3) {
 	    // initialize fn(..)
             match_extra_fn[match_extra_fn_n](init_ARG2(inv_out, &(match_extra_fn_local[match_extra_fn_n]),arg1,arg2));
             i = strlen(arg1) + 1;
-            if ((match_extra_fn_arg1[match_extra_fn_n] = (char *) malloc(i)) == NULL) 
+            if ((match_extra_fn_arg1[match_extra_fn_n] = (char *) malloc(i)) == NULL)
 		fatal_error("match_inv_add: memory allocation","");
             strncpy(match_extra_fn_arg1[match_extra_fn_n], arg1, i);
             i = strlen(arg2) + 1;
-            if ((match_extra_fn_arg2[match_extra_fn_n] = (char *) malloc(i)) == NULL) 
+            if ((match_extra_fn_arg2[match_extra_fn_n] = (char *) malloc(i)) == NULL)
 		fatal_error("match_inv_add: memory allocation","");
             strncpy(match_extra_fn_arg2[match_extra_fn_n], arg2, i);
         }
@@ -83,7 +83,7 @@ int f_match_inv_add(ARG3) {
 	    else if (match_extra_fn_nargs[j] == 1)
                 match_extra_fn[j](fin_ARG1(inv_out, &(match_extra_fn_local[j]), match_extra_fn_arg1[j] ));
 	    else if (match_extra_fn_nargs[j] == 2)
-                match_extra_fn[j](fin_ARG2(inv_out, &(match_extra_fn_local[j]), match_extra_fn_arg1[j], 
+                match_extra_fn[j](fin_ARG2(inv_out, &(match_extra_fn_local[j]), match_extra_fn_arg1[j],
                      match_extra_fn_arg2[j] ));
 	}
 	for (j = 0; j < match_extra_fn_n; j++) {
@@ -153,13 +153,13 @@ int match_inv(int type_datecode, ARG0) {
 
 	if (type_datecode == SHORT_DATECODE) f_t(call_ARG0(inv_out,NULL));
 	else f_T(call_ARG0(inv_out,NULL));
-	
+
         strcat(inv_out,":");
         inv_out += strlen(inv_out);
 
         if (type_ext_name) f_ext_name(call_ARG0(inv_out,NULL));
 	else f_var(call_ARG0(inv_out,NULL));
-	
+
         strcat(inv_out,":");
         inv_out += strlen(inv_out);
 
@@ -225,11 +225,11 @@ int match_inv(int type_datecode, ARG0) {
 
 	/* added 8/2017 */
         for (j = 0; j < match_extra_fn_n; j++) {
-	    if (match_extra_fn_nargs[j] == 0) 
+	    if (match_extra_fn_nargs[j] == 0)
                 match_extra_fn[j](call_ARG0(inv_out, &(match_extra_fn_local[j])));
-	    else if (match_extra_fn_nargs[j] == 1) 
+	    else if (match_extra_fn_nargs[j] == 1)
                 match_extra_fn[j](call_ARG1(inv_out, &(match_extra_fn_local[j]),match_extra_fn_arg1[j]));
-	    else if (match_extra_fn_nargs[j] == 2) 
+	    else if (match_extra_fn_nargs[j] == 2)
                 match_extra_fn[j](call_ARG2(inv_out, &(match_extra_fn_local[j]), match_extra_fn_arg1[j], match_extra_fn_arg2[j]));
             strcat(inv_out,":");
             inv_out += strlen(inv_out);

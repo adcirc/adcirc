@@ -69,7 +69,7 @@ int f_grib_out_irr(ARG2) {
 	return 0;
     }
 
-    if ( (30 + 8 * (size_t) n) != (size_t) (30 + 8 * n)) 
+    if ( (30 + 8 * (size_t) n) != (size_t) (30 + 8 * n))
 	fatal_error("grib_out_irr: too many grid points, sec3 overflow","");
 
     if ((gds = (unsigned char *) malloc(30 + 8 * (size_t) n)) == NULL) fatal_error("grib_out_irr: memory allocation","");
@@ -116,7 +116,7 @@ int f_grib_out_irr(ARG2) {
 
     old_gds = sec[3];
     sec[3] = gds;
-    grib_wrt(sec, data_tmp, n, n, 1, use_scale, dec_scale, 
+    grib_wrt(sec, data_tmp, n, n, 1, use_scale, dec_scale,
 		bin_scale, wanted_bits, max_bits, grib_type, save);
     sec[3] = old_gds;
     if (flush_mode) fflush_file(save);

@@ -6,6 +6,5 @@ This section provides detailed information about running the ADCIRC model, inclu
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   
+
    command_line_options
-   

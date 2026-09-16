@@ -1,6 +1,6 @@
-pre-release  1/2004: Variable names now appear on the inventory. Ok, only 1% of the GRIB names have 
+pre-release  1/2004: Variable names now appear on the inventory. Ok, only 1% of the GRIB names have
                 been typed in and I plan to revise this code.
-pre-release  2/2004: Levels now work. Ok some levels may need polishing but it works. Inventory of 
+pre-release  2/2004: Levels now work. Ok some levels may need polishing but it works. Inventory of
                  sample eta file lacks grid information but is usable.
 pre-release  9/2004: Jaakko Hyvätti added the "gribtab" code
 pre-release  8/2005: extraction of grib data works
@@ -57,7 +57,7 @@ v0.1.4e	11/2006   fixed bug in un-scanning code: WE|EW:SN, (we:ns and we:sn were
 	12/2006   modified -t and -vt to produce datecode in grads format when -v2 used
 v0.1.4f 1/2007    Many mods from Manfred Schwarb, remove wrtieee_header, libg2c -> libgrib2c,
                   error checks for thinned grids
-                  error check on verftime 
+                  error check on verftime
                   many cleanup patches form M. Schwarb - no effect on code operation
                   better thinned grid support .. in lat-lon grids
 		  uint8 fixed for numbers > 2 GB (ok, if I had 2GB grib record, I could check the fix)
@@ -93,7 +93,7 @@ v0.1.5c 6/2007     updated Netcdf.c  by Sergey Varlamov
                    Support for grid 204, some other minor grids added
 		   API for closest/closest_init made more general for future changes
                    modified makefiles to be easier to change to pre-compiled libraries
-v0.1.5d 9/2007     changed to new version of g2clib (1.0.5), updated makefiles,minor netcdf changes 
+v0.1.5d 9/2007     changed to new version of g2clib (1.0.5), updated makefiles,minor netcdf changes
 v0.1.5e 10/2007	   would segfault if -netcdf and undefined variable (fixed cname), modified makefile
 10/2007            scaled2FLT has less roundoff error
                    -spread doesn't print out undef values
@@ -103,7 +103,7 @@ v0.1.5e 10/2007	   would segfault if -netcdf and undefined variable (fixed cname
 11/2007		   added -ijundefine option
 11/2007		   allow inventories to start with blanks
 		   use tigge table if produced as a tigge product (secondary table)
-v0.1.5f 11/2007	
+v0.1.5f 11/2007
 11/2007		   VerfTime.c fixed when not a forecast
 		   updated -CodeTable_5.0 and -packing
 		   updated CodeTable_4.10.dat
@@ -132,7 +132,7 @@ v0.1.6 1/2008  ---------------------------------------
                        The change log should be all contributors, not mine.
 2/2008		   -vector_dir prints whether N/S or grid winds
 		   ffopen added, allows multiple opens to same file
-		   -if works (previously just stub)  
+		   -if works (previously just stub)
                        -if REG_EX -grib file    will do -grib if REG_EX
 		   LatD for lambert-conformal vsm
 		   updated Sec3 vsm
@@ -151,7 +151,7 @@ v0.1.6.1 2/2008  ---------------------------------------
                   vsm: restructuring Netcdf code for use by HDF library
 v0.1.6.2 2/2008  ---------------------------------------
 		  fixed version code
-	          thinned grids -> go to "raw" mode,  done by adding 
+	          thinned grids -> go to "raw" mode,  done by adding
                       output_type_wanted (fix error in display)
 v0.1.6.2a 2/2008  ---------------------------------------
                  in makefiles got rid of space after -L and -I
@@ -171,7 +171,7 @@ v0.1.7.1 3/2008 ----------------------------------------
 		 Bbox by Arlindo da Silva
                  update -packing
                  error checking fix scan.c Manfred Schwarb
-                 fixed thined grid bug/changed scan order of grib_out 
+                 fixed thined grid bug/changed scan order of grib_out
                       now in grid order (we:sn default)
 		 sec8 now uses 55 instead of '7' for compatibility non-ascii
 		 reads single precision ieee-grib
@@ -193,7 +193,7 @@ v0.1.7.2b 3/2008 ----------------------------------------
 		Manfred Schwarb: big cleanup signed/unsigned, remove extern from wgrib2.h
                     print statements, signed/unsigned conversions in lola/geo fixed
 v0.1.7.4   4/2008 ---------------------------------------- (internal release)
-		wgrib.c:  up to 8 parameters for mysql 
+		wgrib.c:  up to 8 parameters for mysql
 		csv.c: added Niklas Sondell, Storm Weather Center
 		mysql.c: added Niklas Sondell, Storm Weather Center
 		ijsmall_domain, small_domain added
@@ -303,7 +303,7 @@ v0.1.7.7i   12/2008 ----------------------------------------
 		    The default value of g2clib will depend on the installation
 
 		Modified grib_out so that dec_scale is set to zero for constant fields
-		  as a result, the constant fields are NCEP-library compatible 
+		  as a result, the constant fields are NCEP-library compatible
 v0.1.7.8   1/2009 ----------------------------------------
 		changed Sec4.c so that when NCEP prints TMIN/TMAX
 		old: 264:30420217:d=2004021912:TMIN:2 m above ground:66-72 hour missing fcst:
@@ -323,7 +323,7 @@ v0.1.7.8b  1/2009 --------------------------------------------------
 			and filled other missing NCEP local levels
 		added -fix_ncep_2, NCEP operations has probability for less than negative value
 		    wrong, used 2's complement to store integer rather than signed number.
-		    NCEP operations knows of the problem but can't fix it because of 
+		    NCEP operations knows of the problem but can't fix it because of
 		    downstream software.
 		changed -prob: prob>N to prob >N, prob<N prob <N, prob>N <N to prob =N
 		-lev0 .. handle factions of a PV unit in control file
@@ -389,27 +389,27 @@ v0.1.7.8i  5/2009 ------- old version posted on web site, posted for couple hour
 		new gribtable
 v0.1.7.8j  6/2009 ------------------------------
 		removed a debug statement in geo.c
-		added semicolon after match_inv 
+		added semicolon after match_inv
 		N_ens works for more pdts
 		more table specific code should be moved to Code_Values.c
 		   f_lev, f_lev0 use fixed_surfaces()
 		   this is in preparation for chemistry templates.
 		Sergey Varlamov: add netcdf4 to Netcdf.c etc
 		Reinoud Bokhorst: added -tosubmsg, thanks
-		Fix rd_grib2_msg: Reinoud Bokhorst pointed out that code table 
+		Fix rd_grib2_msg: Reinoud Bokhorst pointed out that code table
 		   6.0=254 was handled incorrectly
 		Reinoud Bokhorst: added Checksum.c and crc32.c  thanks
 		move reftime to Verftime.c, mod f_csv, AAIG, Sec1, Mysql
 		  to use reftime
-		modified codetable_5_5, diagnostics for substitute missing 
+		modified codetable_5_5, diagnostics for substitute missing
 		  values complex packing
-		Reinoud Bokhorst: Scan.c, fix translation tables with 
+		Reinoud Bokhorst: Scan.c, fix translation tables with
 		    multi-scan files and grib_out
 		Reinoud Bokhorst: Grib.c, fixed sec[5] n points
 		Reinoud Bokhorst: 0xSec check size of output writing to inv_out
 		Pablo Romero: fixed a bug in makefile for mysql = -> +=
 		Mod_grib: added extern to use_scale, dec_scale, bin_scale
-		subtle change in min_val of grib_out routines now making a 
+		subtle change in min_val of grib_out routines now making a
 			new file reproduces old file
 		changed -processid to add observational process id, new format
 		added -spectral_bands (no test data)
@@ -427,10 +427,10 @@ v0.1.8.0  8/2009 ------------------------------
 v0.1.8.1  8/2009 ------------------------------
 		f_set_ftime now alters code table 1.2 and 1.3
 		f_time now calls a2time_range
-		f_metadata calls f_time or f_ave	
-		f_RPN: added print_{min,max,rms,corr} corr/rms are 
+		f_metadata calls f_time or f_ave
+		f_RPN: added print_{min,max,rms,corr} corr/rms are
 			cosine(lat) weighted
-		modified wgrib2, all functions (not just inv) can write to 
+		modified wgrib2, all functions (not just inv) can write to
 			inv_out in during execution
 		added yrev to RPN.c, only applies to we:sn and we:ns files.
 		added set_metadata: added field: scale=Dec_scaling,Bin_scaling
@@ -465,7 +465,7 @@ v0.1.8.2  11/2009 ------------------------------
 		added -start_ft .. for use with -b option in gribmap
 		from Manfred Schwarb: include "mysql.h" -> include <mysql.h>
 			Wrt_grib .. replaced strncat/strncpy with test & strcat/strcpy
-			Mod_grib .. strncat/strncpy with strcat/strcpy (internal tables no need to 
+			Mod_grib .. strncat/strncpy with strcat/strcpy (internal tables no need to
 				worry about bad guys)
 		gcc caught problems in f_get_int(), Sec5 and VerfTime.
 		from Manfred Schwarb: code cleanup, found bug in f_get_int(), same fix as previous line
@@ -473,7 +473,7 @@ v0.1.8.2  11/2009 ------------------------------
 		replaced Sec5:nval() by #define GB2_Sec5_nval(sec) as part to move details to .h and Code*.c
 		added some prototypes that so that gcc wouldn't complain.
 		added some cleanup by Manfred Schwarb: RPN, Wind_speed, copy, Csv, Grib, Import, jpeg_pk,
-			NCEP_norm, Small_grib, test_sec, unpk, unpk_complex, unpk_run_length, 
+			NCEP_norm, Small_grib, test_sec, unpk, unpk_complex, unpk_run_length,
 			Grads, Netcdf
 		changed complex_pk:  size_t -> size_tail, changed size_m and size_h too
 		added Manfred Schwarb, level.c: "1000 m above ground - 0 m above ground" -> 1000-0 m above ground"
@@ -498,11 +498,11 @@ v0.1.8.2  11/2009 ------------------------------
 		added more set_ave formats .. need more
 		removed some changes to fix_ncep .. doesn't work for all cases
 		Manfred more guard bits in jpeg2000 encoding - fixed jpeg_pk.c
-v0.1.8.3  3/2010 ------------------------------ 
+v0.1.8.3  3/2010 ------------------------------
 		bug report from Manfred Schwarb: increase size of new_sec4 from 58 to 70 in Mod_grib
 		from Manfred Schwarb, cleanup AAIG Bbox Checksum Cyclic Data LatLon Macro Sec3
 			Small_grib Wrt_grib complex_pk geo, wgrib2 etc
-		added set_grib_max_bits 
+		added set_grib_max_bits
 		-rpn: added acos, asin, atan, atan2
 		-lev0: added "Xcm" for "X meters depth below land surface", corresponding to X_Ycm
 		-lev0: added "clm" leve1 == 1 && level2 == 8
@@ -517,7 +517,7 @@ v0.1.8.3  3/2010 ------------------------------
 		changed ave: problem with making climo of feb-monthly means (leap years)
 			change code to use reference time rather than validation time for "expectation"
 		bitstream.c -- replaced error message for n_bits > 25 bit by 32-bit-cpu && n_bits > 25
-		added grib to -lola 
+		added grib to -lola
 		CHECK code (wgrib2) is improved
 		preliminary code to use  latlon->ij codes, used by closest and closest_init
 			only lat-lon grid supported right now
@@ -572,7 +572,7 @@ v0.1.8.6  7/2010 ------------------------------------------------
 		radius of earth code table 3.2=3: convert from km to m
 		added -radius .. shows earth radius and major/minor axes
 		added -set_radius, need to add user defined radius/minor/major axes
-		-new_grid: added varibles ftn_npnts and ftn_nout for removing error messages 
+		-new_grid: added varibles ftn_npnts and ftn_nout for removing error messages
 			from AIX compiler
 		fix problem with USE_REGEX = 0: reported by Y. Tosa
 		added -if_rec option and parse_loop() code
@@ -608,7 +608,7 @@ v0.1.9.0  11/2010 ------------------------------------------------
 			to change year -set_date YYYY, to set year and month, -set_date YYYYMM
 		Ext_var.c undefined chemical changed from (1) to chemical_1
 		added UDF.c, modified Config.c
-		new_grid: added undefined wind rotation, improved error messages, 
+		new_grid: added undefined wind rotation, improved error messages,
                     fixed problem with V without U
 		prelim support for grid template 3.130
 		RPN: exc/swap .. was fixed but fix got lost (3/2012)
@@ -641,7 +641,7 @@ v0.1.9.1  11/2010 --------- unplanned early release
 			wgrib2.c rd_grib_msg: add sequential reads
 		makefile works with new cygwin 1.7.7-1
 		changed error messages -ave, -NCEP_norm
-		changed error message  "Warning: g2lib/g2clib jpeg deocde may differ from 
+		changed error message  "Warning: g2lib/g2clib jpeg deocde may differ from
                     WMO standard, use -g2clib 0 for WMO standard
 		updated gribtab.dat from NCO website
 		changed set_date to new syntax: -set_date INITIAL_DATE:DT:BLOCKSIZE
@@ -654,12 +654,12 @@ v0.1.9.2b  3/2011 ---- withdrawn
 		restore to 1.9.1 set_date, the new set_date worked but conflicted
 		with the use by set_metadata
 v0.1.9.2c  3/2011 ------------------------------------------------
-		added set_ts_dates 
+		added set_ts_dates
 		added Table 4.5 values 118 and 119 to Levels.c
 		added code to detect wrong size of section 7 for simple and IEEE packing
 		changed initial value of ipopts(2) from 0 to -1 (good for budget)
 		in Latlon.c fatal_error("no val","") change to be more informative
-		f_radius, fix when code_table 3.2==3 
+		f_radius, fix when code_table 3.2==3
 		added axes_earth()
 		closest: changed initial value for j to -1 in search for closest point
 			in case field is all NULL
@@ -684,7 +684,7 @@ v0.1.9.2c  3/2011 ------------------------------------------------
 		when table 4.11 == 4  ...ave LAF[...]++
 		when table 4.11 == X  ...ave ?[...]
 		  this affect product definition template 8
-		set_pdt: added more default sizes, add -set_pdt +N, copys 
+		set_pdt: added more default sizes, add -set_pdt +N, copys
                      parameter category and number
 		prt_stat_tr: if Code Table 4.11 = reserved, ":reserved:" -> "CodeTable 4.11=reserved"
 		prt_stat_tr: if Code Table 4.11 = missing, ":missing:" -> "CodeTable 4.11=missing"
@@ -697,7 +697,7 @@ v0.1.9.2c  3/2011 ------------------------------------------------
 		update makefile for hdf 1.8.6 and netcdf 4.1.1
 		config() says version of Netcdf installed
 		prelim version f_new_grid_vectors
-		ffopen(): error check, - can be used for stdin, check for read & write 
+		ffopen(): error check, - can be used for stdin, check for read & write
                     of same file set flush_mode = 1 if output to a pipe or stdout
 		Sander Hulst: Netcdf.c #if defined USE_NETCDF3 #undef NC_NETCDF4 $endif
 		   netcdf.h: NC_NETCDF4 .. implies netcdf v4 code
@@ -753,7 +753,7 @@ v0.1.9.4  8/2011 -------------------------------------------------
 		config.h added code to makefile for c and f95 compiler names
 		-rpn: added print_diff, fix last_lat code: speedup no output difference
 		Netcdf.c: changed illegal netcdf name code, turned off _FillValue for time variable
-		  added more units 
+		  added more units
 		fixed bug in -wind_speed introduced 1.8.5
 		for pdt=5/9 .. change units to prob, for pdt=6/10, change units to %, affect NETCDF code
 		irr_grid: limit -grid output to 300 lat-lon pairs otherwise inv_out would overflow
@@ -785,12 +785,12 @@ v0.1.9.5.1  12/2011 -------------------------------------------------
 		   to "oblate spheroid user defined major axis=%.1lf minor axis=%.1lf ave radius=%.1lf m"
 		geo.c: lambert2ll .. fixed case where grid is not WE:SN
 		geo.c: polar2ll .. fixed case where grid is not WE:SN
-		rd_grib_msg: added code to check that section length >= 5 
+		rd_grib_msg: added code to check that section length >= 5
 		WxTalk: added support for grib variable: PWTHER (ncep + mdl)
                 Regional Gaussian grid support:
 		   Small_grib: added Gaussian grid
-		   cyclic(): added gaussian grid (not thinned), modified ERROR 
-		   grb2.h added GDS_Gaussian_dlon 
+		   cyclic(): added gaussian grid (not thinned), modified ERROR
+		   grb2.h added GDS_Gaussian_dlon
 		   mk_kgds() .. allow regional gaussian grid
                    enabled everywhere except writing by IPOLATES
                 preliminary work for using gctpc for geolocation
@@ -802,7 +802,7 @@ v0.1.9.5.1  12/2011 -------------------------------------------------
 		added code table 4.91
 		fixed  -spectral_bands (note: no data to check)
 		Earth.c  fixed translation of scaled numbers (no effect on output)
-		2/10/2012: update gribtab, need to filter greek char and validation 
+		2/10/2012: update gribtab, need to filter greek char and validation
 		prelim for code table 4.52 validation
 		added location for code table 4.5 a/b, changed fixed_surface to use code_table_4_5a_location
 		code_table_4.3 added location
@@ -835,7 +835,7 @@ v0.1.9.6a  5/2012 -------------------------------------------------
 		Dusan Jovic (NCEP): updated grb2.h mk_kgds.c for NCEP grid 32769, 32768
 		updated CodeTables.c for NCEP grid 32769, 32768
 		changed all center == 7   to center == NCEP  (same for ECMWF)
-		Mod_grib.c: f_set():  added table_3.2, fixed problem when XX_loc(sec) returns NULL		
+		Mod_grib.c: f_set():  added table_3.2, fixed problem when XX_loc(sec) returns NULL
 		New_grid.c: change error messages, add mercator
 		sec3_grids.c: removed the creating the lat-lon values, remove last two args
 		change Cress_lola.c, New_grid.c, Lola.c: sec3_lola .. few args
@@ -851,18 +851,18 @@ v0.1.9.6a  5/2012 -------------------------------------------------
                      removed "raw output  raw"
 		Extname.c: table 4.3: added 9: climatology, 192: confidence Indicator
 v0.1.9.7  11/2012 -------------------------------------------------
-		changed wgrib2 fprintf(inv_file, item_deliminator); to 
+		changed wgrib2 fprintf(inv_file, item_deliminator); to
                       fprintf(inv_file,"%s", item_deliminator);
-                changed grid_id.c to grid_ident.c because of MacOS problems 
+                changed grid_id.c to grid_ident.c because of MacOS problems
 			(grid_id.c == Grid_id.c)
 		minor bug fix in g2clib
                 updated version from 1.9.7-beta to 1.9.7a
 v0.1.9.7a  11/2012 ----- Mac Release ------------------------------
 		small cleanup of makefile (C. R. Ferguson)
-                changed g2clib = 0 -> internal decoders, 1 -> emulation of g2clib bugs, 
+                changed g2clib = 0 -> internal decoders, 1 -> emulation of g2clib bugs,
 				2 -> g2clib
-                added USE_G2CLIB, include/exclude g2clib decoders (still uses 2 small routines 
-		   from g2clib) result of changes: g2clib decoders are not used for decoding 
+                added USE_G2CLIB, include/exclude g2clib decoders (still uses 2 small routines
+		   from g2clib) result of changes: g2clib decoders are not used for decoding
                    unless enabled In the future, g2clib decoders will be eliminated from the
 		   default configuration. (Needed for the debug configurations.)
 		added -wind_dir
@@ -879,7 +879,7 @@ v0.1.9.7a  11/2012 ----- Mac Release ------------------------------
 		codetable 4.7 now has text descriptions
 		updated f_ens for new codes
 		-set_ftime works with more values of pdt
-		updated Code_Values: forecast_time_in_units 
+		updated Code_Values: forecast_time_in_units
 		struct gribtab_s -> struct gribtable_s: added range of valid mastertables
 		    useful for handling distinct mastertables
 		added user gribtables: setup_user_gribtab, mod: wgrib2, Mod_grib.c, cnames.c, Config.c
@@ -897,7 +897,7 @@ v0.1.9.8  5/2013 -----------------------------------
 		added various Gaussian grids to ncep_grids.c
 		better error message, f_g2clib
 		can turn off png and jpeg2000 support by makefile
-		 if turn off png, jasper, proj4, netcdf3 and netcdf4, no external 
+		 if turn off png, jasper, proj4, netcdf3 and netcdf4, no external
 		 libraries that need to be configured.  good for cross-compiling.
 		0xSec fixed section number output for mode >= 2
 		added lambertc grid defn for -new_grid: new_grid_lambertc, modified New_grid.c
@@ -931,7 +931,7 @@ v0.1.9.9  9/2013 -----------------------------------
 		major changes to -merge_fcst: supports ensembles, many changes, old code had
 		    problems
 		wind_speed, wind_dir: old: failed if mastertab > 6, now works for all mastertab != 255
-		    ie local table      
+		    ie local table
 		Grads.c: f_ctl_inv, change probability numbers to keep trailing zeros  3 and 30 were
 		  causing grads variable name to be aliased .. can stll happen if scaling factor isn't constant
 		Grads.c: f_ctl_inv prob interval was fixed a2,first,first -> a2,first,second
@@ -942,7 +942,7 @@ v0.1.9.9  9/2013 -----------------------------------
 		-set_ens, so that -1 to be no change
 		fix -udf_arg buf[2]
 		   want all calls to f_*() to use call_ARGN(buffer, NULL, arg1..argN)
-		   if (local == NULL) then call is recursive. must examine code to check local not used!              
+		   if (local == NULL) then call is recursive. must examine code to check local not used!
 		all code: CALL_ARG{N} -> call_ARG{N}
 		netcdf/mysql*.c:  f_lev(...) -> f_lev(call_ARG0)
 		wgrib2: f_match_inv(..) -> f_match_inv(call_ARG0) f_help -> f_help(call_ARG0)
@@ -952,7 +952,7 @@ v0.1.9.9  9/2013 -----------------------------------
 		  this changed -ens code 4.7  10 -> 10% 50 -> 50% and 90 -> 90%
 		rpn: ln is fixed, popped stack by mistake
 		added -Werror=format to makefile
-		removed unused variable from geo.c 
+		removed unused variable from geo.c
 		deleted empty file help.c, pot case insen fs prob found J. Taylor
 		support for code table 3.20
 		better but incomplete support for cross-section grids
@@ -982,7 +982,7 @@ v0.1.9.9  9/2013 -----------------------------------
 		fcst_ave: added test for valid dtime
 		ave_test: added test for valid dtime
 		rdieee: added to for read completion
-		removed rd_bitstream(), 
+		removed rd_bitstream(),
 		renamed rd_bitstream_offset() as rd_bitstream(), added 31 bit support
 		removed rd_var_len_bitstream(), mk_bitstream()
 		changed error add_bitstream to n_bits > 25, added error msg to add_many_bitsteam()
@@ -993,18 +993,18 @@ v0.1.9.9  9/2013 -----------------------------------
 		added set_ival
 		updated set_ival to support a list of pointsZ
 		complex_pk.c free(u) early, reduce footprint by 4*ndata bytes
-		int8.c best_scaled_value() increases scaling (giving more precision) as long as 
+		int8.c best_scaled_value() increases scaling (giving more precision) as long as
                    val-floor(val) != 0 and val/10 < INT_MAX, this means val=1000 is kept as 1000.
 		   NOTE: the scaling factor and scaled value changes from previous versions of wgrib2
 		   NOTE: the scaled level1 and level2 have changed .. more precision
 		gribtable: two SOILM with two different units kg/m/m and kg/m/m/m, both are deprecated
 		   rename SOILM (kg/m/m/m) to SOIL_M, so grib1 and grib2 tables are the same
 		   it is a deviation from NCO tables but NCO hasn't made a decision
-		   NOTE: SOIL_M is not in NCO tables	
+		   NOTE: SOIL_M is not in NCO tables
 v0.2.0.0  6/2014 -----------------------------------
 		-gctpc changed from inv to misc option
 		-merge_fcst: if N == 0, output every merge step, for S2S (tigge)
-		-set_metadata: fixed problems made in the 2.0.0 release.  
+		-set_metadata: fixed problems made in the 2.0.0 release.
 v0.2.0.1  7/2014 -----------------------------------
 		Level.c added more fixed levels
 		support for PDT=60,61
@@ -1028,7 +1028,7 @@ v0.2.0.1  7/2014 -----------------------------------
 		support for pdt 4.6 and 4.10, in ctl_inv (Grads.c)
 		fixed cname.c units for pdt 4.6 and 4.10 should not be %
 		ffclose, by John Howard, ffclose_finished WND
-		added ffclose to -bin -ieee -text -spread -grib -GRIB -import_ieee, -import_bin, 
+		added ffclose to -bin -ieee -text -spread -grib -GRIB -import_ieee, -import_bin,
 		    -import_text -csv -cress_lola -ijbox -new_grid -small_grib -ijsmall_grib
 		    -grib_ieee -ncep_uv -set_metadata -grib_out -lola -s_out -inv_f77 -inv
 		    -print_out -nl_out -NCEP_norm -merge_fcst -ave -fcst_ave -irr_grid
@@ -1075,7 +1075,7 @@ v0.2.0.1  7/2014 -----------------------------------
 		cleanup of defined but unused variables (found using cppcheck)
 		Scan.c: added parameters to routines, make it callable by f_import_grib()
 		added -import_grib
-		-fcst_ave, -ave, -wind_dir, -wind_speed, -merge, -ncep_norm : old: picked 
+		-fcst_ave, -ave, -wind_dir, -wind_speed, -merge, -ncep_norm : old: picked
                     up scaling from first record.  Problem when first record was constant field.
 		    set use_scaling=0
 		-fcst_ave, -ave: replaced undo_scan_order, saved many mallocs/frees
@@ -1087,7 +1087,7 @@ v0.2.0.1  7/2014 -----------------------------------
 		Merge.c Manfred Schwarb: treat code_table_4_10(sec) as signed instead of case to unsigned
 		    (no change in code behavior)
 		NCEP_norm.c Manfred Schwarb: removed unused variable pdt, typo in format
-		Prob.c Manfred Schwarb: fixed format print hex number with %u format 
+		Prob.c Manfred Schwarb: fixed format print hex number with %u format
 		f_new_grid_vectors() accepts lists
 		NCEP_uv.c: put struct local_struct into function definition (looks better)
 		NCEP_uv: better error messages
@@ -1096,10 +1096,10 @@ v0.2.0.1  7/2014 -----------------------------------
 		complex_grib_out: strange nam file: RIME had val=(1e+10+i*2^1)*10^-10, i=0..511 (#bits=9)
 			convert to data to integer vector  u[i] = floor((data[i] - ref)*scale + 0.5);
 			when using decimal scaling, ref is not quite the min value under all compilation
-			options (could be 64-bit register vs 32-bit memory value).  The scaling factor is 
+			options (could be 64-bit register vs 32-bit memory value).  The scaling factor is
 			so large that u[i] could be negative!  Added a step to make sure u[i] is >= 0
 		-fcst_ave, -ave, -wind_dir, -wind_speed, -merge, -ncep_norm : restored to old
-		    behavior, scaling from first record. 
+		    behavior, scaling from first record.
 		added -code_table_4.8
 		-set added table_4.7 table_4.8
 		-rpn: added smth9g and smth9r
@@ -1130,7 +1130,7 @@ v0.2.0.2a beta  3/2015 -----------------------------------
 		CW2: f_inv open files a+ and w+, need to opens
 		rewind_file: changed from rewind() to fseek() to get error code
 		CW2: fixed ffopen() so if error, link list is in good shape for future call
-		forecast_time_in_units now signed: Code_Values.c Merge.c, Set_date.c 
+		forecast_time_in_units now signed: Code_Values.c Merge.c, Set_date.c
 			Set_ts_dates.c, Mod_grib, Verftime.c
 		added sub_dt, add_time: dtime can now be plus or minus
 		Verftime.c use code_table_4_4() to check for no forecast hour
@@ -1142,7 +1142,7 @@ v0.2.0.2a beta  3/2015 -----------------------------------
 		wgrib2(): if malloc of data fails && callable wgrib2 .. set ndata = 0
 		EOF.c: many small changes
 		wgrib2: fixed setjmp code .. must save current stack frame!!!! else seg fault
-			on subsequent calls to wgrib2 && fatal_error!!! 
+			on subsequent calls to wgrib2 && fatal_error!!!
 		rd_inventory: make buffer[STRING_SIZE] -> buffer[INV_STRING_SIZE]
 		updated New_grid.c, vectors and default_vectors so can compile without IPOLATES
 		removed unused variable i from Set_percentile.c
@@ -1166,7 +1166,7 @@ v0.2.0.2a beta  3/2015 -----------------------------------
 		many files: changed FILE *file to struct seq_file *file.
 		changed gctpc to remove warning about som_series by removing static som_series from proj.h
 		   and adding them to sominv.c and somfor.c
-		Mem_buffer: data structures are statically initialized here instead of call to 
+		Mem_buffer: data structures are statically initialized here instead of call to
 		    init_mem_buffers, this allows external routines to initialize memory file.for CW2
 		init_mem_buffers only checks that initialization was done
 		RPN.c initialize rpn_n[] and rpn_data[] at compile time rather than at run time
@@ -1218,8 +1218,8 @@ v0.2.0.2a beta  3/2015 -----------------------------------
 			wgrib2 totally independent of g2clib in default mode.
 			Problem was NCEP Central Operations (NCO) had g2clib compiled with
 			-D __64BITS__ which told g2clib that ints were 64 bits even
-			though ints were 32 bits!  Normal people don't do this.  
-			So if you linked in NCO's libraries you had problems in the API.  
+			though ints were 32 bits!  Normal people don't do this.
+			So if you linked in NCO's libraries you had problems in the API.
 			However, NCO requires you to link in their libraries.  I have no idea
 			how many external versions of g2clib this will affect as it is unknown
 			if the NCO makefile for g2clib is widely distributed.
@@ -1304,16 +1304,16 @@ v0.2.0.3  11/2015 -----------------------------------
 		support for pdt=4.32, 4.33, 4.34
 		space_view_closest: return long int, error if iy >= nny (before: iy > nny), 2G
 		closest(), latlon_closest(), space_view_closest(): from int to long int
-		bug fix: Many thanks to Steve Sullivan (mathcom.com) who found a bug in complex packing 
-		    (complex_grib_out) and provided a bug fix.  Complex packing divides the string of grid 
+		bug fix: Many thanks to Steve Sullivan (mathcom.com) who found a bug in complex packing
+		    (complex_grib_out) and provided a bug fix.  Complex packing divides the string of grid
 		    points into groups.  The minimum grid point value within the group is the group reference
 		    value.  In order to pack the group references, you need to find the maximum
-		    group reference value (grefmx).  The loop that finds the grefmx bypasses the reference 
-		    value of the 1st group.  This is a problem when the reference value of the 1st group is 
-		    the maximum reference values and the number of bits required to encode this value is 
-		    larger than number of bits required to encode the second largest reference value.  
-		    This bug is for versions 2.0.0 - 2.0.3.  This bug is more likely to occur when the grid 
-		    is small.  
+		    group reference value (grefmx).  The loop that finds the grefmx bypasses the reference
+		    value of the 1st group.  This is a problem when the reference value of the 1st group is
+		    the maximum reference values and the number of bits required to encode this value is
+		    larger than number of bits required to encode the second largest reference value.
+		    This bug is for versions 2.0.0 - 2.0.3.  This bug is more likely to occur when the grid
+		    is small.
 v0.2.0.4  2/2016 -----------------------------------
 		updated to libpng.1.2.56
 		f_match_inv: old match inv depended on verbosity, new: match_inv is fixed
@@ -1323,7 +1323,7 @@ v0.2.0.4  2/2016 -----------------------------------
 		-ave: support pdt = 2 and 12
 		wrtieee(): initialize i
 		added -set_date +10hr, set_date -12mo,
-		-ave: pdt==1, fixed rt, sec4[50] = 1; 
+		-ave: pdt==1, fixed rt, sec4[50] = 1;
 		updated code for table 4.233, updated table 4.233, remove <sub> and </sub>
 		support for pdt 4.45, 4.46, 4.47
 		wgrib2.c: "g2lib/g2clib XXX decode may differ from WMO standard"
@@ -1384,7 +1384,7 @@ v0.2.0.5rc  7/2016 -----------------------------------
 v0.2.0.5    7/2016 -----------------------------------
 		added -set table_4.5a, -set table_4.5b  (some MDL files used a bad code table 4.5b)
 		removed error message from wgrib2_set_mem_buffer() and wgrib2_get_mem_buffer()
-		changed return code for wgrib2_set_mem_buffer from 2 to 3.  unify return codes for set/get mem_buffer()   
+		changed return code for wgrib2_set_mem_buffer from 2 to 3.  unify return codes for set/get mem_buffer()
 		change N_REGS -> N_RPN_REGS, moved to wgrib2.h, set N_RPN_REGS=20
 		fixed RPN.c to reflect new values of N_RPN_REGS (vectors had to be manually increased)
 		changed grb2_inq() in wgrib2api.c: old: used rpn register 0,1,2   new: uses registers 17,18,19
@@ -1497,11 +1497,11 @@ v0.2.0.6c   2/2017 -----------------------------------
 		grb_inq(..): read of ftn_api_fn0 changed from i8,5(1x,i8) to i11,5(1x,i11)
 		    this allows reading of grids bigger than 99,999,999 points
 		-v -varX : the output has been reformatted for local variables have the format
-                          var discipline=0 center=34 local_table=1 parmcat=1 parm=203 
+                          var discipline=0 center=34 local_table=1 parmcat=1 parm=203
 		-set_var(..) now understands: -var (undefined variables) and -varX formats
-                   var discipline=0 center=34 local_table=1 parmcat=1 parm=203 
-                   var discipline=10 master_table=2 parmcat=0 parm=11 
-                   var10_2_1_7_0_11 
+                   var discipline=0 center=34 local_table=1 parmcat=1 parm=203
+                   var discipline=10 master_table=2 parmcat=0 parm=11
+                   var10_2_1_7_0_11
 		small_domain(..) use GDS_change_no to avoid duplicate calculations
 		small_domain(..) for lat/lon, mercator, only scan axis to save time
 		fwrite_file(..): added ferror(..) after fwrite
@@ -1510,7 +1510,7 @@ v0.2.0.6c   2/2017 -----------------------------------
 			added check for malloc(..) working
 		-set_pdt: supports aerosols pdt=46, 48
 		-set_ftime2: fixed error message Set_ftime2: no match string=$s
-		-set_pdt, if len specified, do not add extra bytes 
+		-set_pdt, if len specified, do not add extra bytes
 			  if len not specified, add extra bytes for n time ranges
 		f_misc: print aerosol size for pdt 44..47 (only did 44 before)
 		f_spatial_proc(..): pdt 15, changed output format, more info
@@ -1530,7 +1530,7 @@ v0.2.0.6c   2/2017 -----------------------------------
 		-radius now prints out major/minor axes
 		-radius output for user define oblate spheroid changed, consistent with other new output
 		-rpn print_ave,print_rms,print_diff,print_corr will work when lat not defined
-		-rpn_rcl, -rpn_sto, bug fix: do not set decode=1 
+		-rpn_rcl, -rpn_sto, bug fix: do not set decode=1
 		makefile: clean now cleans ftp_api
 		default vector fields: added USSD/VSSD
 		added -alarm, terminates wgrib2 after N seconds by the alarm function
@@ -1539,7 +1539,7 @@ v0.2.0.6c   2/2017 -----------------------------------
 		added code_table 3.2 for grid def 101
 		modified Earth.c as grid def 101 does not support user major/minor axes
 		sec3_lc: change LatSP 0.000000 LonSP 0.000000 -> LatSP -90.000000 LonSP 0.000000
-			 change definition of latitude of southern pole                         
+			 change definition of latitude of southern pole
 			 THIS CHANGE REQUIRES TIN for interpolation products
 		support for grid 101: -grib_out_irr2, Sec3.c
 		updated documenation: undefine_val.html to reflect that the code can undefine a range
@@ -1570,12 +1570,12 @@ v0.2.0.6c   2/2017 -----------------------------------
 		   I can't think of a current machine for which this is not true.
 		added: -reduced_gaussian_grid, transform from reduced Gaussian to full Gaussian grids
 v0.2.0.7   12/2017 -----------------------------------
-		report that missing. zlib.h in RedHat system, changed makefile which may 
+		report that missing. zlib.h in RedHat system, changed makefile which may
                    but probably doesn't fix the problem
 		update Code_Values.c
 		Time_processing.c: do_ave .. quit if save->n_fields == 0
 		added -ens_processing
-		Level.c update code table 4.5 (level_table[]), replace CodeTable_4.5_ncep.dat 
+		Level.c update code table 4.5 (level_table[]), replace CodeTable_4.5_ncep.dat
 		    by ncep_level_table[] (needed by -set_lev) and makes codes more consistent
                     eliminated need for CodeTable_4.5_ncep.dat and get_code_Table_4.5_ncep.sh
 		    simplified special ncep levels
@@ -1639,7 +1639,7 @@ v0.2.0.7   12/2017 -----------------------------------
 		wgrib2api: added get_(ref/start/end)_edate, dynamical allocation of @mem:XX
 		change number of memory buffers to 30, should fix wgrib2api to read N_num_memory_buffers
 		   from wgrib2.h file
-		Level.c and Mod_grib.c added %g (Eta|logarithmic hybrid|hybrid height|hybrid pressure) 
+		Level.c and Mod_grib.c added %g (Eta|logarithmic hybrid|hybrid height|hybrid pressure)
                    level and layers, needed by fv3-core
 		Grads.c: added hyp and hyh (hybrid pressure level/layer and hybrid height level/layer)
 		changed Ftime2.c so that when NCEP prints TMIN/TMAX
@@ -1731,7 +1731,7 @@ v0.2.0.8   2/2019 - v2.0.8
 		 SRAD -> SCRAD (Scaled Radiance)
                  TSEC -> IRTSEC
 
-		import_netcdf: fix scale_factor, 
+		import_netcdf: fix scale_factor,
 		import_netcdf: data can be in anytype (old: float only)
 		import_netcdf: calculations are in double precision, before returning float[]
 		import_netcdf: fix scaling: old: required offset and scaling to be set
@@ -1780,7 +1780,7 @@ v0.2.0.8   2/2019 - v2.0.8
 		added: -geolocation which prints out which geolocation package created lat/lon values
 		added: -new_grid_format
 		makefile: fix typos to make USE_G2CLIB work, submitted G. Trojan
-		-rpn:	old: (number)(characters) -> number 
+		-rpn:	old: (number)(characters) -> number
 			new: (number)(characters) -> error
 		changed grib2/makefile and grib2/lib/makefile to make shared library libwgrib2.so,
 			for COMP_SYS=gnu_linux in use by python interface
@@ -1788,7 +1788,7 @@ v0.2.0.8   2/2019 - v2.0.8
 		splib: ncpus.f -> ncpus.F .. now compile when compiled without OpenMP
 		splib: #if USE_SPECTRAL == 1  in polatess4.f90 -> polatess4.F90
 		splib: #if USE_SPECTRAL == 1  in polatesv4.f90 -> polatesv4.F90
-		RPN.c logf() -> log()  fix bug in gclib 
+		RPN.c logf() -> log()  fix bug in gclib
                 RPN.c  more parallel code
 		wgrib2.c: flush after writes to inv_file
 		-rpn_rcl: fixed if (rpn_data == NULL and rpn_n != 0) should never occur
@@ -1812,7 +1812,7 @@ v0.2.0.8   2/2019 - v2.0.8
 		fixed: ffopen() works with all models r/w/a
 		Mem_buffer.c George Trojan fixed errors
 		KMA local levels and local grib table added, Dong-il Jang
-		added extern to init.c and wgrib2.c for following variables: run_flag, free_gribfield, 
+		added extern to init.c and wgrib2.c for following variables: run_flag, free_gribfield,
 			grib_data, found by George Trojan using gcc v10.x
 		GDT.c:  added free list_opt, George Trojan
 		mk_gdt.c: added Space View Perspective or orthographic, George Trojan
@@ -1841,7 +1841,7 @@ v3.0.0        9/2020 - v2.0.8
 		added more pdts to code table 4.8
 		fixed: ExtName.c and f_misc(..) with regards to trailing : in inventory .. should be the same inv
 		updated -set: cluster
-		added check for pdt size: check_pdt_size(sec), 
+		added check for pdt size: check_pdt_size(sec),
 		added delayed fatal errors using last message > 1
 		   problem, could not see last message that caused error, added check_pdt_size to delayed errors
 		   redefined last_message: old: 0/1 (stop), new 0/1..N (stop), contains error reason for last_message > 0
@@ -1888,9 +1888,9 @@ v3.0.0        9/2020 - v2.0.8
 		updated: c_api/*.c to remove pointer warnings
 v3.0.1		released 2/24/2021, removed because wrong file went to ftp.cpc.noaa.gov
 		-netcdf doesn't output unique variable names for href file
-		   using -set_ext_name 1 helps but some fields need ftime info to 
+		   using -set_ext_name 1 helps but some fields need ftime info to
 		   uniquely identify the fields.  So changed getExtName(), changed
-		   int use_ext_name -> unsigned int type_ext_name.  
+		   int use_ext_name -> unsigned int type_ext_name.
 		change getExtName() to same parameters as getName().  The replacement
 		   delim and space are now "global" variables and characters.
 v3.0.2		released 3/01/2021
@@ -1910,7 +1910,7 @@ v3.0.2		released 3/01/2021
                 unpk.c: change char *c to unsigned char *c, added grib2_bit_depth to call to dec_png_clone()
                 wgrib2.c  add DELAYED_ERROR_MISC, error must be explained in message to stdout
                 removed one of many warnings when compiling gctpc
-		fixed EOF.c comparison 
+		fixed EOF.c comparison
 		gctpc: explicityly defined sign(x) to be int. sign(x) -> int gctpc_sign(double x)
 		makefile: changed lib/ to ${lib}
 		makefile: added ${mod} for location of fortran mods. Keep ${mod} == ${lib}
@@ -1950,11 +1950,11 @@ v3.0.2		released 3/01/2021
 		updated get_code_Table_4.3.sh: CodeTable_4.3.dat: update, text changes
 		updated get_code_Table_4.4.sh: CodeTable_4.4.dat: text changes
 		updated get_code_Table_4.4.sh: CodeTable_4.4.dat: text changes
-		updated get_code_Table_4.7.sh: 
+		updated get_code_Table_4.7.sh:
 		updated get_code_Table_4.9.sh: CodeTable_4.9.dat: text changes
 		new get_code_Table_4.10.sh: CodeTable_4.10.dat: comments lost
 		updated get_code_Table_4.11.sh: CodeTable_4.11.dat: text changes
-		updated get_code_Table_4.15.sh: 
+		updated get_code_Table_4.15.sh:
 		updated get_code_Table_4.91.sh: CodeTable_4.91.dat: text changes
 		updated get_code_Table_4.208.sh: CodeTable_4.208.dat: text changes
 		updated get_code_Table_4.212.sh: CodeTable_4.212.dat: text changes
@@ -1998,7 +1998,7 @@ v3.0.2		released 3/01/2021
 		update: get_code_Table_4.222.sh (from M. Schwarb, thanks)
 		update: get_code_Table_4.10.sh (from M. Schwarb, thanks)
 		update: codetable_4_230.c (from M. Schwarb, thanks)
-v3.1.0		released 10/7/2021 
+v3.1.0		released 10/7/2021
 		unpk_complex.c:  better vectorization
 		The next two fixes improve the accuracy of the calculations. Mathematically the same
 		  results but by not simplifying the calculation, the optimized version (-march=...)  of the
@@ -2008,7 +2008,7 @@ v3.1.0		released 10/7/2021
 				 for more accuracy when -march=znver2
 		unpk_0.c:	 (ref+flt[i])*factor -> (ref0+flt[i]*bin_scale)*dec_scale
 				 for more accuracy when -march=znver2
-		wgrib2 was failing in a MPMD program with a write error.  Error message did not say name of 
+		wgrib2 was failing in a MPMD program with a write error.  Error message did not say name of
 		   output file which made debug more difficult. 3 changes to add filename to error meessages.
 		wgrib2.h: struct seq_file: added char filename[STRING_SIZE], to store filename
 		rd_seq_file.c	 fopen_file: save filename in file->filename
@@ -2056,7 +2056,7 @@ v3.1.0		released 10/7/2021
 				added number_of_contributing_spectral_bands(sec) and location
 		-import_netcdf: new hypercube arg: * can be used for start-N:count-N, cleanup
 			prints out hypercube data if npnts != ndata, include standard time
-		makefile changes for netcdf4: thanks David Ryglicki, 
+		makefile changes for netcdf4: thanks David Ryglicki,
 		-set_radius: better help
 		-ftime2: remove code to check initial pdt size, do outside
 		-set_pdt: allow optional parmeters pdt:len:nc=1:n=1, new_pdt(...,char *misc_arg)
@@ -2146,7 +2146,7 @@ v3.1.1		released 4/14/2022
                 Small_grib.c: fix free of non-allocated memory
 		simple_pk.c: fix for oneAPI, random seg fault with oneAPI but not other compilers
 		   Could not see error with original code. Compiler bug?
-		Config.c: fixed order geolocation support for proj4, clarified default 
+		Config.c: fixed order geolocation support for proj4, clarified default
 		updated lib/makefile to make shared library for new intel compiler (icx/ifx)
 		grib2_split: changed to shell script
 		Ftime2.c: convert seconds to minutes in X-Y sec (type) fcst

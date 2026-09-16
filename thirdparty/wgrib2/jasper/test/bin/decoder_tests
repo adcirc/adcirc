@@ -161,4 +161,3 @@ id=j2kc_jp2_09 \
 	encoded_file=testfiles_jp2/file9.jp2 \
 	decoded_file=reference_jp2/jp2_9.tif \
 	pae=0
-

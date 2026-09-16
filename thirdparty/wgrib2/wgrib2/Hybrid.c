@@ -24,7 +24,7 @@ int f_hybrid(ARG0) {
 	pdtsize = GB2_Sec4_size(sec);		// size of PDT + vert coordinatese + extras
 
 	if (calc_pdtsize <= 0) return 0;		// no calculated pdt size
-	if (calc_pdtsize > pdtsize) 
+	if (calc_pdtsize > pdtsize)
 	    fatal_error_i("not enough space allocated for vertical coordinate data, vert_cordinate values=%d", n);
 	if (calc_pdtsize != pdtsize) return 0;
 
@@ -32,7 +32,7 @@ int f_hybrid(ARG0) {
 	inv_out += strlen(inv_out);
 	if (n % 2 != 0) {
 	    for (k = 0; k < n; k++) {
-	        sprintf(inv_out," %d=%9.6f", k+1, 
+	        sprintf(inv_out," %d=%9.6f", k+1,
 		(double) ieee2flt(sec[4]+pdtsize-n*4+k));
 	        inv_out += strlen(inv_out);
 	    }
@@ -40,7 +40,7 @@ int f_hybrid(ARG0) {
 	}
 	else {
 	    for (k = 0; k < n/2; k++) {
-		sprintf(inv_out," %d=(%9.6f,%9.6f)", k+1, 
+		sprintf(inv_out," %d=(%9.6f,%9.6f)", k+1,
 		    (double) ieee2flt(sec[4]+pdtsize-n*4+k*2),
 		    (double) ieee2flt(sec[4]+pdtsize-n*4+k*2+4));
 	        inv_out += strlen(inv_out);

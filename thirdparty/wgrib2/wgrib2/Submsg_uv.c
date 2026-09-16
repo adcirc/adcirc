@@ -3,7 +3,7 @@
  *
  * Put vector fields into same submessage .. for multiprocessing
  *  based on NCEP_uv.c
- *  
+ *
  * to alter the U/V list, use -new_grid_vectors
  *
  * U and V must be adjacent
@@ -78,7 +78,7 @@ int f_submsg_uv(ARG1) {
 
     if (mode == -2)  {		// cleanup
 	if (save->vname != NULL) {		// write out cached field
-	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3], 
+	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3],
 		save->sec[4], save->sec[5], save->sec[6], save->sec[7], &(save->out));
 	   if (flush_mode) fflush_file(&(save->out));
 	   if (i) fatal_error_i("submsg_uv: last record problem %i",i);
@@ -172,10 +172,10 @@ int f_submsg_uv(ARG1) {
             return 0;
 	}
 
-	/* has U but not V, write U */    
+	/* has U but not V, write U */
 
 	if (save->vname != NULL) {
-	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3], 
+	   i = wrt_sec(save->sec[0], save->sec[1], save->sec[2], save->sec[3],
 		save->sec[4], save->sec[5], save->sec[6], save->sec[7], &(save->out));
 	   if (flush_mode) fflush_file(&(save->out));
 	   if (i) fatal_error_i("submsg_uv: write record problem %d",i);

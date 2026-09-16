@@ -15,7 +15,7 @@ Updating the gribtable 11/2018
 
 Updating the gribtable 7/2018
 	Manfred Schwarb <schwarb@meteodat.ch> updated get_gribtab.sh
-        1) new URL 
+        1) new URL
         2) old manual changes are now in the get_gribtab.sh code
         3) fixed problems that I missed
         4) made units more consistent
@@ -51,7 +51,7 @@ run make_gribtable.sh  by Manfred Schwarb
 Updating the grib table 9.2015
  run get_gribtab.sh -> gribtab   using updated get_gribtab.sh mods by Manfred Schwarb
  change gribtab
- 
+
 0:1:0:255:0:0:6:17:TCOND:Total Condensate:kg/kg -> TCONDold
 0:1:0:255:0:0:6:18:TCOLW:Total Column-Integrated Cloud Water:kg/m^2 -> TCOLWold
 0:1:0:255:0:0:6:19:TCOLI:Total Column-Integrated Cloud Ice:kg/m^2 -> TCOLIold
@@ -115,4 +115,3 @@ sort -t: -k7,7 -k1,6 gribtab >gribtab.sort
 
 ./mk_gribtable_dat.pl
 	gribtab.sort -> gribtable.dat
-

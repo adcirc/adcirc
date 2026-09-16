@@ -20,4 +20,4 @@ Features
 Links
 -----
 
-* `GitHub Repository <https://github.com/ccht-ncsu/subgridADCIRCUtility>`_ 
+* `GitHub Repository <https://github.com/ccht-ncsu/subgridADCIRCUtility>`_

@@ -18,7 +18,7 @@
 
 /* create the grib2 sec3 for lat-lon grid */
 
-unsigned char *sec3_lola(int nx, double x0, double dx, int ny, double y0, double dy, 
+unsigned char *sec3_lola(int nx, double x0, double dx, int ny, double y0, double dy,
 	unsigned char **old_sec) {
 
     static unsigned char gds[72];
@@ -32,7 +32,7 @@ unsigned char *sec3_lola(int nx, double x0, double dx, int ny, double y0, double
     gds[5] = 0;				/* source of grid  */
 
     uint_char(nx*ny, gds+6);		/* number of data points */
-        
+
     gds[10] = 0;			/* number of octets for optional list of number */
     gds[11] = 0;			/* list */
     gds[12] = gds[13] = 0;		/* template 3.0  lat-lon grid*/
@@ -87,7 +87,7 @@ unsigned char *sec3_lola(int nx, double x0, double dx, int ny, double y0, double
  *  this routine only allows global gaussian grids
  */
 
-unsigned char *sec3_gaussian(int nx, double x0, double dx, int ny, double y0, 
+unsigned char *sec3_gaussian(int nx, double x0, double dx, int ny, double y0,
 	unsigned char **old_sec) {
 
     static unsigned char gds[72];
@@ -96,7 +96,7 @@ unsigned char *sec3_gaussian(int nx, double x0, double dx, int ny, double y0,
     int i;
 
     if (x0 < 0) x0 += 360.0;
-	
+
     uint_char(72, gds);                 /* 1-4 length of section */
 
     gds[4] = 3;                         /* section 3 */
@@ -220,7 +220,7 @@ unsigned char *sec3_mercator(double lad, int nx, double x0, double dx, double xn
  */
 
 unsigned char *sec3_lc(double lov, double lad, double latin1, double latin2, int proj,
-	int nx, double x0, double dx, int ny, double y0, double dy, 
+	int nx, double x0, double dx, int ny, double y0, double dy,
 	unsigned char **old_sec) {
 
     static unsigned char gds[81];
@@ -236,7 +236,7 @@ unsigned char *sec3_lc(double lov, double lad, double latin1, double latin2, int
     gds[5] = 0;				/* source of grid  */
 
     uint_char(nx*ny, gds+6);		/* number of data points */
-        
+
     gds[10] = 0;			/* number of octets for optional list of number */
     gds[11] = 0;			/* list */
 
@@ -349,7 +349,7 @@ unsigned char *sec3_polar_stereo(double lov, double lad, int proj,
  * create the grib2 sec3 for rotate lat-lon grid (rot-ll)
  */
 
-unsigned char *sec3_rot_ll(int nx, double x0, double dx, int ny, double y0, double dy, 
+unsigned char *sec3_rot_ll(int nx, double x0, double dx, int ny, double y0, double dy,
 	double sp_lon, double sp_lat, double sp_rot, unsigned char **old_sec) {
 
     static unsigned char gds[84];

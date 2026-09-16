@@ -2,7 +2,7 @@ Development directory for wgrib2
 
 To make development sane, most functions can be plugged into the code
 automatically.  The "compile" script scan the source code to the various
-"option" functions and adds them to a table so that they can be selected 
+"option" functions and adds them to a table so that they can be selected
 by the user.
 
 Rules for Option Functions
@@ -55,10 +55,10 @@ The "name" is the option name.  That is the function is invoked by -{name}
 if type == inv
    writes text to stdout based on data file
 
-if type == output 
+if type == output
    writes grid data to a file
 
-if type == inv_output 
+if type == inv_output
    writes non-grid data (metadata/inventory) to a file
 
 if type == setup

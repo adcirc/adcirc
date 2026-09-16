@@ -41,4 +41,3 @@ int f_table(ARG0) {
     }
     return 0;
 }
-

@@ -96,9 +96,9 @@ int f_rpn(ARG1) {
 	save_translation = 1;
 	if (state == 0) {
 	    /* check compile-time configuration */
-	    if (sizeof(rpn_n)/sizeof(size_t) != N_RPN_REGS) 
+	    if (sizeof(rpn_n)/sizeof(size_t) != N_RPN_REGS)
 		fatal_error("RPN: configure N_RPN_REGS and rpn_n[]","");
-	    if (sizeof(rpn_data)/sizeof(float *) != N_RPN_REGS) 
+	    if (sizeof(rpn_data)/sizeof(float *) != N_RPN_REGS)
 		fatal_error("RPN: configure N_RPN_REGS and rpn_data[]","");
 	    state = 1;
 	}
@@ -451,7 +451,7 @@ int f_rpn(ARG1) {
         }
 
 	// sto_N
-	else if (string[0] == 's' && string[1] == 't' && string[2] == 'o' && string[3] == '_' 
+	else if (string[0] == 's' && string[1] == 't' && string[2] == 'o' && string[3] == '_'
 		&& isdigit((unsigned char) string[4]) && (string[5] == 0 || (isdigit((unsigned char) string[5]) && string[6] == 0) )) {
 	    if (top < 0) fatal_error("rpn: sto","");
 	    j = atoi(string+4);
@@ -635,7 +635,7 @@ int f_rpn(ARG1) {
 	    if (top < 0) fatal_error("rpn: yrev needs field","");
             get_nxny(sec, &nx, &ny, &npnts, &res, &scan);
 	    if (nx <= 0 || ny <= 0) fatal_error("rpn: yrev only on nx x ny grids","");
- 	    if ((scan >> 4) != 0 && (scan >> 4) != 4) 
+ 	    if ((scan >> 4) != 0 && (scan >> 4) != 4)
 		fatal_error("rpn: yrev only appropriate for we:ns and we:sn grids","");
 	    for (k = 0; k < ny/2; k++) {
 		p1 = stack[top] + nx*k;
@@ -655,7 +655,7 @@ int f_rpn(ARG1) {
 
             get_nxny(sec, &nx, &ny, &npnts, &res, &scan);
 	    if (nx <= 0 || ny <= 0) fatal_error("rpn: yrev only on nx x ny grids","");
- 	    if ((scan >> 4) != 0 && (scan >> 4) != 4) 
+ 	    if ((scan >> 4) != 0 && (scan >> 4) != 4)
 		fatal_error("rpn: smth9 only appropriate for we:ns and we:sn grids","");
 
             top = push(top,ndata,VECTOR,0.0,stack[top],NULL);
@@ -997,19 +997,19 @@ int f_rpn(ARG1) {
         }
 
         // print_wt_ave: prints weighted ave, X=data, Y=weights
-	
+
         else if (strcmp(string,"print_wt_ave") == 0) {
             if (top <= 0) fatal_error("rpn: print_wt_ave needs two fields","");
             j = top - 1;
 	    sum1 = sum2 = 0.0;
-	    
+
 	    // find mean values
             for (i = 0; i < ndata; i++) {
                 if (DEFINED_VAL(stack[top][i]) && DEFINED_VAL(stack[j][i])) {
 		    sum1 += stack[j][i]*stack[top][i];
 		    sum2 += stack[top][i];
 		}
-	    }		
+	    }
 	    if (sum2 != 0.0) sum1 = sum1 / sum2;
 	    sprintf(inv_out,"%srpn_wt_ave=%g",item_deliminator,sum1);
         }
@@ -1110,7 +1110,7 @@ int f_rpn(ARG1) {
 	     fatal_error("rpn: unidentified symbol %s", string);
 	}
 	if (mode == 98) fprintf(stderr," top=%d\n", top);
-    }	
+    }
     if (*p != 0) fatal_error("-rpn didn't find operatore or value before %s",p);
     if (top >= 0) {
 	for (i = 0; i < ndata; i++) {

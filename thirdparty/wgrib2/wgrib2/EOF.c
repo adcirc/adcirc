@@ -42,7 +42,7 @@ void err_bin(int error) {
         if (i != 1) fprintf(stderr,"ERROR err_bin: write error\n");
     }
     if (err_file != NULL) ffclose(err_file);
-    
+
     return;
 }
 

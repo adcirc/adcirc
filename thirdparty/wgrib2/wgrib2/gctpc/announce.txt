@@ -6,11 +6,11 @@ The General Cartographic Transformation Package (GCTP) is a system of
 software routines designed to permit the transformation of coordinate
 pairs from one map projection to another.  The GCTP is the standard
 computer software used by the National Mapping Division for map
-projection computations.  
+projection computations.
 
 Because of requirements internal to the EROS Data Center, the GCTP software
 was converted from FORTRAN to the C programming language, and several new
-projections were added.  During the conversion process, the software was 
+projections were added.  During the conversion process, the software was
 tested on the following UNIX systems:  Data General running DG/UX Release
 5.4R2.01 AViiON, SUN running SunOS Release 4.1.3, and Silicon Graphics
 running IRIX Release 5.3 IP7.  In addition, the software has also been
@@ -19,14 +19,14 @@ software.  This new version, GCTPc, is being made available informally
 on a 'user-beware' basis.  EDC assumes no responsibility for the accuracy
 of the routines in this package.
 
-Because of decreasing budgets and impacts on software development staff, 
-EDC will not be responsible for supporting this software package.  The 
+Because of decreasing budgets and impacts on software development staff,
+EDC will not be responsible for supporting this software package.  The
 user is responsible for using the package correctly.  A set of validation
 data is provided so that each user/facility may perform its' own testing
 of the programs.  A description of this data set and instructions for its
-use are in the test/README file.  EDC will welcome any questions, comments, 
-or suggestions, and will respond on a time-available basis based on our 
-interests and requirements.  Communications concerning the GCTPc package 
+use are in the test/README file.  EDC will welcome any questions, comments,
+or suggestions, and will respond on a time-available basis based on our
+interests and requirements.  Communications concerning the GCTPc package
 may be directed to this email address:
 
 	gctpc@edcmail.cr.usgs.gov

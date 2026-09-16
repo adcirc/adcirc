@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                             ORTHOGRAPHIC 
+NAME                             ORTHOGRAPHIC
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Orthographic projection.  The
@@ -36,7 +36,7 @@ static double cos_p14;		/* cos of center latitude		*/
   -------------------------------------*/
 long orthinvint(double r_maj, double center_lon, double center_lat,
         double false_east, double false_north) {
-//long orthinvint(r_maj,center_lon,center_lat,false_east,false_north) 
+//long orthinvint(r_maj,center_lon,center_lat,false_east,false_north)
 //
 //double r_maj;			/* major axis			*/
 //double center_lon;		/* center longitude		*/
@@ -57,14 +57,14 @@ sincos(center_lat,&sin_p14,&cos_p14);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("ORTHOGRAPHIC"); 
+ptitle("ORTHOGRAPHIC");
 radius(r_major);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Orthographic inverse equations--mapping x,y to lat/long
   ------------------------------------------------------*/

@@ -89,4 +89,4 @@ Notes
 * Data is recorded at multiple vertical levels defined by SIGMA values
 * SIGTSTA represents density values
 * TEMPSTA represents temperature values
-* SALSTA represents salinity values 
+* SALSTA represents salinity values

@@ -5,7 +5,7 @@
 
 /* 6/2009 public domain 	wesley ebisuzaki
  *
- * code taken from wgrib 
+ * code taken from wgrib
  *
  *  takes a bitstream -> vector of unsigned ints
  *  bitstream starts on a byte boundary
@@ -147,7 +147,7 @@ void add_bitstream(int t, int n_bits) {
     if (n_bits > 16) {
         add_bitstream(t >> 16, n_bits - 16);
         n_bits = 16;
-    } 
+    }
     if (n_bits > 25) fatal_error_i("add_bitstream: n_bits = (%d)",n_bits);
     jmask = (1 << n_bits) - 1;
     rbits += n_bits;

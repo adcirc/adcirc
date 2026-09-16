@@ -37,7 +37,7 @@ void RefineKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int npart
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->AuxTmr1));
 
   /* Determine how many levels are there */
-  for (ptr=graph, nlevels=0; ptr!=orggraph; ptr=ptr->finer, nlevels++); 
+  for (ptr=graph, nlevels=0; ptr!=orggraph; ptr=ptr->finer, nlevels++);
 
   for (i=0; ;i++) {
     /* PrintSubDomainGraph(graph, nparts, graph->where); */
@@ -49,21 +49,21 @@ void RefineKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int npart
     if (2*i >= nlevels && !IsBalanced(graph->pwgts, nparts, tpwgts, 1.04*ubfactor)) {
       ComputeKWayBalanceBoundary(ctrl, graph, nparts);
       if (ctrl->RType == RTYPE_KWAYRANDOM_MCONN)
-        Greedy_KWayEdgeBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 1); 
+        Greedy_KWayEdgeBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 1);
       else
-        Greedy_KWayEdgeBalance(ctrl, graph, nparts, tpwgts, ubfactor, 1); 
+        Greedy_KWayEdgeBalance(ctrl, graph, nparts, tpwgts, ubfactor, 1);
       ComputeKWayBoundary(ctrl, graph, nparts);
     }
 
     switch (ctrl->RType) {
       case RTYPE_KWAYRANDOM:
-        Random_KWayEdgeRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 1); 
+        Random_KWayEdgeRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 1);
         break;
       case RTYPE_KWAYGREEDY:
-        Greedy_KWayEdgeRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10); 
+        Greedy_KWayEdgeRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10);
         break;
       case RTYPE_KWAYRANDOM_MCONN:
-        Random_KWayEdgeRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 1); 
+        Random_KWayEdgeRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 1);
         break;
     }
     IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->RefTmr));
@@ -88,12 +88,12 @@ void RefineKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int npart
   if (!IsBalanced(graph->pwgts, nparts, tpwgts, ubfactor)) {
     ComputeKWayBalanceBoundary(ctrl, graph, nparts);
     if (ctrl->RType == RTYPE_KWAYRANDOM_MCONN) {
-      Greedy_KWayEdgeBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 8); 
-      Random_KWayEdgeRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0); 
+      Greedy_KWayEdgeBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 8);
+      Random_KWayEdgeRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0);
     }
     else {
-      Greedy_KWayEdgeBalance(ctrl, graph, nparts, tpwgts, ubfactor, 8); 
-      Random_KWayEdgeRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0); 
+      Greedy_KWayEdgeBalance(ctrl, graph, nparts, tpwgts, ubfactor, 8);
+      Random_KWayEdgeRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0);
     }
   }
 
@@ -102,7 +102,7 @@ void RefineKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int npart
   EliminateComponents(ctrl, graph, nparts, tpwgts, ubfactor);
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->AuxTmr2));
 
-  if (mustfree) 
+  if (mustfree)
     GKfree(&graph->vwgt, &graph->adjwgt, LTERM);
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->UncoarsenTmr));
@@ -136,7 +136,7 @@ void AllocateKWayPartitionMemory(CtrlType *ctrl, GraphType *graph, int nparts)
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void ComputeKWayPartitionParams(CtrlType *ctrl, GraphType *graph, int nparts)
 {
@@ -177,14 +177,14 @@ void ComputeKWayPartitionParams(CtrlType *ctrl, GraphType *graph, int nparts)
     }
     myrinfo->id = graph->adjwgtsum[i] - myrinfo->ed;
 
-    if (myrinfo->ed > 0) 
+    if (myrinfo->ed > 0)
       mincut += myrinfo->ed;
 
     if (myrinfo->ed-myrinfo->id >= 0)
       BNDInsert(nbnd, bndind, bndptr, i);
 
     /* Time to compute the particular external degrees */
-    if (myrinfo->ed > 0) { 
+    if (myrinfo->ed > 0) {
       myedegrees = myrinfo->edegrees = ctrl->wspace.edegrees+ctrl->wspace.cdegree;
       ctrl->wspace.cdegree += xadj[i+1]-xadj[i];
 
@@ -291,13 +291,13 @@ void ProjectKWayPartition(CtrlType *ctrl, GraphType *graph, int nparts)
       myrinfo->id -= myrinfo->ed;
 
       /* Remove space for edegrees if it was interior */
-      if (myrinfo->ed == 0) { 
+      if (myrinfo->ed == 0) {
         myrinfo->edegrees = NULL;
         ctrl->wspace.cdegree -= iend-istart;
       }
       else {
-        if (myrinfo->ed-myrinfo->id >= 0) 
-          BNDInsert(nbnd, bndind, bndptr, i); 
+        if (myrinfo->ed-myrinfo->id >= 0)
+          BNDInsert(nbnd, bndind, bndptr, i);
 
         myrinfo->ndegrees = ndegrees;
 
@@ -358,7 +358,7 @@ void ComputeKWayBoundary(CtrlType *ctrl, GraphType *graph, int nparts)
   /------------------------------------------------------------*/
   nbnd = 0;
   for (i=0; i<nvtxs; i++) {
-    if (graph->rinfo[i].ed-graph->rinfo[i].id >= 0) 
+    if (graph->rinfo[i].ed-graph->rinfo[i].id >= 0)
       BNDInsert(nbnd, bndind, bndptr, i);
   }
 
@@ -383,10 +383,9 @@ void ComputeKWayBalanceBoundary(CtrlType *ctrl, GraphType *graph, int nparts)
   /------------------------------------------------------------*/
   nbnd = 0;
   for (i=0; i<nvtxs; i++) {
-    if (graph->rinfo[i].ed > 0) 
+    if (graph->rinfo[i].ed > 0)
       BNDInsert(nbnd, bndind, bndptr, i);
   }
 
   graph->nbnd = nbnd;
 }
-

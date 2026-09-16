@@ -340,11 +340,11 @@ static const struct pdstemplate templatespds[G2C_MAX_PDS_TEMPLATE] =
         4.89: Post-processed quantile forecasts at a horizontal level or in a horizontal layer at a point in time */
         {89, 20, 0, {1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4, 2, 2}},
         /** PDT 4.90 (12/04/2024)
-        4.90: Post-processed quantile forecasts at a horizontal level or in a horizontal layer in a continuous 
+        4.90: Post-processed quantile forecasts at a horizontal level or in a horizontal layer in a continuous
         or non-continuous time interval */
         {90, 34, 1, {1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4, 2, 2, 2, 1, 1, 1, 1, 1, 1, 4, 1, 1, 1, 4, 1, 4}},
         /** PDT 4.92 (12/04/2024)
-        4.92: Individual ensemble forecast, control and perturbed, at a horizontal 
+        4.92: Individual ensemble forecast, control and perturbed, at a horizontal
         level or in a horizontal layer at a specified local time. */
         {92, 27, 1, {1, 1, 1, 1, 1, 1, -1, -4, 1, -1, -4, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, -4, 1, 1, 4}},
         /** PDT 4.93 (12/04/2024)
@@ -367,19 +367,19 @@ static const struct pdstemplate templatespds[G2C_MAX_PDS_TEMPLATE] =
         at a horizontal level or in a horizontal layer at a local time */
         {97, 31, 1, {1, 1, 2, 2, 1, 1, 1, 1, 1, -1, -4, 1, -1, -4, 1, 1, 4, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, -4, 1, 1, 4}},
         /** PDT 4.98 (12/04/2024)
-        4.98: Average, accumulation, extreme values or other statistically processed values of a post-processing individual 
+        4.98: Average, accumulation, extreme values or other statistically processed values of a post-processing individual
         ensemble forecast, control and perturbed, at a horizontal level or in a horizontal layer at a local time */
         {98, 34, 1, {1, 1, 2, 2, 1, 1, 1, 1, 1, -1, -4, 1, -1, -4, 1, 1, 1, 1, 1, 4, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, -4, 1, 1, 4}},
         /** PDT 4.99 (12/04/2024)
-        4.99: Analysis or forecast at a horizontal level or in a horizontal layer at a point in time for wave 2D spectra 
+        4.99: Analysis or forecast at a horizontal level or in a horizontal layer at a point in time for wave 2D spectra
         with explicit list of frequencies and directions */
         {99, 14, 1, {1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 1, -4, -1}},
         /** PDT 4.100 (12/04/2024)
-        4.100: Individual ensemble forecast, control and perturbed, at a horizontal level or in a horizontal layer at a 
+        4.100: Individual ensemble forecast, control and perturbed, at a horizontal level or in a horizontal layer at a
         point in time for wave 2D spectra with explicit list of frequencies and directions */
         {100, 17, 1, {1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 1, -4, 1, 1, 1, -1}},
         /** PDT 4.103 (12/04/2024)
-        4.103: Analysis or forecast at a horizontal level or in a horizontal layer at a point in time 
+        4.103: Analysis or forecast at a horizontal level or in a horizontal layer at a point in time
         for waves selected by period range */
         {103, 20, 0, {1, 1, 1, -1, -4, -1, -4, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4}},
         /** PDT 4.104 (12/04/2024)
@@ -390,7 +390,7 @@ static const struct pdstemplate templatespds[G2C_MAX_PDS_TEMPLATE] =
         4.108: Analysis or forecast at a horizontal level or in a horizontal layer at a point in time for generic optical products */
         {108, 20, 0, {1, 1, 1, -1, -4, -1, -4, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4}},
         /** PDT 4.109 (12/04/2024)
-        4.109: Individual ensemble forecast, control and perturbed, at a horizontal level or in a horizontal layer at a 
+        4.109: Individual ensemble forecast, control and perturbed, at a horizontal level or in a horizontal layer at a
         point in time for generic optical products */
         {109, 23, 0, {1, 1, 1, -1, -4, -1, -4, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4, 1, 1, 1}},
         /** PDT 4.110 (12/04/2024)
@@ -405,15 +405,15 @@ static const struct pdstemplate templatespds[G2C_MAX_PDS_TEMPLATE] =
         4.113: Generalized tiles at a horizontal level or horizontal layer at a point in time */
         {113, 7, 1, {1, 1, 1, 2, 1, 1, 1}},
         /** PDT 4.114 (12/04/2024)
-        4.114: Average, accumulation, and/or extreme values or other statistically processed values on generalized tiles at a 
+        4.114: Average, accumulation, and/or extreme values or other statistically processed values on generalized tiles at a
         horizontal level or in a horizontal layer in a continuous or non-continuous time interval */
         {114, 7, 1, {1, 1, 1, 2, 1, 1, 1}},
         /** PDT 4.115 (12/04/2024)
-        4.115: Individual ensemble forecast, control and perturbed on generalized tiles at a horizontal level or in a horizontal 
+        4.115: Individual ensemble forecast, control and perturbed on generalized tiles at a horizontal level or in a horizontal
         layer at a point in time */
         {115, 7, 1, {1, 1, 1, 2, 1, 1, 1}},
         /** PDT 4.116 (12/04/2024)
-        4.116: Individual ensemble forecast, control and perturbed on generalized tiles at a horizontal level or in a horizontal 
+        4.116: Individual ensemble forecast, control and perturbed on generalized tiles at a horizontal level or in a horizontal
         layer in a continuous or non-continuous time interval */
         {116, 7, 1, {1, 1, 1, 2, 1, 1, 1}},
         /** PDT 4.117 (12/04/2024)
@@ -444,7 +444,7 @@ static const struct pdstemplate templatespds[G2C_MAX_PDS_TEMPLATE] =
         level or in a horizontal layer at a point in time for radionuclides */
         {125, 35, 0, {1, 1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4, 1, 1, 1}},
         /** PDT 4.126 (12/04/2024)
-        4.126: Average, accumulation, or extreme values or other statistically processed values at a horizontal level or in a horizontal 
+        4.126: Average, accumulation, or extreme values or other statistically processed values at a horizontal level or in a horizontal
         layer in a continuous or non-continuous time interval for radionuclides */
         {126, 47, 1, {1, 1, 2, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, -4, 1, -1, -4, 1, -1, -4, 2, 1, 1, 1, 1, 1, 1, 4, 1, 1, 1, 4, 1, 4}},
         /** PDT 4.127 (12/04/2024)
@@ -1831,7 +1831,7 @@ g2c_get_pds_template(int pds_template_num, int *maplen, int *map, int *needext)
 }
 
 /**
- * Get initial length (number of entries) in static part of 
+ * Get initial length (number of entries) in static part of
  * PDS template.
  *
  * @param pds_template_num The PDS template number.

@@ -57,7 +57,7 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
     bitmap_flag = code_table_6_0(sec);
     ctable_5_6 = code_table_5_6(sec);
 
-    if (pack == 3 && (ctable_5_6 != 1 && ctable_5_6 != 2)) 
+    if (pack == 3 && (ctable_5_6 != 1 && ctable_5_6 != 2))
 	fatal_error_i("unsupported: code table 5.6=%d", ctable_5_6);
 
     extra_octets = (pack == 2) ? 0 : sec[5][48];
@@ -108,7 +108,7 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
     group_clocation = (unsigned int *) malloc(sizeof (unsigned int) * (size_t) ngroups);
     group_offset = (int *) malloc(sizeof (unsigned int) * (size_t) ngroups);
     udata = (int *) malloc(sizeof (unsigned int) * (size_t) npnts);
-    if (group_refs == NULL || group_widths == NULL || group_lengths == NULL || 
+    if (group_refs == NULL || group_widths == NULL || group_lengths == NULL ||
 	group_location == NULL || group_clocation == NULL || group_offset == NULL
 	|| udata == NULL) fatal_error("unpk_complex: memory allocation","");
 
@@ -138,7 +138,7 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
     nthreads = omp_get_num_threads();
     thread_id = omp_get_thread_num();
 
-    // want to split work into nthreads, 
+    // want to split work into nthreads,
     // want di * nthreads >= ngroups
     // want dt % 8 == 0  so that the offset doesn't change
     //    having offset == 0 is fastest
@@ -163,13 +163,13 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
 	for (ii = 0; ii < k; ii++) group_widths[i+ii] += ref_group_width;
     }
 
-#ifdef USE_OPENMP	
+#ifdef USE_OPENMP
 #pragma omp barrier
 #endif
 
     if (ctable_5_4 == 1) {
 
-	// for(i = 0; i < ngroups-1; i++) 
+	// for(i = 0; i < ngroups-1; i++)
 
         // di * nthreads > (ngroups-1)
         di = (ngroups - 1 + nthreads - 1) / nthreads;
@@ -179,12 +179,12 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
         if (i < ngroups - 1) {
             k  = ngroups - 1 - i;
             if (k > di) k = di;
-	    rd_bitstream(d+(nbits*ngroups+7)/8+(ngroups*nbit_group_width+7)/8 + 
+	    rd_bitstream(d+(nbits*ngroups+7)/8+(ngroups*nbit_group_width+7)/8 +
 	       (i/8)*nbits_group_len, 0,group_lengths + i, nbits_group_len, k);
 #ifdef IS_OPENMP_4_0
 #pragma omp simd
 #endif
-	    for (ii = 0; ii < k; ii++) group_lengths[i+ii] = 
+	    for (ii = 0; ii < k; ii++) group_lengths[i+ii] =
 		    group_lengths[i+ii] * group_length_factor + ref_group_length;
         }
 
@@ -197,7 +197,7 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
 /* old version
 #pragma omp sections
     {
-    
+
 #pragma omp section
         {
            // read the group reference values
@@ -321,7 +321,7 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
 	group_clocation[i] += (group_offset[i] / 8);
 	group_offset[i] = (group_offset[i] % 8);
 
-	rd_bitstream(d + group_clocation[i], group_offset[i], udata+group_location[i], 
+	rd_bitstream(d + group_clocation[i], group_offset[i], udata+group_location[i],
 		group_widths[i], group_lengths[i]);
     }
 
@@ -469,7 +469,7 @@ int unpk_complex(unsigned char **sec, float *data, unsigned int ndata) {
 #pragma omp parallel for schedule(static) private(i)
 #endif
 	    for (i = 0; i < ndata; i++) {
-		data[i] = (udata[i] == INT_MAX) ? UNDEFINED : 
+		data[i] = (udata[i] == INT_MAX) ? UNDEFINED :
 			(ref_val0 + udata[i] * factor_2) * factor_10;
 	    }
 	}

@@ -13,8 +13,8 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, please consult  
-              
+    along with this program; if not, please consult
+
               http://www.gnu.org/licenses/licenses.html
 
     or write to the Free Software Foundation, Inc., 59 Temple Place,
@@ -54,7 +54,7 @@ struct Bbox {
 /* return c-style index, with wrapping; on input i is a fortran-style
    index and nx is the */
 
-static int get_cindex (int i, int nx) { 
+static int get_cindex (int i, int nx) {
    int j;
    j = (i - 1) % nx;
    if (j < 0) j += nx;
@@ -72,12 +72,12 @@ int f_ijbox(ARG4) {
   int j1, j2, dj, nj;
   int i, j, k, nk, n;
   int x, y, nxny;
-  
+
   struct Bbox *self;
   char open_mode[4];
 
-    /*                      -------------------- 
-                            Initialization Phase 
+    /*                      --------------------
+                            Initialization Phase
                             --------------------
     */
   if (mode == -1) {
@@ -88,24 +88,24 @@ int f_ijbox(ARG4) {
     n = sscanf(arg1,"%d:%d:%d", &i1, &i2, &di);
     if (n < 2) fatal_error("ijbox parsing i-dimension, expecting i1:i2:di but got %s", arg1);
     if (n == 2) di = 1;
-  
+
     n = sscanf(arg2,"%d:%d:%d", &j1,&j2,&dj);
     if (n < 2) fatal_error("ijbox parsing j-dimension, expecting j1:j2:dj but got %s", arg2);
     if (n == 2) dj = 1;
 
-    if (strcmp(arg4,"spread") != 0 && 
-	strcmp(arg4,"text")   != 0 && 
-	strcmp(arg4,"bin")    != 0  ) 
+    if (strcmp(arg4,"spread") != 0 &&
+	strcmp(arg4,"text")   != 0 &&
+	strcmp(arg4,"bin")    != 0  )
            fatal_error("ijbox bad write mode %s", arg4);
 
     strcpy(open_mode, file_append ? "a" : "w");
-    if (strcmp(arg4,"bin")  == 0 || 
-	strcmp(arg4,"ieee") == 0 || /* ieee not implemented yet */ 
-	strcmp(arg4,"grib") == 0 ) /* grib not implemented yet */ 
+    if (strcmp(arg4,"bin")  == 0 ||
+	strcmp(arg4,"ieee") == 0 || /* ieee not implemented yet */
+	strcmp(arg4,"grib") == 0 ) /* grib not implemented yet */
            strcat(open_mode,"b");
 
-    ni = 1 + (i2-i1)/di;  
-    nj = 1 + (j2-j1)/dj;  
+    ni = 1 + (i2-i1)/di;
+    nj = 1 + (j2-j1)/dj;
     i2 = i1 + (ni-1) * di; /* get real end point */
     j2 = j1 + (nj-1) * dj; /* get real end point */
 
@@ -138,8 +138,8 @@ int f_ijbox(ARG4) {
 
 
 
-  /*                      ---------------- 
-                          Processing Phase 
+  /*                      ----------------
+                          Processing Phase
                           ----------------
   */
 
@@ -158,7 +158,7 @@ int f_ijbox(ARG4) {
 
       if (data == NULL) fatal_error("ijbox: no data","");
       if (GDS_Scan_staggered(scan)) fatal_error("ijbox does not support staggered grids","");
-        
+
       /* record pointers, with wrapping */
       k = 0;
       /* Note: (i,j) are fortran-style 1-offset arrays */
@@ -168,13 +168,13 @@ int f_ijbox(ARG4) {
 	  x = get_cindex (i, nx);
 	  n = x + y * nx;
 	  if (n < 0 || n >= nxny) fatal_error("ijbox invalid index", "");
-	  self->iptr[k++] = n; 
-        }    
-      }    
+	  self->iptr[k++] = n;
+        }
+      }
     }
-    
+
     /*                     -----------
-                           File Output 
+                           File Output
                            -----------
     */
 
@@ -182,16 +182,16 @@ int f_ijbox(ARG4) {
     if (strcmp(arg4,"spread") == 0) {
       fprintf(self->out, " i-index, j-index, value,\n");
       for (k=0; k<nk; k++ ) {
-        i = get_cindex(di*(k % ni) + i1, nx) + 1; 
+        i = get_cindex(di*(k % ni) + i1, nx) + 1;
 	j = dj*(k/ni) + j1;
 	fprintf(self->out, "%d, %d, %g,\n", i,j,data[self->iptr[k]]);
       }
-      
+
     /* binary output */
     } else if (strcmp(arg4,"bin") == 0) {
       i = nk * sizeof(float);
       if (header) fwrite((void *) &i, sizeof(int), 1, self->out);
-      for (k = 0; k < nk; k++) 
+      for (k = 0; k < nk; k++)
 	fwrite(data + self->iptr[k], sizeof(float), 1, self->out);
       if (header) fwrite((void *) &i, sizeof(int), 1, self->out);
 

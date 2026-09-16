@@ -1,11 +1,11 @@
 GCTPC:	general cartographic trasnfortation package
 	public domain
 
-Advantages: 
+Advantages:
 	supports ellipsoid earth
 	transfortion to and from lat-lon to (x,y) coordinates
 
 
-	
-	
+
+
 s

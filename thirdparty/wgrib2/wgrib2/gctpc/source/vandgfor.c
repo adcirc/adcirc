@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                    VAN DER GRINTEN 
+NAME                    VAN DER GRINTEN
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Van der Grinten projection.  The
 		longitude and latitude must be in radians.  The Easting
 		and Northing values will be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		March, 1993
 
 This function was adapted from the Lambert Azimuthal Equal Area projection
 code (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -39,7 +39,7 @@ static double false_northing;	/* y offset in meters			*/
   ----------------------------------------*/
 long vandgforint(double r, double center_long, double false_east,
         double false_north) {
-//long vandgforint(r, center_long,false_east,false_north) 
+//long vandgforint(r, center_long,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
@@ -55,13 +55,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("VAN DER GRINTEN"); 
+ptitle("VAN DER GRINTEN");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Van Der Grinten forward equations--mapping lat,long to x,y
   ---------------------------------------------------------*/
 long vandgfor( double lon, double lat, double *x, double *y) {

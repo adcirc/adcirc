@@ -37,7 +37,7 @@ ifneq ("$(wildcard $(BOU_OBJ))","")
 else
   MSG_OBJS = $(O_DIR)mkdir.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o $(O_DIR)version.o $(O_DIR)messenger.o
 endif
-OUT = -o 
+OUT = -o
 EXTO = o
 MAKE = make
 RM = rm -f

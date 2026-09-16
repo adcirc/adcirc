@@ -42,9 +42,9 @@ void CompressGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, i
   l = cptr[0] = 0;
   for (cnvtxs=i=0; i<nvtxs; i++) {
     ii = keys[i].val;
-    if (map[ii] == -1) { 
+    if (map[ii] == -1) {
       mark[ii] = i;  /* Add the diagonal entry */
-      for (j=xadj[ii]; j<xadj[ii+1]; j++) 
+      for (j=xadj[ii]; j<xadj[ii+1]; j++)
         mark[adjncy[j]] = i;
 
       cind[l++] = ii;
@@ -56,7 +56,7 @@ void CompressGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, i
         if (keys[i].key != keys[j].key || xadj[ii+1]-xadj[ii] != xadj[iii+1]-xadj[iii])
           break; /* Break if keys or degrees are different */
 
-        if (map[iii] == -1) { /* Do a comparison if iii has not been mapped */ 
+        if (map[iii] == -1) { /* Do a comparison if iii has not been mapped */
           for (jj=xadj[iii]; jj<xadj[iii+1]; jj++) {
             if (mark[adjncy[jj]] != i)
               break;
@@ -126,7 +126,7 @@ void CompressGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, i
         ii = cind[j];
         for (jj=xadj[ii]; jj<xadj[ii+1]; jj++) {
           k = map[adjncy[jj]];
-          if (mark[k] != i) 
+          if (mark[k] != i)
             cadjncy[l++] = k;
           mark[k] = i;
         }
@@ -154,7 +154,7 @@ void CompressGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, i
 
 
 /*************************************************************************
-* This function prunes all the vertices in a graph with degree greater 
+* This function prunes all the vertices in a graph with degree greater
 * than factor*average
 **************************************************************************/
 void PruneGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *iperm, float factor)
@@ -221,7 +221,7 @@ void PruneGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, idxt
       if (xadj[i+1]-xadj[i] < factor) {
         for (j=xadj[i]; j<xadj[i+1]; j++) {
           k = perm[adjncy[j]];
-          if (k < pnvtxs) 
+          if (k < pnvtxs)
             padjncy[pnedges++] = k;
         }
         pxadj[++l] = pnedges;
@@ -245,12 +245,3 @@ void PruneGraph(CtrlType *ctrl, GraphType *graph, int nvtxs, idxtype *xadj, idxt
   free(perm);
 
 }
-
-
-
-
-
-
-
-
-

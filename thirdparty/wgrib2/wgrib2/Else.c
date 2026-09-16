@@ -14,4 +14,3 @@
 int f_else(ARG0) {
     return 0;
 }
-

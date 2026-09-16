@@ -35,7 +35,7 @@ static double feast[6];		/* False easting, one for each region */
 /* Initialize the Interrupted Mollweide projection
   --------------------------------------------*/
 long imolwinvint(double r) {
-//long imolwinvint(r) 
+//long imolwinvint(r)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //{
 /* Place parameters in static storage for common use
@@ -62,7 +62,7 @@ feast[5] = R * 2.19988776387;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("INTERRUPTED MOLLWEIDE EQUAL-AREA"); 
+ptitle("INTERRUPTED MOLLWEIDE EQUAL-AREA");
 radius(r);
 return(OK);
 }
@@ -99,13 +99,12 @@ theta = asin(y / (1.4142135623731 * R));
 /* Are we in a interrupted area?  If so, return status code of IN_BREAK.
   ---------------------------------------------------------------------*/
 if (region == 0 && (*lon < 0.34906585 || *lon > 1.91986217719))return(IN_BREAK);
-if (region == 1 && ((*lon < 1.91986217719 && *lon > 0.34906585) || 
+if (region == 1 && ((*lon < 1.91986217719 && *lon > 0.34906585) ||
               (*lon > -1.74532925199 && *lon < 0.34906585))) return(IN_BREAK);
 if (region == 2 && (*lon < -1.745329252 || *lon > 0.34906585)) return(IN_BREAK);
 if (region == 3 && (*lon < 0.34906585 || *lon > 2.44346095279))return(IN_BREAK);
-if (region == 4 && ((*lon < 2.44346095279 && *lon > 0.34906585) || 
+if (region == 4 && ((*lon < 2.44346095279 && *lon > 0.34906585) ||
               (*lon > -1.2217304764 && *lon < 0.34906585))) return(IN_BREAK);
 if (region == 5 && (*lon < -1.2217304764 || *lon> 0.34906585))return(IN_BREAK);
 return(OK);
 }
-

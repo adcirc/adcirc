@@ -25,4 +25,4 @@ Notes
 -----
 
 * Output may be in ascii or netCDF format depending on how :ref:`NOUTGE <NOUTGE>` is set in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`
-* The initiallydry.63 is written at the very beginning of a simulation run, before timestepping begins 
+* The initiallydry.63 is written at the very beginning of a simulation run, before timestepping begins

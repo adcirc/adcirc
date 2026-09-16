@@ -74,7 +74,7 @@ if (fabs(lat1+lat2) < EPSLN)
 	   "lamcc-for");
    return(41);
    }
-   
+
 temp = r_minor / r_major;
 es = 1.0 - SQUARE(temp);
 e = sqrt(es);
@@ -149,4 +149,3 @@ theta = ns * adjust_lon(lon - center_lon);
 
 return(OK);
 }
-

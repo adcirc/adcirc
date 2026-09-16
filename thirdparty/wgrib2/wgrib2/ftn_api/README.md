@@ -1,14 +1,14 @@
                Callable wgrib2 for writing and reading grib2  v2
 
-The FTN_API uses "callable wgrib2" which is a 2015 change to wgrib2 which 
-allows C and fortran programs to call wgrib2 as a subroutine.  This change 
-allows programs to read and write grib2 files using the features built 
+The FTN_API uses "callable wgrib2" which is a 2015 change to wgrib2 which
+allows C and fortran programs to call wgrib2 as a subroutine.  This change
+allows programs to read and write grib2 files using the features built
 into wgrib2.  Thanks to John Howard for his idea and code submission.
 
 Level 0:
 
-The callable wgrib2 allows a C program to call wgrib2 using the same 
-arguments as a main C program; i.e., 
+The callable wgrib2 allows a C program to call wgrib2 using the same
+arguments as a main C program; i.e.,
 
         return_code = wgrib2(int argc, const char **argv);
 
@@ -62,7 +62,7 @@ Some operations need a temporary file. For example, to read a
 file, you may want a temporary inventory.  To write a file, you may
 want to create a temporary template file.  Temporary files are
 useful because they are automatically deleted and it use a system
-determined filesystem.  To use a temporary file, you use a time 
+determined filesystem.  To use a temporary file, you use a time
 like @tmp:XYZ where XYZ is an alpha-numeric string.
 
               New File Types: memory files
@@ -78,8 +78,8 @@ decoded message to another memory file.
 
 
 00000000000000000000000000000000000000000000000000000000000000000000000000000000
-Some options had to be added to allow the transfer of data between the calling and 
-called routines.  Of course, we had to worry about memory leaks and freeing unused 
+Some options had to be added to allow the transfer of data between the calling and
+called routines.  Of course, we had to worry about memory leaks and freeing unused
 file handles.
 
 
@@ -111,8 +111,8 @@ Level 1
 		  For example, you may want the 12-hour-fcst HGT for 2015010200 at 500 mb.
                   The wgrib2 match strings are "12 hour fcst", "HGT", "d=2015010200" and
                   "500 mb".   The function will return the number of matches in "i".  If i is zero,
-                  no fields matched and the return values have undefined values.  If i is greater 
-                  than zero, then the returned values are for the last match.  
+                  no fields matched and the return values have undefined values.  If i is greater
+                  than zero, then the returned values are for the last match.
 
                 The optional arguments allow you to set values or return values.
 
@@ -127,12 +127,12 @@ Level 1
 		   if (i.eq.1) write(*,*) 'grid(1,1)=', grid(1,1)
 
                 2. Getting the lat, lon and gridded values in WE:SN order
-                  
+
                    real, allocatable :: grid(:,:), lon(:,:), lat(:,:)
 
                    (assume only one z500 field in the file)
                    i = grb2_inq('IN.grb','IN.inv','HGT','500 mb',grid=grid,lon=lon,lat=lat)
-		
+
 		   if (i.eq.1) write(*,*) 'nx=',size(grid,1),' ny=',size(grid,2)
 		   if (i.eq.1) write(*,*) 'grid(1,1)=', grid(1,1)
 		   if (i.eq.1) write(*,*) 'lat/lon=', lat(1,1), lon(1,1)
@@ -161,7 +161,7 @@ Level 1
 
                 real, allocatable :: grid(:,:)
                 allocate(grid(nx,ny))
-                .. 
+                ..
                 i = grb2_wrt('OUT.grb','TMPLATE.grb','1',data2=grid, &
                        meta='0:1:d=2001020304:TMP:200 mb:4 hour fcst:')
                 write(*,*) 'ierr=',i
@@ -174,10 +174,10 @@ Level 1
                 integer (kind=8) :: date
                 real, allocatable :: grid(:,:)
                 allocate(grid(nx,ny))
-                .. 
+                ..
                 date=2001010218
                 i = grb2_wrt('OUT.grb','TMPLATE.grb','1',data2=grid,date=date,var='UGRD',mb=0.01,fhour=234)
-                .. 
+                ..
                 i = grb2_wrt('OUT.grb','TMPLATE.grb','1',data2=grid,date=date,var='ULWRF',level='surface'.&
                   fhour_ave1=0,fhour_ave2=6,center=91,subcenter=1)
 

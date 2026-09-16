@@ -86,7 +86,7 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
     qnum[i] = samax(ncon, nvwgt+i*ncon);
 
   Compute2WayHLoadImbalanceVec(ncon, npwgts, tpwgts, origbal);
-  for (i=0; i<ncon; i++) 
+  for (i=0; i<ncon; i++)
     minbal[i] = origbal[i];
 
   newcut = mincut = graph->mincut;
@@ -96,7 +96,7 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
     printf("Parts: [");
     for (l=0; l<ncon; l++)
       printf("(%.3f, %.3f) ", npwgts[l], npwgts[ncon+l]);
-    printf("] T[%.3f %.3f], Nv-Nb[%5d, %5d]. ICut: %6d, LB: ", tpwgts[0], tpwgts[1], 
+    printf("] T[%.3f %.3f], Nv-Nb[%5d, %5d]. ICut: %6d, LB: ", tpwgts[0], tpwgts[1],
             graph->nvtxs, graph->nbnd, graph->mincut);
     for (i=0; i<ncon; i++)
       printf("%.3f ", origbal[i]);
@@ -132,10 +132,10 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
     newcut -= (ed[higain]-id[higain]);
     Compute2WayHLoadImbalanceVec(ncon, npwgts, tpwgts, newbal);
 
-    if (IsBetter2wayBalance(ncon, newbal, minbal, ubvec) || 
+    if (IsBetter2wayBalance(ncon, newbal, minbal, ubvec) ||
         (IsBetter2wayBalance(ncon, newbal, origbal, ubvec) && newcut < mincut)) {
       mincut = newcut;
-      for (i=0; i<ncon; i++) 
+      for (i=0; i<ncon; i++)
         minbal[i] = newbal[i];
       mincutorder = nswaps;
     }
@@ -152,12 +152,12 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
 
     if (ctrl->dbglvl&DBG_MOVEINFO) {
       printf("Moved %6d from %d(%d). Gain: %5d, Cut: %5d, NPwgts: ", higain, from, cnum, ed[higain]-id[higain], newcut);
-      for (i=0; i<ncon; i++) 
+      for (i=0; i<ncon; i++)
         printf("(%.3f, %.3f) ", npwgts[i], npwgts[ncon+i]);
 
       Compute2WayHLoadImbalanceVec(ncon, npwgts, tpwgts, tvec);
       printf(", LB: ");
-      for (i=0; i<ncon; i++) 
+      for (i=0; i<ncon; i++)
         printf("%.3f ", tvec[i]);
       if (mincutorder == nswaps)
         printf(" *\n");
@@ -170,7 +170,7 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
     * Update the id[i]/ed[i] values of the affected nodes
     ***************************************************************/
     SWAP(id[higain], ed[higain], tmp);
-    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1]) 
+    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1])
       BNDDelete(nbnd, bndind,  bndptr, higain);
     if (ed[higain] > 0 && bndptr[higain] == -1)
       BNDInsert(nbnd, bndind,  bndptr, higain);
@@ -187,12 +187,12 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
         PQueueUpdate(&parts[qnum[k]][where[k]], k, oldgain, ed[k]-id[k]);
 
       /* Update its boundary information */
-      if (ed[k] == 0 && bndptr[k] != -1) 
+      if (ed[k] == 0 && bndptr[k] != -1)
         BNDDelete(nbnd, bndind, bndptr, k);
-      else if (ed[k] > 0 && bndptr[k] == -1)  
+      else if (ed[k] > 0 && bndptr[k] == -1)
         BNDInsert(nbnd, bndind, bndptr, k);
     }
-   
+
   }
 
 
@@ -233,7 +233,7 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
       printf("(%.3f, %.3f) ", npwgts[i], npwgts[ncon+i]);
     printf("], LB: ");
     Compute2WayHLoadImbalanceVec(ncon, npwgts, tpwgts, tvec);
-    for (i=0; i<ncon; i++) 
+    for (i=0; i<ncon; i++)
       printf("%.3f ", tvec[i]);
     printf("\n");
   }
@@ -262,8 +262,8 @@ void MocGeneral2WayBalance2(CtrlType *ctrl, GraphType *graph, float *tpwgts, flo
 /*************************************************************************
 * This function selects the partition number and the queue from which
 * we will move vertices out
-**************************************************************************/ 
-void SelectQueue3(int ncon, float *npwgts, float *tpwgts, int *from, int *cnum, 
+**************************************************************************/
+void SelectQueue3(int ncon, float *npwgts, float *tpwgts, int *from, int *cnum,
        PQueueType queues[MAXNCON][2], float *maxwgt)
 {
   int i, j, maxgain=0;
@@ -316,7 +316,7 @@ printf("***[%5d %5d]\n", *cnum, *from);
     for (j=0; j<2; j++) {
       for (i=0; i<ncon; i++) {
         if (PQueueGetSize(&queues[i][j]) > 0 && PQueueGetKey(&queues[i][j]) > maxgain) {
-          maxgain = PQueueGetKey(&queues[i][0]); 
+          maxgain = PQueueGetKey(&queues[i][0]);
           *from = j;
           *cnum = i;
         }

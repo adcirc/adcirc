@@ -52,4 +52,3 @@ were anything other than 1, it is an error that will cause ADCIRC to stop.
 
 For 3D ADCIRC runs, spatially varying bottom friction should be specified using
 the :ref:`bottom_roughness_length <bottom_roughness_length>` nodal attribute.
-

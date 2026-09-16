@@ -19,18 +19,18 @@
 /*************************************************************************
 * This function is the entry point for KMETIS
 **************************************************************************/
-void METIS_PartGraphKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                         idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_PartGraphKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                         idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
                          int *options, int *edgecut, idxtype *part)
 {
   int i;
   float *tpwgts;
 
   tpwgts = fmalloc(*nparts, "KMETIS: tpwgts");
-  for (i=0; i<*nparts; i++) 
+  for (i=0; i<*nparts; i++)
     tpwgts[i] = 1.0/(1.0*(*nparts));
 
-  METIS_WPartGraphKway(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts, 
+  METIS_WPartGraphKway(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts,
                        tpwgts, options, edgecut, part);
 
   free(tpwgts);
@@ -40,8 +40,8 @@ void METIS_PartGraphKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vw
 /*************************************************************************
 * This function is the entry point for KWMETIS
 **************************************************************************/
-void METIS_WPartGraphKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                          idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_WPartGraphKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                          idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
                           float *tpwgts, int *options, int *edgecut, idxtype *part)
 {
   int i, j;
@@ -102,14 +102,14 @@ int MlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxtype
   IFSET(ctrl->dbglvl, DBG_TIME, starttimer(ctrl->InitPartTmr));
   AllocateKWayPartitionMemory(ctrl, cgraph, nparts);
 
-  options[0] = 1; 
+  options[0] = 1;
   options[OPTION_CTYPE] = MATCH_SHEMKWAY;
   options[OPTION_ITYPE] = IPART_GGPKL;
   options[OPTION_RTYPE] = RTYPE_FM;
   options[OPTION_DBGLVL] = 0;
 
-  METIS_WPartGraphRecursive(&cgraph->nvtxs, cgraph->xadj, cgraph->adjncy, cgraph->vwgt, 
-                            cgraph->adjwgt, &wgtflag, &numflag, &nparts, tpwgts, options, 
+  METIS_WPartGraphRecursive(&cgraph->nvtxs, cgraph->xadj, cgraph->adjncy, cgraph->vwgt,
+                            cgraph->adjwgt, &wgtflag, &numflag, &nparts, tpwgts, options,
                             &edgecut, cgraph->where);
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->InitPartTmr));
@@ -126,4 +126,3 @@ int MlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxtype
   return graph->mincut;
 
 }
-

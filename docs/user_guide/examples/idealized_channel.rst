@@ -29,8 +29,8 @@ southern end of the domain.
 .. figure:: /_static/images/user_guide/examples/idealized_channel_problem/IdealChannel.png
    :width: 1000px
 
-   Left: Mesh triangulation and resolution. Blue line shows the elevation specified boundary 
-   condition location, green and yellow lines on the sides show the periodic lateral boundary 
+   Left: Mesh triangulation and resolution. Blue line shows the elevation specified boundary
+   condition location, green and yellow lines on the sides show the periodic lateral boundary
    condition locations. Center: Mesh topo-bathy. Right: The sponge strength coefficients.
 
 .. list-table::

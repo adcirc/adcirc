@@ -7,7 +7,7 @@
 #include "wgrib2.h"
 
 /*
- * write fatal error message .. so to have common format 
+ * write fatal error message .. so to have common format
  * Public Domain 2004 Wesley Ebisuzaki, George Trojan (2021)
  * v1.0   original release (2004)
  * v1.X   added fatal_error_XY, code for callable wgrib2, calls to err_bin, err_string

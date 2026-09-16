@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -29,7 +29,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG,kappamodulus
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -61,8 +61,8 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIRD(:)
 
 C.... DW, periodic bc
-      INTEGER:: NPERBC 
-      INTEGER, ALLOCATABLE:: IPERCONN(:,:), IPERPTR(:) ! a simple sparse CRS format 
+      INTEGER:: NPERBC
+      INTEGER, ALLOCATABLE:: IPERCONN(:,:), IPERPTR(:) ! a simple sparse CRS format
 C.... DW
 
       TYPE(ipair),ALLOCATABLE, TARGET :: node_dict(:)
@@ -93,7 +93,7 @@ C                                   ! Ith Flow Boundary Node
       INTEGER EXIST_FLUX
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
                                     ! NFFR=0 in fort.15
-                                    
+
       ! @jasonfleming: add boundary weights for perturbing the domain
       ! decomposition in subroutine metis()
       logical :: strictBoundaries ! true if subdomain boundaries must match fulldomain
@@ -300,7 +300,7 @@ Casey 180318: Added NWS=13
 #endif
 
       ! DW 2024
-      LOGICAL :: found_NWS14Grib2NetCdf_Namelist = .false. 
+      LOGICAL :: found_NWS14Grib2NetCdf_Namelist = .false.
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
       ! AMAN TEJASWI
@@ -308,7 +308,7 @@ Casey 180318: Added NWS=13
       LOGICAL :: UseInterpInset
       NAMELIST /InterpInset/ UseInterpInset,Pfile_inset, Wfile_inset, InsetControlFile
 
-      logical :: foundWetDryControlNamelist = .false. ! for namelist 
+      logical :: foundWetDryControlNamelist = .false. ! for namelist
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
       logical :: noffActive = .true.
@@ -317,35 +317,35 @@ Casey 180318: Added NWS=13
 
 
 
-       
+
 
 
 !JLW: add subgrid namelist control
       logical :: foundSubgridControlNamelist = .false.
       character(200) :: subgridFilename = 'null'
-      logical :: level0 = .true. 
+      logical :: level0 = .true.
       logical :: level1 = .false.
       logical :: phi_time_derivative = .false.
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,
-      ! but this must wait until build dependencies are resolved. 
+      ! but this must wait until build dependencies are resolved.
       logical :: foundInundationOutputControlNamelist = .false.
       logical :: inundationOutput = .false.
       real(8) :: inunThresh = 0.6d0
 
       ! jgf: added support for water level correction
-      logical :: foundCorrectionControlNamelist = .false. 
-      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+      logical :: foundCorrectionControlNamelist = .false.
+      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file
       character(len=64) :: dynamicWaterLevelCorrectionMethod='default' ! method specifiation for water level correction
-      integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip 
+      integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip
       real(8) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
       real(8) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
-      real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
+      real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
 C     VEW1D channel namelist 11/06/2023 sb
-      logical :: foundVEW1DChannelControlNamelist = .false. 
+      logical :: foundVEW1DChannelControlNamelist = .false.
       logical :: activateVEW1DChannelWetPerimeter
       REAL(8)                 :: BARMIN64_SUBM=0.04D0   !...Minimum water depth above weir to consider submerged when the weir is already submerged
       REAL(8)                 :: BARMIN64_NOSUBM=0.04D0  !...Minimum water depth above weir to consider submerged when the weir is not submerged
@@ -354,20 +354,48 @@ C     VEW1D channel namelist 11/06/2023 sb
       REAL(8)                 :: BARSLIM64_EDGE=1D-4   !...Water level edge slope threhold. A weir is considered not submerged if the water level slope is greater than this value
 
 C     Full luni-solar tidal potential namelist: 2024
-      logical:: foundTidalPotentialControlNamelist = .false. 
-      LOGICAL:: UseFullTIPFormula = .FALSE. 
+      logical:: foundTidalPotentialControlNamelist = .false.
+      LOGICAL:: UseFullTIPFormula = .FALSE.
       INTEGER:: TIPOrder = 2
       CHARACTER (LEN=24):: TIPStartDate = 'none'
-      CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
+      CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM'
       CHARACTER (LEN=80):: MoonSunCoordFile = 'none'
-      LOGICAL:: UniformResMoonSunTimeData = .TRUE.  
-      LOGICAL:: IncludeNutation = .TRUE.  
-      REAL (8):: k2value = 0.302D0 
-      REAL (8):: h2value = 0.609D0    
+      LOGICAL:: UniformResMoonSunTimeData = .TRUE.
+      LOGICAL:: IncludeNutation = .TRUE.
+      REAL (8):: k2value = 0.302D0
+      REAL (8):: h2value = 0.609D0
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
-     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData  
-      
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
+
+C    inline Self Attraction and Loading
+      ! I/O Self-attraction-loading
+      LOGICAL:: foundInlineSALControlNamelist = .false.
+      LOGICAL:: use_inline_sal = .FALSE.
+      LOGICAL:: sal_use_direct_sh = .TRUE.
+      LOGICAL:: sal_use_cache_blocking = .TRUE.
+      INTEGER:: nSHOrder = 64
+      INTEGER:: nCellBlock = 500
+      INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp
+      INTEGER:: salExtrapVal = 0
+      character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation
+      REAL (8):: salAPBeta = 0.09D0
+      LOGICAL:: sal_use_sh_filter
+      INTEGER:: sh_filter_scheme
+
+      NAMELIST /InlineSALControl/ use_inline_sal,
+     &     sal_use_direct_sh,
+     &     sal_use_cache_blocking,
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal,
+     &     inlineSalMethod, salAPBeta,
+     &     sal_use_sh_filter, sh_filter_scheme
+
+C    Inteneded for Tsunami
+      LOGICAL:: foundTsunamiSimOption = .false.
+      LOGICAL:: use_variable_water_density_VCT = .false.
+      NAMELIST /TsunamiSimOption/ use_variable_water_density_VCT,
+     &     kappamodulus
+
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(8) CONVCR
@@ -423,9 +451,9 @@ C                                      ! Boundary Node I on PE
 C
       INTEGER            ::NNBVVGRP    ! NNBVVGRP Number of hanging nodes on
 C                                      ! removed land boundary segments
-      INTEGER,ALLOCATABLE::NBVVGRP(:,:)! NBVVGRP(2,I) List of global node numbers 
-                                       ! of hanging nodes on removed land boundary  
-                                       ! segments (1,I) and 
+      INTEGER,ALLOCATABLE::NBVVGRP(:,:)! NBVVGRP(2,I) List of global node numbers
+                                       ! of hanging nodes on removed land boundary
+                                       ! segments (1,I) and
                                        ! their processor numbers (2,I)
 
       INTEGER,ALLOCATABLE::NNSTA3DDP(:)! Number of 3D density stations on (PE)
@@ -648,7 +676,7 @@ C
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
       ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
-      
+
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)
       print *,"from alloc_main2: "
@@ -673,7 +701,7 @@ C
       deallocate(nnep)
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
       deallocate(el_share)
-      
+
       nbytes = nbytes + mnep
       call memory_dealloc(nbytes)
       print *,"from dealloc_main2: "

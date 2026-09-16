@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                 GENERAL VERTICAL NEAR-SIDE PERSPECTIVE 
+NAME                 GENERAL VERTICAL NEAR-SIDE PERSPECTIVE
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the General Vertical Near-Side Perspective
 		projection.  The Easting and Northing must be in meters.
 		The longitude and latitude values will be returned in radians.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		Mar, 1993
 
 This function was adapted from the General Vertical Near-side projection
 code (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -43,7 +43,7 @@ static double false_northing;	/* y offset in meters			*/
   ---------------------------------------------------------------*/
 long gvnspinvint(double r, double h, double center_long, double center_lat,
         double false_east, double false_north) {
-//long gvnspinvint(r, h,center_long, center_lat,false_east,false_north) 
+//long gvnspinvint(r, h,center_long, center_lat,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double h;			/* height above sphere			*/
@@ -64,7 +64,7 @@ sincos(center_lat, &sin_p15, &cos_p15);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("GENERAL VERTICAL NEAR-SIDE PERSPECTIVE"); 
+ptitle("GENERAL VERTICAL NEAR-SIDE PERSPECTIVE");
 radius(r);
 genrpt(h,"Height of Point Above Surface of Sphere:    ");
 cenlon(center_long);
@@ -72,8 +72,8 @@ cenlat(center_lat);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
-/* General Vertical Near-Side Perspective inverse equations--mapping 
+
+/* General Vertical Near-Side Perspective inverse equations--mapping
    x,y to lat/long
   ----------------------------------------------------------------*/
 long gvnspinv(double x, double y, double *lon, double *lat) {

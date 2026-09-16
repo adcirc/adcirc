@@ -27,4 +27,4 @@ Notes
 * Output may be in ascii or binary format depending on how :ref:`NOUTM <NOUTM>` is set in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`
 * If binary output is specified, the station number (k) is not included in the output
 * The meteorological recording station locations are specified in the fort.15 file
-* Wind velocity components (WVNX, WVNY) are given in meters per second 
+* Wind velocity components (WVNX, WVNY) are given in meters per second

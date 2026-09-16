@@ -6,7 +6,7 @@
  *  to                    init() {
  *                          variable = value;
  *                        }
- * 
+ *
  * needed to make wgrib2 a callable routine
  */
 
@@ -37,8 +37,8 @@ extern int use_gctpc;		/* use gctpc for geolocation */
 extern int use_proj4;		/* use Proj4 for geolocation */
 extern enum geolocation_type geolocation;
 
-extern int fix_ncep_2_flag;	
-extern int fix_ncep_3_flag;	
+extern int fix_ncep_2_flag;
+extern int fix_ncep_3_flag;
 extern int fix_ncep_4_flag;
 extern int fix_undef_flag;
 
@@ -163,7 +163,7 @@ void init_globals(void) {
     header=1;           /* file header flag */
     flush_mode = 0;	/* flush of output 1 = yes */
     WxText = 0;		/* decode NDFD keys */
-    ftime_mode = 0;	
+    ftime_mode = 0;
 
     use_g2clib = DEFAULT_G2CLIB;        /* use g2clib/emulation code for decoding */
     use_gctpc = DEFAULT_GCTPC;          /* use gctpc for geolocation */

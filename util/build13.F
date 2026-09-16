@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -50,7 +50,7 @@ c-------------------------------------------------------------------------
         do i=1,np
            read(12,*) idumy,xdumy,ydumy,startdry(i),
      &       (z0land(i,j),j=1, 12),vcanopy(i)
-        enddo  
+        enddo
         close(12)
 
         allocate( tau0var(np) )
@@ -89,7 +89,7 @@ c-----------------------------------------------------------------------
         write(13,'(I2)')  1
       else
          print *, "cannot find either a fort.12 or a for.21 file"
-         stop 
+         stop
       endif
 
 
@@ -117,7 +117,7 @@ c-----------------------------------------------------------------------
         write(13,'(A)') "surface_directional_effective_roughness_length"
         write(13,'(A2)')  " m"
         write(13,'(I3)')  12
-        write(13,'(A)') 
+        write(13,'(A)')
      &  "0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0 0.0  0.0"
       endif
 
@@ -131,7 +131,7 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
 c  write variable values
 c-----------------------------------------------------------------------
-        
+
       if (has_dry) then
 
 ! VARABLE 1

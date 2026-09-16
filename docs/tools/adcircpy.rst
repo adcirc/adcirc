@@ -21,4 +21,4 @@ Links
 
 * `GitHub Repository <https://github.com/oceanmodeling/adcircpy>`_
 * `Documentation <https://adcircpy.readthedocs.io/>`_
-* `Citation <https://github.com/oceanmodeling/adcircpy#citation>`_ 
+* `Citation <https://github.com/oceanmodeling/adcircpy#citation>`_

@@ -20,7 +20,7 @@
  * v0.99 3/2018
  */
 
-int grb2_wrtVA(const char *grb, const char *template, int msgno, float *data, 
+int grb2_wrtVA(const char *grb, const char *template, int msgno, float *data,
          unsigned int ndata, ...) {
     va_list valist;
     char *option, *str_arg;
@@ -133,7 +133,7 @@ int grb2_wrtVA(const char *grb, const char *template, int msgno, float *data,
             wgrib2_add_cmd(line);
 	    fprintf(stderr,"date: %s\n",line);
         }
-	else {  
+	else {
 	    printf("unknown option=%s\n",option);
 	    str_arg = (char *) va_arg(valist, char * );
 	}

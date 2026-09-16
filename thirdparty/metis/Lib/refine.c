@@ -32,7 +32,7 @@ void Refine2Way(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int *tpwg
     switch (ctrl->RType) {
       case 1:
         Balance2Way(ctrl, graph, tpwgts, ubfactor);
-        FM_2WayEdgeRefine(ctrl, graph, tpwgts, 8); 
+        FM_2WayEdgeRefine(ctrl, graph, tpwgts, 8);
         break;
       default:
         errexit("Unknown refinement type: %d\n", ctrl->RType);
@@ -72,7 +72,7 @@ void Allocate2WayPartitionMemory(CtrlType *ctrl, GraphType *graph)
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void Compute2WayPartitionParams(CtrlType *ctrl, GraphType *graph)
 {
@@ -201,4 +201,3 @@ void Project2WayPartition(CtrlType *ctrl, GraphType *graph)
   graph->coarser = NULL;
 
 }
-

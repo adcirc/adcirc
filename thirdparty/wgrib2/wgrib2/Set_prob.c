@@ -10,7 +10,7 @@
  * Set_percentile.c
  *
  * converts PDT 0..6 -> 5    8..15 -> 9
- *   
+ *
  *
  * 2/2015: Public Domain: Wesley Ebisuzaki
  *
@@ -52,7 +52,7 @@ int f_set_prob(ARG5) {
 	fprintf(stderr,"\nWARNING: set_prob does not work with PDT %d\n", pdt);
 	return 0;
     }
- 
+
     if (arg1 != NULL && strcmp(arg1,"") != 0)
         p[-2] = (unsigned char) atoi(arg1);
     if (arg2 != NULL && strcmp(arg2,"") != 0)

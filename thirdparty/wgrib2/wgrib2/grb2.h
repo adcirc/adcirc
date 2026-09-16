@@ -60,8 +60,8 @@
 #define GDS_Lambert_NP(gds)		(((gds[63]) & 128) == 0)
 #define GDS_Lambert_nx(gds)		(uint4_missing(gds+30))
 #define GDS_Lambert_ny(gds)		(uint4_missing(gds+34))
-#define GDS_Lambert_dx(gds)		(int4(gds+55) * 0.001) 
-#define GDS_Lambert_dy(gds)		(int4(gds+59) * 0.001) 
+#define GDS_Lambert_dx(gds)		(int4(gds+55) * 0.001)
+#define GDS_Lambert_dy(gds)		(int4(gds+59) * 0.001)
 
 #define GDS_Albers_La1(gds)		(int4(gds+38) * 0.000001)
 #define GDS_Albers_Lo1(gds)		(int4(gds+42) * 0.000001)
@@ -75,8 +75,8 @@
 #define GDS_Albers_NP(gds)		(((gds[63]) & 128) == 0)
 #define GDS_Albers_nx(gds)		(uint4_missing(gds+30))
 #define GDS_Albers_ny(gds)		(uint4_missing(gds+34))
-#define GDS_Albers_dx(gds)		(int4(gds+55) * 0.001) 
-#define GDS_Albers_dy(gds)		(int4(gds+59) * 0.001) 
+#define GDS_Albers_dx(gds)		(int4(gds+55) * 0.001)
+#define GDS_Albers_dy(gds)		(int4(gds+59) * 0.001)
 
 #define GDS_LatLon_basic_ang(gds)	int4(gds+38)
 #define GDS_LatLon_sub_ang(gds)		sub_angle(gds+42)

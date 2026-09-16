@@ -31,7 +31,7 @@ reportError()
   else
     errmsg="Compilation of ${1} failed."
   fi
-  
+
   if [ "${2:-UNDEF}" -eq "${2}" ]; then
     errval=${2}
   fi
@@ -162,4 +162,3 @@ popd >/dev/null 2>&1
 
 # build ADCIRC NUOPC
 make nuopc
-

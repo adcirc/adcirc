@@ -343,7 +343,7 @@ ENDIF( JAS_DEBUG_MSG )
 #		endif()
 #	endif()
 #	# On some systems (e.g., Fedora 21), there is a bug in the cmake code
-#	# that detects GLUT libraries.  The following ugliness is a workaround for 
+#	# that detects GLUT libraries.  The following ugliness is a workaround for
 #	# this problem.
 #	if (NOT GLUT_Xmu_LIBRARY OR NOT GLUT_Xmi_LIBRARY)
 #		if (NOT GLUT_Xmu_LIBRARY)
@@ -401,7 +401,7 @@ if (JAS_ENABLE_SHARED)
 
 	# when building, don't use the install RPATH already
 	# (but later on when installing)
-	set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+	set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 	set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 

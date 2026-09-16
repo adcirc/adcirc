@@ -18,7 +18,7 @@
  *   2. have less than microdegree precision because they often use single precision
  *        for lat/lon calculations (centi-degrees in one case).
  *
- *   
+ *
  * cyclic is needed to determine whether a grid has a E or W boundary
  */
 

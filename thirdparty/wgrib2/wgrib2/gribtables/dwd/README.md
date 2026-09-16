@@ -8,7 +8,7 @@ run  ../../make_gribtable.sh dwd_gribtable which makes dwd_gribtable.dat
 wgrib2 v3.0.1 : removed CDCT .. defined cloud type and cloud top
 		SM (soil moisture) defined twice, set_var should default to new/good version
 		TSEC defined twice
-new variable:  "PR_GSP", "Large-scale precipitation rate" 
+new variable:  "PR_GSP", "Large-scale precipitation rate"
 
 note: many DWD variables have no units.. not in the shortName.def file
 
@@ -34,4 +34,3 @@ check for duplicates
 wgrib2 v3.0.1 : removed CDCT .. defined cloud type and cloud top
 		SM (soil moisture) defined twice, set_var should default to new/good version
 		TSEC defined twice
-

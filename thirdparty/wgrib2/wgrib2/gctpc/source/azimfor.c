@@ -1,6 +1,6 @@
 /*******************************************************************************
-NAME                             AZIMUTHAL EQUIDISTANT 
-  
+NAME                             AZIMUTHAL EQUIDISTANT
+
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Azimuthal Equidistant projection.  The
 		longitude and latitude must be in radians.  The Easting
@@ -37,7 +37,7 @@ static double cos_p12;		/* cos of center latitude		*/
   ----------------------------------*/
 long azimforint( double r_maj, double center_lon, double center_lat,
         double false_east, double false_north) {
-// long azimforint(r_maj,center_lon,center_lat,false_east,false_north) 
+// long azimforint(r_maj,center_lon,center_lat,false_east,false_north)
 
 // double r_maj;			/* major axis			*/
 // double center_lon;		/* center longitude		*/
@@ -58,14 +58,14 @@ sincos(center_lat,&sin_p12,&cos_p12);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("AZIMUTHAL EQUIDISTANT"); 
+ptitle("AZIMUTHAL EQUIDISTANT");
 radius(r_major);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Azimuthal forward equations--mapping lat,long to x,y
   ---------------------------------------------------*/
@@ -80,7 +80,7 @@ double sinphi, cosphi;	/* sin and cos value				*/
 double dlon;		/* delta longitude value			*/
 double coslon;		/* cos of longitude				*/
 double ksp;		/* scale factor					*/
-double g;		
+double g;
 double con;		/* radius of circle				*/
 double z;		/* angle					*/
 char mess[80];		/* error message buffer				*/
@@ -98,7 +98,7 @@ if (fabs(fabs(g) - 1.0) < EPSLN)
      {
      con = 2.0 * HALF_PI * r_major;
      sprintf(mess,"Point projects into a circle of radius = %12.2lf",con);
-     p_error(mess,"azim-for");  
+     p_error(mess,"azim-for");
      return(123);
      }
    }
@@ -108,7 +108,7 @@ else
    ksp = z/ sin(z);
    }
 *x = false_easting + r_major * ksp * cosphi * sin(dlon);
-*y = false_northing + r_major * ksp * (cos_p12 * sinphi - sin_p12 * 
-				cosphi * coslon); 
+*y = false_northing + r_major * ksp * (cos_p12 * sinphi - sin_p12 *
+				cosphi * coslon);
 return(OK);
 }

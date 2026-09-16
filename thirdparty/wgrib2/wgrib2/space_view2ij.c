@@ -26,7 +26,7 @@
  *
  * used a different test to see if the grid point is visible than suggested
  * by the code MSG_navigation_v1.01.c  by EUMETSAT
- * 
+ *
  * code limited to orientation == 0 and satellite location = 0N
  *  v1.0 4-2011
  *
@@ -57,7 +57,7 @@ extern double *lat, *lon;
 extern enum output_order_type output_order;
 
 static unsigned int nnx, nny;
-static double sat_height, r_pol, r_eq, r_pol_eq, factor_10, lap, lop, 
+static double sat_height, r_pol, r_eq, r_pol_eq, factor_10, lap, lop,
 	inv_rx, inv_ry;
 static double xp, yp, dx, dy;
 
@@ -70,7 +70,7 @@ int space_view_init(unsigned char **sec) {
 
 fprintf(stderr,"ALPHA: experimental space_view2ij\n");
     if (sec == NULL || sec[3] == NULL) fatal_error("space_view_init: sec/sec[3] == NULL","");
- 
+
     if (code_table_3_1(sec) != 90) fatal_error("space_view_init: not space view grid","");
     if (output_order != wesn) fatal_error("space_view_init: order must be we:sn","");
 

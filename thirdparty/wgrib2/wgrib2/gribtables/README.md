@@ -19,7 +19,6 @@ For locally defined fields, the local center sets the naming convention.
                     To add more gribtables
 
 
-change wgrib2/grb2.h (to add center code), wgrib2/cnames.c, wgrib2/gribtab.c, wgrib2/Mod_grib.c 
+change wgrib2/grb2.h (to add center code), wgrib2/cnames.c, wgrib2/gribtab.c, wgrib2/Mod_grib.c
 and perhaps wgrib2/Names.c (for category 2).  Please keep the location of the gribtable
 to center/(center)_gribtable.dat because the wgrib2/makefile uses it.
-

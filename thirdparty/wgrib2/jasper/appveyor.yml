@@ -31,4 +31,3 @@ init:
 # The command to run for building.
 build_script:
     - build\appveyor\build.bat
-

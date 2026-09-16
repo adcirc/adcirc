@@ -2,7 +2,7 @@ include ../Makefile.in
 
 BINDIR = ..
 
-INCLUDES = -I../Lib 
+INCLUDES = -I../Lib
 CFLAGS = $(COPTIONS) $(OPTFLAGS) $(INCLUDES)
 
 LIBS = -lmetis -lm
@@ -10,7 +10,7 @@ LD = $(CC) $(LDOPTIONS) -L. -L..
 METISLIB = ../libmetis.a
 
 
-GRAPHCHKOBJ = graphchk.o io.o 
+GRAPHCHKOBJ = graphchk.o io.o
 
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c

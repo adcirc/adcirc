@@ -86,7 +86,7 @@ for line in $disc_lines; do
     if [ $? -ne 0 ]; then
       echo "Download of $url failed, exit."
       exit
-    fi    
+    fi
     cat "$subtable" | tr -s "[:cntrl:]" "[ *]" | sed '{
       s/<\/tr>/\n/ig
       s/<tr>/\n/ig
@@ -278,7 +278,7 @@ for line in $disc_lines; do
   done
 done
 
-#---Add a special entry: 
+#---Add a special entry:
 echo "255:0:0:255:7:1:255:255:IMGD:Image data:-" >> "$outfile"
 
 echo ""

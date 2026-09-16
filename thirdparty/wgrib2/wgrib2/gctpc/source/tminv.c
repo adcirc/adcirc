@@ -8,7 +8,7 @@ PURPOSE:	Transforms input Easting and Northing to longitude and
 
 PROGRAMMER              DATE		REASON
 ----------              ----		------
-D. Steinwand, EROS      Nov, 1991	
+D. Steinwand, EROS      Nov, 1991
 T. Mittan		Mar, 1993
 S. Nelson		Feb, 1995	Divided tminv.c into two files,
 					one for UTM (utminv.c) and one
@@ -89,7 +89,7 @@ if (es < .00001)
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("TRANSVERSE MERCATOR (TM)"); 
+ptitle("TRANSVERSE MERCATOR (TM)");
 radius2(r_major, r_minor);
 genrpt(scale_factor,"Scale Factor at C. Meridian:    ");
 cenlonmer(lon_center);
@@ -98,7 +98,7 @@ offsetp(false_easting,false_northing);
 return(OK);
 }
 
-/* Transverse Mercator inverse equations--mapping x,y to lat,long 
+/* Transverse Mercator inverse equations--mapping x,y to lat,long
    Note:  The algorithm for UTM is exactly the same as TM and therefore
           if a change is implemented, also make the change to UTMINV.c
   --------------------------------------------------------------*/
@@ -117,7 +117,7 @@ double c, cs, t, ts, n, r, d, ds;	/* temporary variables		*/
 double f, h, g, temp;			/* temporary variables		*/
 long max_iter = 6;			/* maximun number of iterations	*/
 
-/* fortran code for spherical form 
+/* fortran code for spherical form
 --------------------------------*/
 if (ind != 0)
    {
@@ -157,9 +157,9 @@ for (i=0;;i++)
 */
    phi += delta_phi;
    if (fabs(delta_phi) <= EPSLN) break;
-   if (i >= max_iter) 
-      { 
-      p_error("Latitude failed to converge","TM-INVERSE"); 
+   if (i >= max_iter)
+      {
+      p_error("Latitude failed to converge","TM-INVERSE");
       return(95);
       }
    }
@@ -171,12 +171,12 @@ if (fabs(phi) < HALF_PI)
    cs   = SQUARE(c);
    t    = SQUARE(tan_phi);
    ts   = SQUARE(t);
-   con  = 1.0 - es * SQUARE(sin_phi); 
+   con  = 1.0 - es * SQUARE(sin_phi);
    n    = r_major / sqrt(con);
    r    = n * (1.0 - es) / con;
    d    = x / (n * scale_factor);
    ds   = SQUARE(d);
-   *lat = phi - (n * tan_phi * ds / r) * (0.5 - ds / 24.0 * (5.0 + 3.0 * t + 
+   *lat = phi - (n * tan_phi * ds / r) * (0.5 - ds / 24.0 * (5.0 + 3.0 * t +
           10.0 * c - 4.0 * cs - 9.0 * esp - ds / 30.0 * (61.0 + 90.0 * t +
           298.0 * c + 45.0 * ts - 252.0 * esp - 3.0 * cs)));
    *lon = adjust_lon(lon_center + (d * (1.0 - ds / 6.0 * (1.0 + 2.0 * t +

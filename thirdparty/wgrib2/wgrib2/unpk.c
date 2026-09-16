@@ -1,4 +1,4 @@
-/* unpack_grib 
+/* unpack_grib
  * 3/2008 public domain Wesley Ebisuzaki
  * 5/2016 public domain DWD
  */
@@ -69,7 +69,7 @@ int unpk_grib(unsigned char **sec, float *data) {
          fatal_error("unknown bitmap", "");
 
     if (packing == 4) {			// ieee
-        if (sec[5][11] != 1) fatal_error_i("unpk ieee grib file precision %d not supported", 
+        if (sec[5][11] != 1) fatal_error_i("unpk ieee grib file precision %d not supported",
 		(int) sec[5][11]);
 
         // ieee depacking -- simple no bitmap
@@ -140,7 +140,7 @@ int unpk_grib(unsigned char **sec, float *data) {
 
 	mask_pointer = (bitmap_flag == 255) ? NULL : sec[6] + 6;
 
-	unpk_0(data, sec[7]+5, mask_pointer, nbits, ndata, reference, 
+	unpk_0(data, sec[7]+5, mask_pointer, nbits, ndata, reference,
 		bin_scale,dec_scale);
 
 	if (packing == 61) {		// remove log prescaling
@@ -168,7 +168,7 @@ int unpk_grib(unsigned char **sec, float *data) {
 	bin_scale = Int_Power(2.0, int2(p+15));
 	dec_scale = Int_Power(10.0, -int2(p+17));
 	nbits = p[19];
-	
+
 	if (nbits == 0) {
 	    tmp = reference*dec_scale;
             if (bitmap_flag == 255) {
@@ -271,7 +271,7 @@ int unpk_grib(unsigned char **sec, float *data) {
 //	check sizes
 
 	if (mask_pointer == NULL) {
-	    if (ndata != width*height) 
+	    if (ndata != width*height)
     		fatal_error_i("png size mismatch w*h=%d", width*height);
 	}
 	else {
@@ -279,7 +279,7 @@ int unpk_grib(unsigned char **sec, float *data) {
                 fatal_error("png size mismatch", "");
 	}
 
-	unpk_0(data, c, mask_pointer, nbits, ndata, reference, 
+	unpk_0(data, c, mask_pointer, nbits, ndata, reference,
 		bin_scale,dec_scale);
 	free(c);
 	return 0;

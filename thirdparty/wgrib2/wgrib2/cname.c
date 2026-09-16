@@ -123,7 +123,7 @@ int getName_all(unsigned char **sec, int mode, char *inv_out, char *name, char *
                   discipline, center, localtab, parmcat, parmnum);
 	    }
 	    else {
-                sprintf(inv_out,"var discipline=%d master_table=%d parmcat=%d parm=%d", 
+                sprintf(inv_out,"var discipline=%d master_table=%d parmcat=%d parm=%d",
                   discipline, mastertab, parmcat, parmnum);
             }
 	}
@@ -160,7 +160,7 @@ static struct gribtable_s *search_gribtable(struct gribtable_s *p, unsigned char
     use_local_table = (mastertab == 255) ? 1 : 0;
     if ((parmnum >= 192 && parmnum <= 254) || (parmcat >= 192 && parmcat <= 254)
 	|| (discipline >= 192 && discipline <= 254) ) use_local_table = 1;
-   
+
     if (use_local_table == 1 && localtab == 0) {
 	if (count++ < 6 ) fprintf(stderr,"**** ERROR: local table = 0 is not allowed, set to 1 ***\n");
 	localtab = 1;
@@ -180,7 +180,7 @@ static struct gribtable_s *search_gribtable(struct gribtable_s *p, unsigned char
     else {
 //	printf(">> cname local find: disc %d center %d localtab %d pcat %d pnum %d\n", discipline, center, localtab, parmcat, parmnum);
         for (; p->disc >= 0; p++) {
-            if (discipline == p->disc && center == p->cntr && localtab == p->ltab && 
+            if (discipline == p->disc && center == p->cntr && localtab == p->ltab &&
                 parmcat == p->pcat && parmnum == p->pnum) {
                 return p;
 	    }

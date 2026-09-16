@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -256,7 +256,7 @@ c                 print *, K, PE1,PE2,PE3,INDX,INDX2
                   ! that has an element that maps to a fulldomain element
                   ! claims it as a resident; the next subdomain(s) that
                   ! have an element that maps to this fulldomain element
-                  ! will have that element number listed as negative, 
+                  ! will have that element number listed as negative,
                   ! or "ghost" in their mapping tables (first come, first
                   ! served)
                   IF (EL_SHARE(K) > -1) THEN
@@ -265,27 +265,27 @@ c                 print *, K, PE1,PE2,PE3,INDX,INDX2
                      IMAP_EL_LG(NELP(I),I) = K
                   ENDIF
                   ! in any case, record the fact that a subdomain has already
-                  ! claimed this element as a resident 
+                  ! claimed this element as a resident
 !C                   EL_SHARE(K) = I
 
-!c                   
+!c
 !c DW: 2023, for NOAA-CMEP
 !c           If all three nodes are a ghost node, the element is
-!c           taken to be a ghost element.                     
-                  IF ( (PE1 .NE. I) .AND. (PE2 .NE. I) 
+!c           taken to be a ghost element.
+                  IF ( (PE1 .NE. I) .AND. (PE2 .NE. I)
      &                                .AND. (PE3 .NE. I)  ) THEN
                       IF ( EL_SHARE(K) < 0 ) THEN
-                         ! set the element as a ghost element  
+                         ! set the element as a ghost element
                          IMAP_EL_LG(NELP(I),I) = -K ;
 
-                         ! set the element as an unclaimed element 
+                         ! set the element as an unclaimed element
                          EL_SHARE(K) = -I ;
-                      END IF      
+                      END IF
                   ELSE
-                      EL_SHARE(K) =  I ; 
-                  ENDIF        
+                      EL_SHARE(K) =  I ;
+                  ENDIF
 !c END DW
-!c 
+!c
                ENDIF
             ENDDO
          IF (NELP(I).GT.MNEP) THEN
@@ -299,10 +299,10 @@ c           ENDDO
          ENDDO
       ELSE
          ! jgf: If there are no weirs, then go back through the element
-         ! mapping and leave the first subdomain element that maps to a 
+         ! mapping and leave the first subdomain element that maps to a
          ! particular fulldomain element as a "resident" with a positive
-         ! fulldomain element number in IMAP_EL_LG, while giving subsequent 
-         ! subdomain elements that map to that same fulldomain element  
+         ! fulldomain element number in IMAP_EL_LG, while giving subsequent
+         ! subdomain elements that map to that same fulldomain element
          ! a negative value in IMAP_EL_LG (marking them as "ghosts").
          DO I=1,NPROC
             DO J=1,NELP(I)
@@ -383,7 +383,7 @@ C
             DO M = 1,3
                ! get fulldomain node number on this element
                IG1 = NNEG(M,IELG)
-               ! look for the fulldomain node number in the list of 
+               ! look for the fulldomain node number in the list of
                ! fulldomain nodes in this domain
                CALL LOCATE(ITVECT,ITEMP,IG1,K)
                ! if the fulldomain node number on this element below
@@ -396,7 +396,7 @@ C
                      NNEP(M,J,I) = K+1
                   ELSE
                      WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
-                     CALL EXIT(1) 
+                     CALL EXIT(1)
                   ENDIF
                ELSEIF (K.GE.NNODP(I))THEN
                   IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
@@ -412,7 +412,7 @@ C
                      NNEP(M,J,I) = K+1
                   ELSE
                      WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
-                     CALL EXIT(1) 
+                     CALL EXIT(1)
                   ENDIF
                ENDIF
             ENDDO
@@ -424,9 +424,9 @@ C--Compute the number of communicating PEs and their
 C  list for each PE:  NUMM_COMM_PE(PE) and COMM_PE_NUM(IPE,PE)
 C
       !
-      ! ITVECT is a list of the neighboring subdomain numbers  
+      ! ITVECT is a list of the neighboring subdomain numbers
       ! corresponding to this subdomain's ghost nodes
-      ! 
+      !
       ! loop over subdomains
       DO I = 1,NPROC
          NUM_COMM_PE(I) = 0  ! zero the num of neighboring subdomains
@@ -452,7 +452,7 @@ C
          ELSE
             IF (ITEMP.GT.VTMAX) THEN
                 WRITE(*,'(A)') "Error during step 8, decomp"
-                CALL EXIT(1) 
+                CALL EXIT(1)
             ENDIF
             ! sort the list of neighboring subdomains numbers in ascending order
             CALL SORT(ITEMP,ITVECT)
@@ -460,8 +460,8 @@ C
             COMM_PE_NUM(1,I) = ITVECT(1)
             ! reset the subdomain neighbor counter
             ITOT = 1
-            ! loop over the subdomain numbers of the ghost nodes 
-            ! in this subdomain        
+            ! loop over the subdomain numbers of the ghost nodes
+            ! in this subdomain
             DO J = 1,ITEMP
                ! if the subdomain number is not a duplicate
                IF (ITVECT(J).NE.COMM_PE_NUM(ITOT,I)) THEN
@@ -490,29 +490,29 @@ Casey 110518: Added this change from Seizo.
             ! get neighboring subdomain number
             INDX = COMM_PE_NUM(J,I)
             ! zero the flag indicating that this subdomain is listed
-            ! as the neighboring subdomain's neighbor 
-            ITOT = 0   
-            ! loop over the subdomains neighboring this neighbor 
+            ! as the neighboring subdomain's neighbor
+            ITOT = 0
+            ! loop over the subdomains neighboring this neighbor
             DO K = 1, NUM_COMM_PE(INDX)
                ! get the neighbor's neighboring subdomain number
                INDX2 = COMM_PE_NUM(K,INDX)
-               ! set a flag if this subdomain is listed as the 
+               ! set a flag if this subdomain is listed as the
                ! neighbor's neighbor
                IF( I == INDX2 ) ITOT = 1
             ENDDO
             ! if the flag was not set
             IF( ITOT == 0 ) THEN
-               ! increment neighbor's number of subdomain neighbors 
+               ! increment neighbor's number of subdomain neighbors
                NUM_COMM_PE(INDX) = NUM_COMM_PE(INDX) + 1
                ! add this subdomain to this list of neighbors for
                ! the neighboring subdomain
                COMM_PE_NUM( NUM_COMM_PE(INDX), INDX )  = I
-               ! I don't see how this can happen, so I am adding a 
+               ! I don't see how this can happen, so I am adding a
                ! warning message to provide an alert when it does
-               ! so that I can examine it more closely. 
-               write(6,'(a,i0,a,i0,a)') 'WARNING: Subdomain ',I, 
+               ! so that I can examine it more closely.
+               write(6,'(a,i0,a,i0,a)') 'WARNING: Subdomain ',I,
      &       ' added to the list of subdomain neighbors of subdomain ',
-     &         INDX,'.' 
+     &         INDX,'.'
             ENDIF
          ENDDO
       ENDDO
@@ -570,7 +570,7 @@ C----------------------------------------------------------------------
       subroutine checkMappings(partitionOK,numPartitionAttempts)
       use pre_global
       implicit none
-      logical, intent(out) :: partitionOK 
+      logical, intent(out) :: partitionOK
       integer, intent(in) :: numPartitionAttempts
       integer i, ilnode, ilnode2, ilnode3, index2, indx, iproc, iproc2
       integer iproc3, itemp, itemp2, j, jd, k
@@ -582,7 +582,7 @@ C----------------------------------------------------------------------
       ! vjp modified array to drop last dimension to save memory space
       ! LBINDEX_LG(K,I,PE) = Global Index of I-th Node on Land Boundary Segment K on PE
       partitionOK = .true.
-      ! 
+      !
       ! loop over subdomains
       do iproc = 1,nproc
          nvelp(iproc) = 0
@@ -618,7 +618,7 @@ C----------------------------------------------------------------------
                   enddo
                enddo
             case default
-               ! for each node in this non-weir flux boundary 
+               ! for each node in this non-weir flux boundary
                do i = 1,nvell(k)
                   ! find full domain node number
                   indx = nbvv(k,i)
@@ -626,9 +626,9 @@ C----------------------------------------------------------------------
                   ! node is found
                   do j = 1,itotproc(indx)
                      itemp = (j-1)*2 + 1
-                     ! look up subdomain number 
+                     ! look up subdomain number
                      iproc2 =  imap_nod_gl2(itemp,indx)
-                     ! look up node number in this subdomain                    
+                     ! look up node number in this subdomain
                      ilnode =  imap_nod_gl2(itemp+1,indx)
                      ! if the current subdomain matches this one
                      if (iproc.eq.iproc2) then
@@ -638,31 +638,31 @@ C----------------------------------------------------------------------
                         ! increment number of nodes from this boundary
                         ! that occur in this subdomain
                         nvellp(k) = nvellp(k) + 1
-                        ! add fulldomain node number for this boundary 
+                        ! add fulldomain node number for this boundary
                         ! and subdomain node array position on this boundary
                         ! to mapping
                         lbindex_lg(k,nvellp(k)) = i
                         ! record subdomain node number for this boundary
-                        ! and subdomain boundary position  
+                        ! and subdomain boundary position
                         nbvvp(k,nvellp(k)) = ilnode
                      endif
                   enddo
                enddo
                !
-               ! @jasonfleming: it is possible for a single node of an 
+               ! @jasonfleming: it is possible for a single node of an
                ! island boundary to appear as a ghost node in a nearby
                ! subdomain, and if this single node is the first node
-               ! on the fulldomain island boundary, it will also be the 
+               ! on the fulldomain island boundary, it will also be the
                ! last node on the fulldomain boundary (because adcirc
                ! requires island boundaries to be closed). As a result,
                ! it can be erroneously translated as a two node subdomain
-               ! boundary with the same node number listed twice. 
+               ! boundary with the same node number listed twice.
                if ( nvellp(k).eq.2 ) then
                   if ( nbvvp(k,1).eq.nbvvp(k,2) ) then
-                     write(*,'(a)') 
+                     write(*,'(a)')
      &           'ERROR: Two node boundary with identical node numbers.'
                      hbn = imap_nod_lg(nbvvp(k,1),iproc)
-                     boundaryWeights(hbn) = boundaryWeights(hbn) 
+                     boundaryWeights(hbn) = boundaryWeights(hbn)
      &                  + 1
                      partitionOK = .false.
                   endif
@@ -672,12 +672,12 @@ C
 C
          enddo  ! end loop over flux specified boundaries
          !
-         ! @jasonfleming: it is possible for a single node of an 
+         ! @jasonfleming: it is possible for a single node of an
          ! land boundary to appear as a ghost node in a nearby
-         ! subdomain. 
+         ! subdomain.
          do k=1, nbou
             if (nvellp(k).eq.1) then
-               write(*,'(a,i0,a,i0,a)') 
+               write(*,'(a,i0,a,i0,a)')
      &           'WARNING: The land boundary number ',k,
      &           ' is only one node long in subdomain ',iproc,'.'
                !hbn = imap_nod_lg(nbvvp(k,1),iproc)
@@ -686,13 +686,13 @@ C
                ! subdomains may never be able to avoid this without
                ! smarter adjustments of the partition weights, so
                ! the rejection of the partitioning as a result of
-               ! this condition is disabled for now. 
+               ! this condition is disabled for now.
                !select case (ibtype(k))
                !case(0,20,30) ! zero flux land boundaries
                !   partitionOK = .false. ! allow discrepancies here ?
                !case default
                !   partitionOK = .false.
-               !end select 
+               !end select
             endif
          enddo
 
@@ -864,7 +864,7 @@ C        then make it and its dual a local Weir-node pair
         ITEMP = ITOT
         IF (ITOT.GT.VTMAX) THEN
             WRITE(*,'(A)') "Error during step 4 decomp"
-            CALL EXIT(1)  
+            CALL EXIT(1)
         ENDIF
         IF (ITEMP.GT.1) THEN
           CALL SORT(ITEMP,ITVECT)

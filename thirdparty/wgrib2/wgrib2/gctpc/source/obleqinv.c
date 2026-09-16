@@ -9,7 +9,7 @@ PURPOSE:	Transforms input Easting and Northing to longitude and
 PROGRAM HISTORY
 PROGRAMMER              DATE            REASON
 ----------              ----            ------
-D. Steinwand            May, 1991     
+D. Steinwand            May, 1991
 S. Nelson		Nov, 1993	Added "double adjust_lon()" function
 					declaration statement.
 
@@ -121,4 +121,3 @@ sincos(z, &sin_z, &cos_z);
 		 cos_z - sin_lat_o * sin_z * cos_diff_angle)));
 return(OK);
 }
-

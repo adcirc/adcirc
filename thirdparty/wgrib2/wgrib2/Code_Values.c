@@ -8,7 +8,7 @@
 /*
  * 2016 Public Domain Wesley Ebisuzaki
  *
- * this file contains nice to know values 
+ * this file contains nice to know values
  */
 
 /*
@@ -16,7 +16,7 @@
  */
 int f_number_of_coordinate_values_after_template(ARG0) {
     if (mode >= 0) {
-	sprintf(inv_out,"number_coordinates_values_in_pdt=%d", 
+	sprintf(inv_out,"number_coordinates_values_in_pdt=%d",
 		number_of_coordinate_values_after_template(sec));
     }
     return 0;
@@ -184,11 +184,11 @@ unsigned char *forecast_time_in_units_location(unsigned char **sec, int *size) {
     if (code_4_4 == NULL) return NULL;
     *size = code_table_4_0(sec) == 44 ? 2 : 4;
     return code_4_4 + 1;
-} 
+}
 
 /* returns the values of fixed surfaces */
 
-void fixed_surfaces(unsigned char **sec, int *type1, float *surface1, 
+void fixed_surfaces(unsigned char **sec, int *type1, float *surface1,
 	int *undef_val1, int *type2, float *surface2, int *undef_val2) {
 
     unsigned char *p1, *p2;
@@ -277,7 +277,7 @@ unsigned char *analysis_or_forecast_generating_process_identifier_location(unsig
 
     p = GB2_ProdDefTemplateNo(sec);
 
-    if (p <= 15 || (p >= 32 && p <= 34) || p == 51 || p == 60 || p == 61 || p == 91 || p == 1000 || p == 1001 || 
+    if (p <= 15 || (p >= 32 && p <= 34) || p == 51 || p == 60 || p == 61 || p == 91 || p == 1000 || p == 1001 ||
 		    p == 1002 || p == 1100 || p == 1101)
         return sec[4]+13;
     if (p >= 40 && p <= 43) return sec[4]+15;
@@ -437,7 +437,7 @@ unsigned char *stat_proc_verf_time_location(unsigned char **sec) {
 	case 72:
 	    return sec[4] + 39;
 	case 46:
-	    return sec[4] + 47;		
+	    return sec[4] + 47;
 	case 47:
 	    return sec[4] + 50;
 	case 61:
@@ -522,7 +522,7 @@ unsigned char *year_of_model_version_date_location(unsigned char **sec) {
     pdt = code_table_4_0(sec);
 
     switch (pdt) {
-      case 60: 
+      case 60:
       case 61: p = sec[4] + 37; break;
       default: p = NULL; break;
     }
@@ -623,10 +623,10 @@ unsigned char *number_of_following_distribution_parameters_np_location(unsigned 
 
     pdt = code_table_4_0(sec);
     switch(pdt) {
-	case 57:   
-	case 58:   
-	case 67:   
-	case 68:   
+	case 57:
+	case 58:
+	case 67:
+	case 68:
 		return sec[4]+19;
     }
     return NULL;
@@ -637,7 +637,7 @@ unsigned char *number_of_following_distribution_parameters_np_location(unsigned 
  */
 int f_post_processing(ARG0) {
     int i;
-    
+
     if (mode >= 0) {
         i = type_of_post_processing(sec);
         if (i >= 0) sprintf(inv_out,"post_processing=%d", i);
@@ -653,7 +653,7 @@ int type_of_post_processing(unsigned char **sec) {
     return (int) sec[4][15];
 }
 
-/* 
+/*
  * returns value of cluster identifier (assume unsigned char)
  */
 int cluster_identifier(unsigned char **sec) {
@@ -800,5 +800,4 @@ unsigned char *number_of_partitions_location(unsigned char **sec) {
 		return sec[4] + 12;
     }
     return NULL;
-}	
-
+}

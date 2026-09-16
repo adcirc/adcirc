@@ -27,21 +27,19 @@ Of course, you may will loose some functionality.
                   wgrib2 *.c *.h *.sh and documentation
 
 
-The components of wgrib2, the C/Fortran API and wgrib2 library are either in 
-the public domain, covered by the GNU General Public License or covered by 
-the Apache licence v2 (decenc_openjpeg.c).  No other licences will be accepted 
-into this archive of wgrib2 modules.  (Already have too many licences for 
-the libraries.)  
+The components of wgrib2, the C/Fortran API and wgrib2 library are either in
+the public domain, covered by the GNU General Public License or covered by
+the Apache licence v2 (decenc_openjpeg.c).  No other licences will be accepted
+into this archive of wgrib2 modules.  (Already have too many licences for
+the libraries.)
 
-Distribution of wgrib2 source/executables needs to be compatible with all 
+Distribution of wgrib2 source/executables needs to be compatible with all
 applicatable licences.
 
 
                          Contributing to wgrib2
 
 
-Contributions of new files can either be public domain or GNU GPL.  If you 
-modify an existing file, please state that your contribution is of the same 
-(gnu or public domain) as the original file.  Otherwise it gets messy.  
-
-
+Contributions of new files can either be public domain or GNU GPL.  If you
+modify an existing file, please state that your contribution is of the same
+(gnu or public domain) as the original file.  Otherwise it gets messy.

@@ -5,11 +5,11 @@
  * The following C function was developed from a FORTRAN subroutine
  * in SPARSPAK written by Eleanor Chu, Alan George, Joseph Liu
  * and Esmond Ng.
- * 
+ *
  * The FORTRAN-to-C transformation and modifications such as dynamic
  * memory allocation and deallocation were performed by Chunguang
  * Sun.
- * ************************************************************** 
+ * **************************************************************
  *
  * Taken from SMMS, George 12/13/94
  *
@@ -56,7 +56,7 @@ void genmmd(int neqns, idxtype *xadj, idxtype *adjncy, idxtype *invp, idxtype *p
 {
     int  ehead, i, mdeg, mdlmt, mdeg_node, nextmd, num, tag;
 
-    if (neqns <= 0)  
+    if (neqns <= 0)
       return;
 
     /* Adjust from C to Fortran */
@@ -81,7 +81,7 @@ void genmmd(int neqns, idxtype *xadj, idxtype *adjncy, idxtype *invp, idxtype *p
 
     /* search for node of the minimum degree. 'mdeg' is the current */
     /* minimum degree; 'tag' is used to facilitate marking nodes.   */
-    if (num > neqns) 
+    if (num > neqns)
       goto n1000;
     tag = 1;
     head[1] = 0;
@@ -89,7 +89,7 @@ void genmmd(int neqns, idxtype *xadj, idxtype *adjncy, idxtype *invp, idxtype *p
 
     /* infinite loop here ! */
     while (1) {
-      while (head[mdeg] <= 0) 
+      while (head[mdeg] <= 0)
         mdeg++;
 
       /* use value of 'delta' to set up 'mdlmt', which governs */
@@ -102,7 +102,7 @@ n500:
       while (mdeg_node <= 0) {
         mdeg++;
 
-        if (mdeg > mdlmt) 
+        if (mdeg > mdlmt)
           goto n900;
         mdeg_node = head[mdeg];
       };
@@ -110,11 +110,11 @@ n500:
       /*  remove 'mdeg_node' from the degree structure. */
       nextmd = invp[mdeg_node];
       head[mdeg] = nextmd;
-      if (nextmd > 0)  
+      if (nextmd > 0)
         perm[nextmd] = -mdeg;
       invp[mdeg_node] = -num;
       *ncsub += mdeg + qsize[mdeg_node] - 2;
-      if ((num+qsize[mdeg_node]) > neqns)  
+      if ((num+qsize[mdeg_node]) > neqns)
         goto n1000;
 
       /*  eliminate 'mdeg_node' and perform quotient graph */
@@ -123,7 +123,7 @@ n500:
       if (tag >= maxint) {
         tag = 1;
         for (i = 1; i <= neqns; i++)
-          if (marker[i] < maxint)  
+          if (marker[i] < maxint)
             marker[i] = 0;
       };
 
@@ -132,13 +132,13 @@ n500:
       num += qsize[mdeg_node];
       list[mdeg_node] = ehead;
       ehead = mdeg_node;
-      if (delta >= 0) 
+      if (delta >= 0)
         goto n500;
 
  n900:
       /* update degrees of the nodes involved in the  */
       /* minimum degree nodes elimination.            */
-      if (num > neqns)  
+      if (num > neqns)
         goto n1000;
       mmdupd( ehead, neqns, xadj, adjncy, delta, &mdeg, head, invp, perm, qsize, list, marker, maxint, &tag);
     }; /* end of -- while ( 1 ) -- */
@@ -545,7 +545,7 @@ n1600:    if ( enode <= 0 )  goto n2300;
                 if ( marker[nabor] < *tag ) {
                      marker[nabor] = *tag;
                      link = nabor;
-                     if ( forward[nabor] >= 0 ) 
+                     if ( forward[nabor] >= 0 )
                           /*if uneliminated, include it in deg count.*/
                           deg += qsize[nabor];
                      else {

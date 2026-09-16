@@ -3,8 +3,8 @@ January 1995
 This directory contains the source code for the new C version
 of the GCTP.
 
-The files nad27sp and nad83sp are used for State Plane.  If there 
-seems to be a problem with these, the files nad1927.dat and nad1983.dat 
+The files nad27sp and nad83sp are used for State Plane.  If there
+seems to be a problem with these, the files nad1927.dat and nad1983.dat
 can be converted from ASCII to the proper binary format by using SPLOAD.
 
 The following is a list containing the files in the geolib/source directory.

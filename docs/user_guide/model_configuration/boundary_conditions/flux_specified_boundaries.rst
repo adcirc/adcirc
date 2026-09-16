@@ -44,32 +44,32 @@ The table below describes the valid IBTYPE values and their corresponding bounda
      - Nonzero inflow
      - Essential
      - Free
-     - River or ocean inflow boundaries; 
-       if flux is periodic it is specified in fort.15; 
-       if it is time varying and aperiodic, it must be 
+     - River or ocean inflow boundaries;
+       if flux is periodic it is specified in fort.15;
+       if it is time varying and aperiodic, it must be
        specified in fort.20 file
    * - 3
      - External
      - Outflow
      - Essential
      - Free
-     - Flow over a weir out of the domain; 
-       must specify levee height; 
+     - Flow over a weir out of the domain;
+       must specify levee height;
        ADCIRC calculates the fluxes
    * - 4
      - Internal
      - Zero or nonzero
      - Essential
      - Free
-     - Interior levees; must specify levee height; 
+     - Interior levees; must specify levee height;
        ADCIRC calculates the fluxes using weir formula
    * - 5
      - Internal
      - Zero or nonzero
      - Essential
      - Free
-     - Interior levees with cross-barrier pipes (like a culvert); 
-       must specify levee height and other parameters; 
+     - Interior levees with cross-barrier pipes (like a culvert);
+       must specify levee height and other parameters;
        ADCIRC calculates the fluxes
    * - 10
      - External
@@ -100,42 +100,42 @@ The table below describes the valid IBTYPE values and their corresponding bounda
      - Zero (weak)
      - Natural
      - Free
-     - As ibtype 0 but natural boundary; 
+     - As ibtype 0 but natural boundary;
        preferred over ibtype 0 or 10
    * - 21
      - Internal
      - Zero (weak)
      - Natural
      - Free
-     - As ibtype 1 but natural boundary; 
+     - As ibtype 1 but natural boundary;
        preferred over ibtype 1 or 11
    * - 22
      - External
      - Nonzero (weak)
      - Natural
      - Free
-     - As ibtype 2 but natural boundary; 
+     - As ibtype 2 but natural boundary;
        preferred over ibtype 2 or 12
    * - 23
      - External
      - Outflow (weak)
      - Natural
      - Free
-     - As ibtype 3 but natural boundary; 
+     - As ibtype 3 but natural boundary;
        preferred over ibtype 3 or 13
    * - 24
      - Internal
      - Zero or nonzero (weak)
      - Natural
      - Free
-     - As ibtype 4 but natural boundary; 
+     - As ibtype 4 but natural boundary;
        preferred over ibtype 4
    * - 25
      - Internal
      - Zero or nonzero (weak)
      - Natural
      - Free
-     - As ibtype 5 but natural boundary; 
+     - As ibtype 5 but natural boundary;
        preferred over ibtype 5
    * - 64
      - Internal
@@ -148,24 +148,24 @@ The table below describes the valid IBTYPE values and their corresponding bounda
      - Nonzero inflow
      - Essential
      - Free
-     - As ibtype 2 but baroclinic instead of barotropic; 
-       also requires density-related boundary conditions 
+     - As ibtype 2 but baroclinic instead of barotropic;
+       also requires density-related boundary conditions
        in fort.39 input file
    * - 112
      - External
      - Nonzero
      - Essential
      - No slip
-     - As ibtype 12 but baroclinic instead of barotropic; 
-       also requires density-related boundary conditions 
+     - As ibtype 12 but baroclinic instead of barotropic;
+       also requires density-related boundary conditions
        in fort.39 input file
    * - 122
      - External
      - Nonzero (weak)
      - Natural
      - Free
-     - As ibtype 22 but baroclinic instead of barotropic; 
-       also requires density-related boundary conditions 
+     - As ibtype 22 but baroclinic instead of barotropic;
+       also requires density-related boundary conditions
        in fort.39 input file
 
 .. note::
@@ -176,7 +176,7 @@ The table below describes the valid IBTYPE values and their corresponding bounda
 
 .. note::
    Different boundary types require different parameters to be specified in the fort.14 file:
-   
+
    * Basic boundaries (IBTYPE = 0, 1, 2, 10, 11, 12, 20, 21, 22, 102, 112, 122): Node numbers only
    * Weir boundaries (IBTYPE = 3, 13, 23): Node numbers plus barrier height and flow coefficients
    * Interior barrier boundaries (IBTYPE = 4, 24): Node numbers, connected nodes, barrier height, and flow coefficients

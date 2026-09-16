@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                            PAKSZ 
+NAME                            PAKSZ
 
 PURPOSE:	This function converts a packed DMS angle to seconds.  The
 		standard packed DMS format is:
@@ -17,7 +17,7 @@ PURPOSE:	This function converts a packed DMS angle to seconds.  The
 
 		2.  The degrees are separated out:
 		    deg = ang/1000000 	(fractional portion truncated)
-	
+
 		3.  The minutes are separated out:
 		    min = (ang - deg * 1000000) / 1000 	   (fractional
 							portion	truncated)
@@ -29,7 +29,7 @@ PURPOSE:	This function converts a packed DMS angle to seconds.  The
 		    sec = deg * 3600.0 + min * 60.0 + sec
 
 		6.  The sign of sec is set to that of the input angle.
-		    
+
 
 PROGRAMMER              DATE
 ----------              ----
@@ -48,7 +48,7 @@ ALGORITHM REFERENCES
 *******************************************************************************/
 #include "cproj.h"
 
-/* Convert DMS packed angle into deg 
+/* Convert DMS packed angle into deg
 ----------------------------------*/
 double paksz(double ang, long *iflg) {
 //double paksz(ang,iflg)
@@ -110,6 +110,6 @@ if (sec > 60)
 else
   sec = fac * (deg * 3600.0 + min * 60.0 + sec);
 deg = sec / 3600.0;
- 
+
 return(deg);
 }

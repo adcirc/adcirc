@@ -127,14 +127,14 @@
       REAL(8) :: corio                       ! Coriolis force (1/s)
       REAL(8) :: Vr                          ! Velocity @ wind radii (knots)
       REAL(8) :: Phi
-      REAL(8), DIMENSION(nPoints) :: Bs        
+      REAL(8), DIMENSION(nPoints) :: Bs
       REAL(8), DIMENSION(nPoints) :: Phis    ! Correction factor to B and Vh
       REAL(8), DIMENSION(nPoints) :: VmBL
-      REAL(8), DIMENSION(nPoints,4) :: Bs4        
+      REAL(8), DIMENSION(nPoints,4) :: Bs4
       REAL(8), DIMENSION(nPoints,4) :: Phis4    ! Correction factor to B and Vh
       REAL(8), DIMENSION(nPoints,4) :: VmBL4
-      INTEGER,  DIMENSION(nPoints,4) :: QuadFlag4  
-      REAL(8), DIMENSION(nPoints,4) :: QuadIr4        
+      INTEGER,  DIMENSION(nPoints,4) :: QuadFlag4
+      REAL(8), DIMENSION(nPoints,4) :: QuadIr4
       REAL(8), DIMENSION(nQuads) :: VrQuadrant
       REAL(8), DIMENSION(nQuads) :: radius   ! Wind radii - the distance
                                               ! winds of velocity Vr extend
@@ -214,7 +214,7 @@
       Bs(1:6)=B
       Phis(1:6)=Phi
       VmBL(1:6)=Vmax
-      ! Jie 2013.01 
+      ! Jie 2013.01
       ! B = MAX( MIN(B,2.5d0), 1.0d0) ! limit B to range 1.0->2.5
 
       END SUBROUTINE newVortexFull
@@ -243,7 +243,7 @@
       cLon = lon
       ! evaluate basic physical params
 !P.V 11/04/2022 use absolute coriolis to account for Southern Hemisphere
-      corio = ABS(2.0d0 * omega * SIN(deg2rad*cLat))      
+      corio = ABS(2.0d0 * omega * SIN(deg2rad*cLat))
       END SUBROUTINE setVortex
 
 
@@ -354,7 +354,7 @@
          Phi = Phis(n+1)
          Vmax = VmBL(n+1)
       ! Loop the root-solving process to converge B, for in the
-      ! new wind formulation, B is a function of Rmax, Vmax, f, and Phi 
+      ! new wind formulation, B is a function of Rmax, Vmax, f, and Phi
       DO icont = 1, cont ! logical expre. is at the end to exit the loop
          norootflg=0
          quad = n
@@ -368,7 +368,7 @@
             r2 = r4
             dr = dr * zoom
          END DO
-         ! avoid invalid B value when root is not found        
+         ! avoid invalid B value when root is not found
          if (root.lt.0.d0) then
          !   r1 = innerRadius
          !   r2 = outerRadius
@@ -382,11 +382,11 @@
          root=1.0*radius(quad)
          norootflg=1
          endif
-         Rmaxes(n+1) = root  
-                
+         Rmaxes(n+1) = root
+
          ! Jie 2013.02
-         ! determine if B converges, if yes, break loop and assign 
-         ! values to Rmaxes, if not, continue the loop to re-calculate 
+         ! determine if B converges, if yes, break loop and assign
+         ! values to Rmaxes, if not, continue the loop to re-calculate
          ! root and re-evaluate Bs
          Phi_new = 1+Vmax*kt2ms*root*nm2m*corio/
      &       (B*((Vmax*kt2ms)**2+Vmax*kt2ms*root*nm2m*corio))
@@ -402,13 +402,13 @@
               EXIT
            endif
          end do
-!  debug with aswip          
+!  debug with aswip
 !         if (ibcont.ge.cont) then
-!           write(1111,211) 
-!     &       "iquad=",n,  
+!           write(1111,211)
+!     &       "iquad=",n,
 !     &       "B_new did not fully converge, procede"
 !         endif
-!  end debug with aswip         
+!  end debug with aswip
          if (abs(B-B_new).le.0.01d0) then
               EXIT
          endif
@@ -416,17 +416,17 @@
          ! warning: modifications made here also affect other subroutines
          B=B_new
          Phi=Phi_new
-      END DO !icont = 1, cont 
+      END DO !icont = 1, cont
          ! update to the latest values for aswip output
          Bs(n+1)=B_new
          Phis(n+1)=Phi_new
-!  debug with aswip         
+!  debug with aswip
 !         if (icont.ge.cont) then
-!           write(1111,211) 
-!     &       "iquad=",n,  
+!           write(1111,211)
+!     &       "iquad=",n,
 !     &       "B did not fully converge, procede"
 !         endif
-!  end debug with aswip 
+!  end debug with aswip
          ! determine if Rmax is actually in the vicinity of the
          ! isotach radius that we are using to solve for Rmax,
          ! and if so, take another shot at finding the
@@ -437,13 +437,13 @@
          if (norootflg==1) then
             write(*,*)
      &      "iquad=",n,
-     &      "No root found, return dist. to Isotach"  
+     &      "No root found, return dist. to Isotach"
          endif
- 
+
       END DO  !n = 1, nQuads
 
       END SUBROUTINE calcRmaxesFull
-      
+
       !====================================================
       ! External function f(x) = 0 for which a root is
       ! sought using Brent's root-finding method.
@@ -475,7 +475,7 @@
       endif
       ! Jie 2013.02
       Vh = ms2kt * ( SQRT(
-     &            ((Vmax*kt2ms)**2.d0+Vmax*kt2ms*testRmax*nm2m*corio) 
+     &            ((Vmax*kt2ms)**2.d0+Vmax*kt2ms*testRmax*nm2m*corio)
      &                   * (testRmax/radius(quad))**B
      &                   * EXP(Phi*(1.0d0-(testRmax/radius(quad))**B))
      &            + (nm2m*radius(quad)*corio/2.d0)**2.d0)
@@ -483,8 +483,8 @@
       VhWithCoriFull = Vh - thisVr
       END FUNCTION VhWithCoriFull
       !===============================================================
-      
-      
+
+
 
       !====================================================
       ! External function f(x) = 0 for which a root is
@@ -788,7 +788,7 @@
       ! Note:
       !    Subroutine directly accesses global class instance variables
       !=================================================================
-      
+
       SUBROUTINE uvpr(idist,iangle,irmx,irmx_true,iB,iVm,iPhi,
      &                uTrans,vTrans,geof, u,v,p)
       REAL(8), INTENT(IN)  :: idist
@@ -816,7 +816,7 @@
       REAL(8) :: damp
       REAL(8) :: percentCoriolis
       INTEGER :: i
-      
+
       rmx=irmx
       B=iB
       Vmax=iVm
@@ -848,19 +848,19 @@
       IF (geof == 1) THEN
          speed = SQRT(
      &           ((Vmax*kt2ms)**2.d0+Vmax*kt2ms*rmx*nm2m
-     &             *percentCoriolis*corio) 
+     &             *percentCoriolis*corio)
      &                  * (rmx/idist)**B
      &                  * EXP(Phi*(1.d0-(rmx/idist)**B))
      &            + (nm2m*idist*percentCoriolis
      &                           *corio/2.d0)**2.d0)
      &            - nm2m*idist*percentCoriolis*corio/2.d0
-      ELSE 
+      ELSE
          speed = SQRT(
      &           (Vmax*kt2ms)**2.d0 * (rmx/idist)**B
      &            * EXP(1.d0-(rmx/idist)**B)
      &            + (nm2m*idist*percentCoriolis
      &            *corio/2.d0)**2.d0)
-     &            - nm2m*idist*percentCoriolis*corio/2.d0      
+     &            - nm2m*idist*percentCoriolis*corio/2.d0
       ENDIF
       ! jgf20111007: Calculate NWS8-like translation speed
       TransSpdX = (abs(speed/(Vmax*kt2ms)))*uTrans*kt2ms
@@ -910,7 +910,7 @@
       !endif
 
       END SUBROUTINE uvpr
-      
+
       !=================================================================
       ! Spatial Interpolation function based on angle and r.
       !
@@ -919,7 +919,7 @@
       !    r            Distnace to storm Center (nm)
       !
       ! On output:
-      !    interpolated value for Rmax/Vmax/B          
+      !    interpolated value for Rmax/Vmax/B
       !
       ! INTEGER valid_Isot is used as a marker to indicate how many isotachs
       ! are available in a certain quadrant
@@ -927,13 +927,13 @@
       ! case(1): 1 situation
       ! case(2): 3 situations
       ! case(3): 4 situations
-      ! case(4): 5 situations                    
+      ! case(4): 5 situations
       !=================================================================
       REAL(8) FUNCTION spInterp(angle,dist,opt)
-      REAL(8), INTENT(IN) :: angle,dist  
+      REAL(8), INTENT(IN) :: angle,dist
       INTEGER, INTENT(IN)  :: opt
-      REAL(8), DIMENSION(nPoints,4) :: param 
-      REAL(8) :: temp1, temp2  
+      REAL(8), DIMENSION(nPoints,4) :: param
+      REAL(8) :: temp1, temp2
       REAL(8) :: delta_angle
       INTEGER  :: iquad
 
@@ -942,9 +942,9 @@
       else if (opt == 2) then
          param = Bs4
       else if (opt == 3) then
-         param = VmBL4    
-      end if   
-      
+         param = VmBL4
+      end if
+
       if (angle.le.45.0d0) then
          iquad = 5
          delta_angle = 45.d0 + angle
@@ -962,7 +962,7 @@
          delta_angle = angle - 315.d0
       endif
 
-      ! nearest neighbor weighted interpolation     
+      ! nearest neighbor weighted interpolation
          if ( delta_angle.lt.1.d0 ) then
              spInterp=interpR(param, iquad, dist)
          else if (delta_angle.gt.89.d0) then
@@ -977,19 +977,19 @@
          end if
 
       END FUNCTION spInterp
-      
-      
+
+
       REAL(8)  FUNCTION interpR(val,quad,r)
-      REAL(8), DIMENSION(nPoints,4),INTENT(IN) :: val 
+      REAL(8), DIMENSION(nPoints,4),INTENT(IN) :: val
       INTEGER, INTENT(IN) :: quad
-      REAL(8), INTENT(IN) :: r 
+      REAL(8), INTENT(IN) :: r
       REAL(8) :: fac
       INTEGER  :: total_Isot
-      
+
       total_Isot=sum(QuadFlag4(quad,:))
          select case(total_Isot)
          case(1)
-           interpR = val(quad,maxloc(QuadFlag4(quad,:),1)) 
+           interpR = val(quad,maxloc(QuadFlag4(quad,:),1))
          case(2)
             if (r > QuadIr4(quad,1)) then
                interpR = val(quad,1)
@@ -1037,14 +1037,14 @@
      &         val(quad,4)* (1-fac)
             else
                interpR = val(quad,4)
-            end if         
+            end if
          case default
          ! For whatever reason if our algorithm fails, add the following
          ! line to avoid run-time errors
-            interpR = val(quad,maxloc(QuadFlag4(quad,:),1)) 
+            interpR = val(quad,maxloc(QuadFlag4(quad,:),1))
             write(*,*) "ERROR: interpR failed in nws20get."
-         end select  
-         
+         end select
+
          END function interpR
 
       !=================================================================
@@ -1271,25 +1271,25 @@ C
       INTEGER             :: n, iter,i
       !
       ! Generate 2 additional points for curve-fit
-       
+
       QuadFlag4(1,1:4) = QuadFlag4(5,1:4)
       QuadFlag4(6,1:4) = QuadFlag4(2,1:4)
-      
+
       QuadIr4(1,1:4) = QuadIr4(5,1:4)
       QuadIr4(6,1:4) = QuadIr4(2,1:4)
-            
+
       Rmaxes4(1,1:4) = Rmaxes4(5,1:4)
       Rmaxes4(6,1:4) = Rmaxes4(2,1:4)
-      
+
       Bs4(1,1:4) = Bs4(5,1:4)
       Bs4(6,1:4) = Bs4(2,1:4)
-      
+
       Phis4(1,1:4) = Phis4(5,1:4)
-      Phis4(6,1:4) = Phis4(2,1:4)  
-      
+      Phis4(6,1:4) = Phis4(2,1:4)
+
       VmBL4(1,1:4) = VmBL4(5,1:4)
-      VmBL4(6,1:4) = VmBL4(2,1:4) 
- 
+      VmBL4(6,1:4) = VmBL4(2,1:4)
+
       END SUBROUTINE fitRmaxes4
 
 
@@ -1349,13 +1349,13 @@ C
       LOGICAL FUNCTION getUseQuadrantVr()
          getUseQuadrantVr = useQuadrantVr
       END FUNCTION getUseQuadrantVr
-      
+
       !Jie 2013.02
       SUBROUTINE setUseVmaxesBL(u)
          LOGICAL, INTENT(IN) :: u
          useVmaxesBL = u
       END SUBROUTINE setUseVmaxesBL
-      
+
       SUBROUTINE getVmaxesBL(vmaxw)
          REAL(8), DIMENSION(4), INTENT(OUT) :: vmaxw
          INTEGER :: i
@@ -1370,22 +1370,22 @@ C
          do i=1,4
             VmBL(i+1) = vmaxw(i)
          end do
-      END SUBROUTINE setVmaxesBL  
-      
+      END SUBROUTINE setVmaxesBL
+
       FUNCTION getShapeParameters()
          REAL(8),DIMENSION(4) :: getShapeParameters
          INTEGER :: i
          do i=1,4
             getShapeParameters(i) = Bs(i+1)
          end do
-      END FUNCTION getShapeParameters   
-      
+      END FUNCTION getShapeParameters
+
       FUNCTION getPhiFactors()
          REAL(8),DIMENSION(4) :: getPhiFactors
          INTEGER :: i
          do i=1,4
             getPhiFactors(i) = Phis(i+1)
          end do
-      END FUNCTION getPhiFactors      
+      END FUNCTION getPhiFactors
 
       END MODULE vortex

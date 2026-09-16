@@ -16,7 +16,7 @@
 int f_h(ARG0) {
     const char *arg1 = "most";
     mode = -1;
-    f_help(call_ARG1(inv_out, NULL, arg1)); 
+    f_help(call_ARG1(inv_out, NULL, arg1));
     // printf("%s\n", inv_out);
     err_bin(1); err_string(1);
     return 1;
@@ -60,7 +60,7 @@ int f_help(ARG1) {
     count = 0;
     most = strcmp(str,"most") == 0;
     all = strcmp(str,"all") == 0;
-    
+
     sprintf(inv_out, "wgrib2 " WGRIB2_VERSION "\n   " BUILD_COMMENTS "\n");
     inv_out += strlen(inv_out);
     for (i = 0; i < nfunctions; i++) {
