@@ -886,7 +886,7 @@ C  DW
      &         'The Tidalpotentialcontrol namelist was not found.')
       ENDIF
       REWIND(15)
-     
+    
 !Casey 221103 : Try to read the baroclinic3D namelist from fort.15
       READ(UNIT=15,NML=baroclinic3D,IOSTAT=IOS)
       IF( IOS.GE.0 )THEN
@@ -899,6 +899,30 @@ C  DW
       ENDIF
       REWIND(15)
 
+C DW 
+      read(unit=15,nml=InlineSALControl,iostat=ios)
+      IF( ios .ge. 0 )THEN
+         foundInlineSALControlNamelist = .true. 
+         call logMessage(INFO,
+     &         'The InlineSALcontrol namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The InlineSALControl namelist was not found.')
+      ENDIF
+      REWIND(15)
+
+C DW
+      read(unit=15,nml=TsunamiSimOption,iostat=ios) 
+      IF ( ios .ge. 0 ) THEN
+          foundTsunamiSimOption = .true.
+          call logMessage(INFO,
+     &         'The TsunamiSimOption namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The TsunamiSimOption namelist was not found.')
+      ENDIF
+      REWIND(15)
+         
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID
@@ -1527,13 +1551,16 @@ C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 #endif
+
+      
       DO I=1,ABS(NSTAE)
          IF (USE_ELEV_STAT_FILE ) then  !read from external file
             READ(151,'(A132)') STAELOC(I)
          ELSE
             READ(15,'(A132)') STAELOC(I)
          ENDIF
-            IF(ICS.EQ.1) THEN
+
+          IF(ICS.EQ.1) THEN
 
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
@@ -1552,15 +1579,16 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 #endif
                ENDIF
 
-            ELSE
+          ELSE
                IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
-
                   READ(STAELOC(I),*) SLEL(I),SFEL(I)
                ELSE
 #ifdef ADCNETCDF
 !                 READ(15,'(A132)') STATLINE
 !                 call parse(STATLINE, LVAR)
                   call parse(STAELOC(I), LVAR)
+
+                  PRINT*, LVAR(1), LVAR(2)
                   read(LVAR(1),*)SLEL(I)
                   read(LVAR(2),*)SFEL(I)
                   STATNAME(I)=LVAR(3)
@@ -1573,7 +1601,8 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
             SLEL(I)=DEG2RAD*SLEL(I)
             SFEL(I)=DEG2RAD*SFEL(I)
             CALL CYLINDERMAP(XEL(I),YEL(I),SLEL(i),SFEL(i),SL0,SF0,ICS)
-         ENDIF
+          ENDIF 
+
          ENDDO !loop over elevation stations
          if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
  9911    FORMAT(F12.3,2X,F12.3, 6X, A50)
