@@ -65,4 +65,5 @@ install(
           hot2asc
           inflate
           hstime
+          adcircResultsComparison
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
