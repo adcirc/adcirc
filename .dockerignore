@@ -1,0 +1,19 @@
+# Only the paths copied by containers/Dockerfile are sent to the build
+*
+!CMakeLists.txt
+!cmake
+!src
+!prep
+!scripts
+!util
+!wind
+!thirdparty
+!.git
+
+# Build products and generated files that may exist in a developer checkout
+**/*.o
+**/*.mod
+**/*.smod
+**/__pycache__
+**/version.F
+thirdparty/wgrib2/config.h

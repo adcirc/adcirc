@@ -31,6 +31,12 @@ repos:
           files: '\.F90$'
           language: python
           args: ["--strip-comments", "--c-relations", "--enable-replacement", "--case", "1", "1", "1", "1"]
+-   repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.15.1
+    hooks:
+      -   id: hadolint
+          name: hadolint dockerfile linter
+          files: 'Dockerfile$'
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
     hooks:
