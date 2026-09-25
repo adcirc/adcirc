@@ -97,8 +97,48 @@ Images are tagged for release versions (using semantic versioning) as well as th
 By default, a release tag should be used and only use latest to try the newest version of the code. The ADCIRC Docker images are 
 distributed under the same license and conditions as this repository. 
 
-Images built for x86 systems use the IntelLLVM compiler while images build for ARM CPUs use the GCC compiler, version 14.2. The 
-x86 base image is the same used to build ADCIRC during continuous integration testing. 
+Images built for x86 systems use the Intel oneAPI compilers (IntelLLVM) and require a CPU that supports x86-64-v3
+(Intel Haswell, AMD Excavator, or newer), while images built for ARM CPUs use the GCC compiler. The compilers and
+libraries come from the [adcirc-ci-docker](https://github.com/adcirc/adcirc-ci-docker) base images, which are also
+used for continuous integration testing. The published image contains the libraries and compiler runtime libraries
+but not the compilers; to build ADCIRC or other code yourself, use the `adcircorg/adcirc-base:<version>-devel` image.
+
+## Running the Container
+
+The images contain `adcirc`, `padcirc`, `adcswan`, `padcswan`, `adcprep`, `aswip`, and the ADCIRC utility programs
+(e.g. `adccmp`, `hstime`, `inflate`, `adcircResultsComparison`), all of which are on the `PATH`. The examples below
+mount the current directory into the container so that input files are visible and output files persist after the
+container exits. Replace `<tag>` with a release version or `latest`.
+
+To start an interactive shell inside the container with Docker (the `-it` flags are required for an interactive
+session):
+```bash
+docker run -it --rm -v "$PWD":/home/adcirc/work -w /home/adcirc/work adcircorg/adcirc:<tag> /bin/bash
+```
+
+Commands can also be run directly without starting a shell:
+```bash
+docker run --rm -v "$PWD":/home/adcirc/work -w /home/adcirc/work adcircorg/adcirc:<tag> adcprep --np 4 --partmesh
+docker run --rm -v "$PWD":/home/adcirc/work -w /home/adcirc/work adcircorg/adcirc:<tag> adcprep --np 4 --prepall
+docker run --rm -v "$PWD":/home/adcirc/work -w /home/adcirc/work adcircorg/adcirc:<tag> mpirun -np 4 padcirc
+```
+
+With Singularity/Apptainer, first convert the image, then use `exec` or `shell`. The current directory is mounted
+automatically:
+```bash
+singularity pull adcirc.sif docker://adcircorg/adcirc:<tag>
+singularity exec adcirc.sif mpirun -np 4 padcirc
+singularity shell adcirc.sif
+```
+
+The container does not run as root. By default it runs as the `adcirc` user (UID 1001), and it can also run as any
+other UID, which is what Singularity/Apptainer and platforms such as OpenShift do. With Docker on Linux, files written
+to a mounted directory are owned by UID 1001; to have them owned by your own account instead, add
+`--user "$(id -u):$(id -g)"` to `docker run`.
+
+The executables are compiled with debug symbols and tracebacks enabled, so a crash reports the source file and
+line number. A copy of the source code used to build the image is included at `/opt/adcirc-source`, and the exact
+commit is recorded in the `org.opencontainers.image.revision` image label.
 
 # Examples
 
