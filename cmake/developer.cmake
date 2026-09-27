@@ -21,7 +21,8 @@ endfunction()
 
 function(add_strict_compiler_flags)
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
-    set(STRICT_FLAGS "-warn all -diag-enable remark -implicit-none")
+    # -warn all includes -warn declarations, ifx's equivalent of gfortran's -fimplicit-none
+    set(STRICT_FLAGS "-warn all -diag-enable remark")
   elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     set(STRICT_FLAGS
         "-Werror -Wall -Wextra -Wconversion -pedantic -fimplicit-none -Wuninitialized -Wsurprising -Wuse-without-only -Wimplicit-procedure -Winteger-division -Wconversion-extra"
