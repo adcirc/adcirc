@@ -539,9 +539,9 @@ ifeq ($(MAKELEVEL),0)
    odir_metis_be:
 	mkdir $@
    metis: odir_metis
-	$(MAKE) -C $(SRCDIR)/thirdparty/metis/Lib/ CC="$(CC)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis/" LIBMETIS="$(CURDIR)/odir_metis/libmetis.a" ARFLAGS="$(ARFLAGS)"
+	$(MAKE) -C $(SRCDIR)/thirdparty/metis/Lib/ CC="$(CC)" CFLAGS="$(CFLAGS) $(METIS_CFLAGS)" O_DIR="$(CURDIR)/odir_metis/" LIBMETIS="$(CURDIR)/odir_metis/libmetis.a" ARFLAGS="$(ARFLAGS)"
    metis_be: odir_metis_be
-	$(MAKE) -C $(SRCDIR)/thirdparty/metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis_be/" LIBMETIS="$(CURDIR)/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
+	$(MAKE) -C $(SRCDIR)/thirdparty/metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS) $(METIS_CFLAGS)" O_DIR="$(CURDIR)/odir_metis_be/" LIBMETIS="$(CURDIR)/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
    adcprep: metis
 	$(MAKE) BUILDTYPE=adcprep  $@
    adcprep_be: metis_be

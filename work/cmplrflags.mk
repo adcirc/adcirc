@@ -847,6 +847,9 @@ ifeq ($(compiler),circleci)
   CCBE		:= $(CC)
   CFLAGS	:= $(INCDIRS) -O0 -mcmodel=medium -DLINUX -m64
   CLIBS	:=
+  # The bundled METIS is old C that newer icx releases reject by default; these
+  # match the flags cmake/metis.cmake uses for IntelLLVM
+  METIS_CFLAGS	:= -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
   LIBS		:=
   MSGLIBS	:=
   ifeq ($(NETCDF),enable)
