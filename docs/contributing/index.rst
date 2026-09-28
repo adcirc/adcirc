@@ -221,4 +221,6 @@ As a result, the code was not necessarily developed to be unit-testable. Therefo
 approximately called "approval testing." ADCIRC runs a suite of tests located in the testing
 `repository <https://github.com/adcirc/adcirc-testsuite>`__. These tests are run for any pull request to the code
 and verify that the solution has not changed outside of minor differences due to compiler differences. The test
-suite uses a docker container available on Docker Hub (``adcircorg/adcirc-ci:2025.0.2``).
+suite uses a docker container available on Docker Hub (``adcircorg/adcirc-ci``, built from
+`adcirc-ci-docker <https://github.com/adcirc/adcirc-ci-docker>`__); the version in use is set by the ``ci-image``
+parameter in ``.circleci/config.yml``. The Intel oneAPI builds and tests run on x86, and the GCC builds run on ARM.
