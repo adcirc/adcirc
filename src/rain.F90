@@ -246,7 +246,7 @@
      &   /,9X,'Precipitation forcing will be added to wet nodes that',&
      &   /,9X,'have positive bathymetry (water) at each time step.')
 
- 3306   format(/,5X,'activeRainType = ',I,&
+ 3306   format(/,5X,'activeRainType = ',I1,&
      &   /,9X,'Your selection (a UNIT 15 input parameter) is not an',&
      &   /,9X,'allowable value. Reverting to the default value [1]: ',&
      &   /,9X,'precipitation will be added to all wet nodes.')
