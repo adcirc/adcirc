@@ -947,7 +947,7 @@ contains
             iSpd(i), iCPress(i), iRRP(i), iRMW(i)
 
          ! yr,mo,dy,hr, ,type, inc,  lat,NS,  lon,EW,  spd,   pc,
-228      format(8x, i4, i2, i2, i2, 6x, a4, 2x, i3, 1x, i4, a1, 2x, i4, a1, 2x, i3, 2x, i4, 47x, i3, 2x, i3)
+228      format(8x, i4, i2, i2, i2, 6x, a4, 1x, i4, 1x, i4, a1, 2x, i4, a1, 2x, i3, 2x, i4, 47x, i3, 2x, i3)
 
          select case (trim(CastType(i)))
          case ("BEST") ! nowcast/hindcast
@@ -991,8 +991,14 @@ contains
 
             ! Determine the time of this forecast in seconds since the beginning
             ! of the year.
-            if (iFcstInc(i) == 0) then
+            if (i == 1) then
                CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
+               if (iFcstInc(i) /= 0) then
+                  call allMessage(ECHO, 'The fort.22 file starts with non-zero forecast hour')
+                  ! to handle initial non-zero forecast times (could be negative for nowcast)
+                  FcstInc(i) = FcstInc(i)*3600.d0 ! convert hours to seconds
+                  CastTime(i) = CastTime(i) + FcstInc(i)
+               end if
                CastTime(i) = CastTime(i) - WindRefTime
             else
                FcstInc(i) = FcstInc(i)*3600.d0 ! convert hours to seconds
