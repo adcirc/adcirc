@@ -10532,7 +10532,7 @@ contains
       integer, intent(in) :: NP_G_p
       real(8), intent(in) :: SLAM0_p
       real(8), intent(in) :: SFEA0_p
-      integer, intent(in) :: NBVV_p(:, :)
+      integer, intent(in) :: NBVV_p(:, 0:) !...Columns from 0, as allocated by adcprep
       integer, intent(in) :: NVDLL_p(:)
       integer, intent(in) :: NBDV_p(:, :)
       integer, intent(in) :: NVELL_p(:)
@@ -10634,7 +10634,10 @@ contains
       SLAM0 = SLAM0_p
       SFEA0 = SFEA0_p
       allocate (NBVV(NBOU_p, 0:NVEL_p))
-      NBVV = NBVV_p
+      ! A section, so NBVV keeps its bounds: a whole-array assignment would
+      ! reallocate it to the shape of NBVV_p (adcprep's is wider) with lower
+      ! bound 1, shifting every node by one column.
+      NBVV(:, :) = NBVV_p(1:NBOU_p, 0:NVEL_p)
       allocate (NVDLL(NOPE_p))
       NVDLL = NVDLL_p
       allocate (NBDV(NOPE_p, NETA_p))
