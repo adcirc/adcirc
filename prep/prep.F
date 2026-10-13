@@ -491,7 +491,7 @@ C
   80  FORMAT(A80)
   81  FORMAT(I10,1x,A120)
   82  FORMAT(2(I10),1x,A120)
- 1100 FORMAT(I10,32000(2X,E16.8))
+ 1100 FORMAT(I10,32000(2X,ES24.16E3))
 C
       call memory_status()
       RETURN
@@ -1061,7 +1061,7 @@ C
  1001 FORMAT('ERROR: The Nodal Attributes File (unit 13)')
  1021 FORMAT('contains invalid name: ',A80)
  1031 FORMAT('WARNING: Processed only one column of unrecognized ',A80)
- 1100 FORMAT(I10,32000(2X,E16.8))
+ 1100 FORMAT(I10,32000(2X,ES24.16E3))
  1101 FORMAT(I10,32000(2X,I10))
 C
       RETURN
@@ -1652,7 +1652,7 @@ c
      &                     LABELS(IMAP_NOD_LG(NNEP(3,J,IPROC),IPROC))
           ENDDO
  43       FORMAT(2I8)
- 44       FORMAT(I8,3(E20.12))
+ 44       FORMAT(I8,3(1X,ES24.16E3))
  45       FORMAT(I8,I2,3(I9))
 C
 C--Write Open Boundary Data
@@ -1766,9 +1766,9 @@ C
       ENDDO
 C
   80  FORMAT(A80)
-  81  FORMAT(I8,2X,E13.6,2X,E13.6)
-  82  FORMAT(I8,2X,I8,2X,E13.6,2X,E13.6,2X,E13.6)
-  83  FORMAT(I8,2X,I8,6(2X,E13.6))
+  81  FORMAT(I8,2X,ES24.16E3,2X,ES24.16E3)
+  82  FORMAT(I8,2X,I8,2X,ES24.16E3,2X,ES24.16E3,2X,ES24.16E3)
+  83  FORMAT(I8,2X,I8,6(2X,ES24.16E3))
   84  FORMAT(I8,2X,I8)
   90  FORMAT(1X,A6,5I8)
 C
@@ -2374,8 +2374,8 @@ Casey 180318: Added NWS=13
              write(15,'(a,L3,a)') " UniformResMoonSunTimeData = ",
      &        UniformResMoonSunTimeData, "," 
              write(15,'(a,L3,a)') " IncludeNutation = ", IncludeNutation, ","
-             write(15,'(a,F15.9,a)') " k2Value = ", k2Value, ","
-             write(15,'(a,F15.9,a)') " h2Value = ", h2Value," /"
+             write(15,'(a,ES24.16E3,a)') " k2Value = ", k2Value, ","
+             write(15,'(a,ES24.16E3,a)') " h2Value = ", h2Value," /"
          END IF
 
          ! NCSU Subdomain Modeling
@@ -2396,7 +2396,7 @@ Casey 180318: Added NWS=13
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a,f15.4,a,l,a,l,a,l,a)')
+            WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a,ES24.16E3,a,l,a,l,a,l,a)')
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
      &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
      &         " StatPartWetFix=",StatPartWetFix,
@@ -2410,7 +2410,7 @@ C....    DMW
          endif
          ! jgf52.08.02: inundation output control
          if (foundInundationOutputControlNamelist) then
-            write(15,'(a,l,a,f15.8,a)')
+            write(15,'(a,l,a,ES24.16E3,a)')
      &       '&inundationOutputControl inundationOutput=',
      &       inundationOutput,' inunThresh=',inunThresh," /"
          endif
@@ -2423,7 +2423,7 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
          ENDIF
          ! jgf: dynamicWaterlevel control namelist
          if (foundCorrectionControlNamelist) then
-            write(15,'(a,a, a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
+            write(15,'(a,a, a,a, a,i0, a,ES24.16E3, a,a, a,ES24.16E3, a,ES24.16E3, a)')
      &       '&dynamicWaterLevelCorrectionControl dynamicWaterLevelCorrectionFileName="',
      &       trim(adjustl(dynamicWaterLevelCorrectionFileName)),
      &       '",  dynamicWaterLevelCorrectionMethod="',
@@ -2438,7 +2438,7 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
 
 C....    SB VEW1D channel control namelist
          if (foundVEW1DChannelControlNamelist) then
-            write(15,'(a,l,a,f15.8,a,f15.8,a,f15.8,a,f15.8,a,f15.8,a)')
+            write(15,'(a,l,a,ES24.16E3,a,ES24.16E3,a,ES24.16E3,a,ES24.16E3,a,ES24.16E3,a)')
      &       '&VEW1DChannelControl activateVEW1DChannelWetPerimeter=',
      &       activateVEW1DChannelWetPerimeter,
      &       ', barmin64_subm=',BARMIN64_SUBM,
@@ -2484,10 +2484,10 @@ c...     wjp additions for density Control Namelist
             write(15,'(A,L,A)') 'useInflow = ',useInflow,','
             write(15,'(A,I0,A)') 'windspeed_averaging_minute = ',
      &                           windspeed_averaging_minute,','
-            write(15,'(A,F6.2,A)') 'w_cool = ',w_cool,','
+            write(15,'(A,ES24.16E3,A)') 'w_cool = ',w_cool,','
             write(15,'(A,L,A)') 'CkCd_calc = ',CkCd_calc,','
-            write(15,'(A,F6.2,A)') 'CkCd = ',CkCd,','
-            write(15,'(A,F6.2,A)') 'WindMultiplier = ',WindMultiplier,','
+            write(15,'(A,ES24.16E3,A)') 'CkCd = ',CkCd,','
+            write(15,'(A,ES24.16E3,A)') 'WindMultiplier = ',WindMultiplier,','
             write(15,'(A)') '/'
             write(15,*) '! -- End nws8 Control NameList --'
          ENDIF
@@ -3480,7 +3480,7 @@ C
  270  FORMAT(A270)
  1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
  1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
- 1100 FORMAT(I8,3E13.5)
+ 1100 FORMAT(I8,3(1X,ES24.16E3))
  1101 FORMAT(' #')
 c----------------------------------------------------------------------------
       END SUBROUTINE PREP22
@@ -3555,7 +3555,7 @@ C
          CLOSE(SDU(IPROC))
       ENDDO
 
- 1100 FORMAT(I8,2E13.5)
+ 1100 FORMAT(I8,2(1X,ES24.16E3))
  1101 FORMAT (' #')
 
  99   RETURN
@@ -3948,7 +3948,7 @@ C
          ENDIF
       END DO
 C     
- 1101 FORMAT(32000(E16.8))
+ 1101 FORMAT(32000(1X,ES24.16E3))
 C     
       RETURN
 C---------------------------------------------------------------------------
@@ -4120,7 +4120,7 @@ C
  !270  FORMAT(A270)
  !1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
  !1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
- 1100 FORMAT(I8,E13.5)
+ 1100 FORMAT(I8,1X,ES24.16E3)
  1101 FORMAT(' #')
 c----------------------------------------------------------------------------
       END SUBROUTINE PREP141
@@ -4294,7 +4294,7 @@ C
       call memory_dealloc(nbytes)
       call memory_status()
   40  FORMAT(A40)
-  80  FORMAT(1X,I6,1X,32000(F11.7,2X))
+  80  FORMAT(1X,I6,1X,32000(ES24.16E3,2X))
 C
       RETURN
       END
@@ -4380,7 +4380,7 @@ C
       call memory_dealloc(nbytes)
       call memory_status()
   40  FORMAT(A40)
-  80  FORMAT(1X,I6,1X,32000(F11.7,2X))
+  80  FORMAT(1X,I6,1X,32000(ES24.16E3,2X))
 C
       RETURN
       END
@@ -4473,7 +4473,7 @@ C
       call memory_dealloc(nbytes)
       call memory_status()
   40  FORMAT(A40)
-  80  FORMAT(1X,I8,1X,32(F12.6,2X))
+  80  FORMAT(1X,I8,1X,32(ES24.16E3,2X))
 C
       RETURN
       END
@@ -4612,7 +4612,7 @@ C
       ENDIF
       call memory_status()
       return
- 80   FORMAT(1X,32000(F11.7,2X))
+ 80   FORMAT(1X,32000(ES24.16E3,2X))
 c----------------------------------------------------------------------------
       END SUBROUTINE PREP39
 c----------------------------------------------------------------------------
@@ -7786,7 +7786,7 @@ C
       RETURN
   60  FORMAT(A60)
  170  FORMAT(A170)
- 1100 FORMAT(I8,3E13.5)
+ 1100 FORMAT(I8,3(1X,ES24.16E3))
  1101 FORMAT(' #')
 c----------------------------------------------------------------------------
       END SUBROUTINE prepUnSWAN
