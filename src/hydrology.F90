@@ -142,6 +142,7 @@
       use mod_logging, only : screenUnit, logMessage, allMessage,&
      &    screenMessage, DEBUG, ECHO, INFO, WARNING, ERROR,&
      &    t_log_scope, init_log_scope
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use mod_io, only : openFileForRead
       use sizes, only : inputdir, mnp
 
@@ -150,7 +151,7 @@
       ! Hydrology (point source) timing variables
       real(8) :: hydroTime1 ! time at previous hydrology input
       real(8) :: hydroTime2 ! time at new hydrology input
-      real(8) :: hydroRamp=0.08333333  ! optional ramp: 2 hrs
+      real(8) :: hydroRamp=0.08333334d0  ! optional ramp: 2 hrs
 
       ! Hydrology arrays for input datasets (sized by numHydro)
       real(8), allocatable :: hydro1(:) ! previous hydrology input
@@ -162,7 +163,8 @@
       integer :: numHydro ! number of hydrologic sources
 
       ! Hydrology arrays for status & location (sized by numHydro)
-      integer, allocatable :: isActive(:)   ! flag for active sources
+      real(8), allocatable :: isActive(:)   ! flag for active sources
+      !integer, allocatable :: isActive(:)   ! flag for active sources
       integer, allocatable :: hydroNearNode(:)   ! nearest adcirc node
 
       ! Namelist input from within read_input.F
@@ -356,7 +358,11 @@
       ! May need to add more arrays with new types.
       call openFileForRead(psLun,trim(inputdir)//'/'//                  &
      &        trim(hFile),ioerr)
-      if (ioerr.GT.0) call hydrologyTerminate()
+      !if (ioerr.GT.0) call hydrologyTerminate()
+      if (ioerr.GT.0) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &       message='Unable to open hydrology location file.')
+      end if
       read(psLun,*) numHydro
       allocate ( hydro1(numHydro), hydro2(numHydro) )
       allocate ( hydroX(numHydro), hydroOld(numHydro) )
@@ -367,7 +373,8 @@
       hydroX(1:numHydro) = 0.D0
       hydroOld(1:numHydro) = 0.D0
       hydroNearNode(1:numHydro) = 0
-      isActive(1:numHydro) = 0
+      isActive(1:numHydro) = 0.d0
+      !isActive(1:numHydro) = 0
 
       ! Subroutine call to read in actual locations
       write(16,3011)
@@ -580,7 +587,11 @@
       ! initialize the current hydrologic sources and time variables.
       call openFileForRead(430,trim(inputdir)//'/'//               &
      &          'fort.430',ioerr)
-      if (ioerr.GT.0) call hydrologyTerminate()
+      !if (ioerr.GT.0) call hydrologyTerminate()
+      if (ioerr.GT.0) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &       message='Unable to open hydrology streamflow: fort.430.')
+      end if
       !Read first set of values
       do I=1,numHydro
          read(430,*) hydro1(I)
@@ -646,7 +657,11 @@
       ! Read initial two sets into memory (same for all intHydroTypes)
       call openFileForRead(430,trim(inputdir)//'/'//              &
      &     'fort.430',ioerr)
-      if (ioerr.GT.0) call hydrologyTerminate()
+      !if (ioerr.GT.0) call hydrologyTerminate()
+      if (ioerr.GT.0) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &       message='Unable to open hydrology streamflow: fort.430.')
+      end if
       !Read first set of values
       do I=1,numHydro
           read(430,*) hydro1(I)
@@ -733,7 +748,8 @@
       select case(abs(interiorHydrologyType))
         case (1,2) ! Static locations - just use nodecode
           do I = 1, numHydro
-             isActive(I) = nodecode(hydroNearNode(I))
+             isActive(I) = real(nodecode(hydroNearNode(I)),8)
+             !isActive(I) = nodecode(hydroNearNode(I))
           end do
         !case (3) ! dynamic locations, need to find most upstream
         ! active node and deactivate the downstream sources
@@ -839,7 +855,7 @@
       use sizes, only : myproc
       use global, only : srchdp, tree, kdresults
       use mesh, only : nm, x, y, rmax, dp
-      use kdtree2_module
+      use kdtree2_module, only : kdtree2_n_nearest
 
       implicit none
 
@@ -858,7 +874,8 @@
       logical :: ElementFound ! .true. = corresponding element is found
       logical :: KeepSearch ! .true. = minimum distance not found yet
 
-      real(8), parameter :: Tolerance = 1.0d-5 ! area diff for match
+      real(8), parameter :: Tolerance = 1.0d-6 ! tolerance for match
+      !real(8), parameter :: Tolerance = 1.0d-5 ! area diff for match
 
       LOG_SCOPE_TRACED("kdtSearchHydrology", HYDROLOGY_TRACING)
 
@@ -919,11 +936,14 @@
               SD2 = (X2-Xsta)**2 + (Y2-Ysta)**2
               SD3 = (X3-Xsta)**2 + (Y3-Ysta)**2
               ! First check for any zero lengths - point is ADCIRC node
-              if (SD1 .EQ. 0.d0) then
+              !if (SD1 .EQ. 0.d0) then
+              if (SD1 .LT. Tolerance) then
                  OutputNode = ielm(1)
-              else if (SD2 .EQ. 0.d0) then
+              !else if (SD2 .EQ. 0.d0) then
+              else if (SD2 .LT. Tolerance) then
                  OutputNode = ielm(2)
-              else if (SD3 .EQ. 0.d0) then
+              !else if (SD3 .EQ. 0.d0) then
+              else if (SD3 .LT. Tolerance) then
                  OutputNode = ielm(3)
               else
                  KeepSearch = .true.
@@ -990,7 +1010,9 @@
 
       if (.not. ElementFound) then
          write(16,9893) Xsta, Ysta
-         call hydrologyTerminate()
+         !call hydrologyTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &       message='Unable to locate source within domain.')
       end if
 
  9893 format(/,1X,'!!!!!  WARNING - FATAL INPUT ERROR  !!!!!',/,       &
