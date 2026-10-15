@@ -473,7 +473,7 @@
             read(270,*) (nhg,rain2(i),i=1,np)
             ! Read until get to current time
             do it=1,iths
-               timeit=it*dt + statim*86400.d0
+               timeit=real(it,8)*dt + statim*86400.d0
                if (timeit.GT.rainTime2) then
                   rainTime1 = rainTime2
                   rainTime2 = rainTime2 + rainTimeInc
@@ -505,7 +505,7 @@
             call rain12get(rain2,np)
             ! Read until get to current time
             do it=1,iths
-               timeit=it*dt + statim*86400.d0
+               timeit=real(it,8)*dt + statim*86400.d0
                if (timeit.GT.rainTime2) then
                   rainTime1 = rainTime2
                   rainTime2 = rainTime2 + rainTimeInc
