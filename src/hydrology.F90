@@ -635,9 +635,9 @@
       implicit none
 
       real(8), intent(in) :: timeloc
-      integer :: i ! node loop counter
+      integer :: I ! node loop counter
       integer :: indXH ! temp global node ID for hydro
-      integer :: it ! temporal loop counter
+      integer :: IT ! temporal loop counter
       integer :: ioerr ! I/O error code
       real(8) :: timeit ! current time
       real(8) :: rampPS ! multiplier to time-delay PS terms
@@ -681,7 +681,7 @@
          hydroTime1 = statim*86400.d0
          hydroTime2 = hydroTime1 + interiorHydrologyTimeInc
          do IT=1,iths
-             timeit=it*dt + statim*86400.d0
+             timeit=real(IT,8)*dt + statim*86400.d0
              if (timeit.GT.hydroTime2) then
                  hydroTime1=hydroTime2
                  hydroTime2=hydroTime2+interiorHydrologyTimeInc
