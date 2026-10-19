@@ -309,7 +309,7 @@
       subroutine getRainForcing(timeloc)
 !-----------------------------------------------------------------------
 
-      use global, only : dt, nodecode
+      use global, only : dt
       use mesh, only : np
       use owi_rain, only : rain12get
 
@@ -352,8 +352,8 @@
           rainODT(i) = (rainX-rainOld)/dt
           rainAcc = rainX*dt
           totalRain(i) = totalrain(i) + rainAcc
-          totalRainApplied(i)=totalRainApplied(i)+                    &
-                              rainAcc*activeRain(i)
+          totalRainApplied(i)=totalRainApplied(i)+ &
+     &                        rainAcc*activeRain(i)
       end do
 
       return
@@ -368,7 +368,7 @@
       subroutine coldstartRainForcing()
 !-----------------------------------------------------------------------
 
-      use global, only : statim, dt, nodecode
+      use global, only : statim, dt
       use sizes, only : inputdir
       use mesh, only : np
       use owi_rain, only : rain12init, rain12get
@@ -436,7 +436,7 @@
       subroutine hotstartRainForcing(timeloc)
 !-----------------------------------------------------------------------
 
-      use global, only : dt, statim, iths, nodecode
+      use global, only : dt, statim, iths
       use sizes, only : inputdir
       use mesh, only : np
       use owi_rain, only : rain12init, rain12get
@@ -579,13 +579,13 @@
 
       select case(activeRainType)
         case (1) ! Currently wet - just use nodecode
-           activeRain(1:np) = 1.d0*nodecode(1:np)
+           activeRain(1:np) = real(nodecode(1:np),8)
         case (2) ! Currently wet and "water only" - ND implementation
                  ! merge(trueV, falseV, test)
                  ! NOTE: will never rain on any nodes that are above
                  ! MSL even if they become wet during the simulation
           do i=1,np
-             activeRain(i) = nodecode(i)*                               &
+             activeRain(i) = real(nodecode(i),8)*&
      &            merge( 1.0d0, 0.d0, dp(i) > 0.d0 ) ;
           end do
       end select

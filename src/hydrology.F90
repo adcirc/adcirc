@@ -329,7 +329,7 @@
       implicit none
  
       integer :: ioerr   !IO error for interior hydrology
-      integer :: psLun   !unit number for input file
+      integer :: psLun=420   !unit number for input file(reset below)
 
       character(8) :: hFile  !default filename for input
 
@@ -345,6 +345,8 @@
       hydroODT(1:mnp) = 0.D0
 
       ! Set file name for reading input based on Type
+      ! TODO: generate psLun on the fly like swan and just set the
+      !       filename here
       select case (abs(interiorHydrologyType))
        case(1)
           psLun = 420
@@ -358,7 +360,6 @@
       ! May need to add more arrays with new types.
       call openFileForRead(psLun,trim(inputdir)//'/'//                  &
      &        trim(hFile),ioerr)
-      !if (ioerr.GT.0) call hydrologyTerminate()
       if (ioerr.GT.0) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
      &       message='Unable to open hydrology location file.')
@@ -416,7 +417,7 @@
       integer, intent(in) :: ps_lun  !file specifier
 
       integer :: I
-      real(8) :: xcoordN, ycoordN, xcoordT, ycoordT
+      real(8) :: xcoordN, ycoordN
       real(8) :: lonN, latN
       real(8) :: lonrN, latrN   !for transform
 
@@ -587,7 +588,6 @@
       ! initialize the current hydrologic sources and time variables.
       call openFileForRead(430,trim(inputdir)//'/'//               &
      &          'fort.430',ioerr)
-      !if (ioerr.GT.0) call hydrologyTerminate()
       if (ioerr.GT.0) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
      &       message='Unable to open hydrology streamflow: fort.430.')
@@ -657,7 +657,6 @@
       ! Read initial two sets into memory (same for all intHydroTypes)
       call openFileForRead(430,trim(inputdir)//'/'//              &
      &     'fort.430',ioerr)
-      !if (ioerr.GT.0) call hydrologyTerminate()
       if (ioerr.GT.0) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
      &       message='Unable to open hydrology streamflow: fort.430.')
@@ -783,48 +782,6 @@
 !------------------------------------------------------------------------
 !------------------------------------------------------------------------
 
-      !cms: Added this subroutine to eliminate dependence on adcirc_mod
-      ! module, which should be built last to simplify the build system.
-      ! Added additional deallocate statements to clean up arrays
-      ! DEPRECATE IF compiles in v56.02 without it
-
-      subroutine hydrologyTerminate(NO_MPI_FINALIZE)
-
-!      use global, only : INFO, setMessageSource, allMessage,            &
-!     &    unsetMessageSource
-#ifdef cmpi
-      use messenger, only : subdomainFatalError, msg_fini
-#endif
-      implicit none
-
-      logical, optional :: no_mpi_finalize
-
-      LOG_SCOPE_TRACED("readInteriorHydrologyLocs", HYDROLOGY_TRACING)
-
-      if (allocated(hydro1)) deallocate(hydro1)
-      if (allocated(hydro2)) deallocate(hydro2)
-      if (allocated(hydroX)) deallocate(hydroX)
-      if (allocated(hydroOld)) deallocate(hydroOld)
-      if (allocated(hydroCurr)) deallocate(hydroCurr)
-      if (allocated(hydroODT)) deallocate(hydroODT)
-      if (allocated(hydroNearNode)) deallocate(hydroNearNode)
-      if (allocated(isActive)) deallocate(isActive)
-
-#ifdef cmpi
-      subdomainFatalError = .true.
-      if (present(NO_MPI_FINALIZE)) then
-        call msg_fini(NO_MPI_FINALIZE)
-      else
-        call msg_fini()
-      endif
-#endif
-      stop 1
-
-      return
-!------------------------------------------------------------------------
-      end subroutine hydrologyTerminate
-!------------------------------------------------------------------------
-
 
 !------------------------------------------------------------------------
 !> Uses the KDTREE2 algorithm for finding which ADCIRC node is closest
@@ -845,14 +802,13 @@
 !> and rmax) are deallocated at the end of read_input. Since this
 !> subroutine is only used during initial I/O this should be okay, but
 !> will need changed if that ever changes.
-!> Also, for now calls hydrologyTerminate if a location is not found
+!> Also, for now terminates the run if a location is not found
 !> do we want to add capability to just set inactive for all time and
 !> set the found node to nearest node or is termination cleaner?
 !------------------------------------------------------------------------
        subroutine kdtSearchHydrology(InputXCoordinate,InputYCoordinate, &
      &         OutputNode)
 !------------------------------------------------------------------------
-      use sizes, only : myproc
       use global, only : srchdp, tree, kdresults
       use mesh, only : nm, x, y, rmax, dp
       use kdtree2_module, only : kdtree2_n_nearest
@@ -863,9 +819,8 @@
       real(8), intent(in) :: InputYCoordinate    ! cartesian/proj
       integer, intent(out) :: OutputNode
 
-      integer :: Element
       integer :: ielm(3), itc, iek
-      real(8) :: X1, X2, X3, X4, Y1, Y2, Y3, Y4
+      real(8) :: X1, X2, X3, Y1, Y2, Y3
       real(8) :: Xsta, Ysta
       real(8) :: A1, A2, A3, AE, AREASK, AA
       real(8) :: SD1, SD2, SD3, SD12, SD13, SD23
@@ -1010,7 +965,6 @@
 
       if (.not. ElementFound) then
          write(16,9893) Xsta, Ysta
-         !call hydrologyTerminate()
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
      &       message='Unable to locate source within domain.')
       end if
