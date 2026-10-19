@@ -113,48 +113,36 @@
       integer, intent(in) :: UnitNumber     ! i/o unit number to open
 
       logical found               !.true. if the full domain file exists
-      character(len=80) fileName   ! name of full domain file
-      character(len=80) defaultName! default name of full domain file
-      integer :: dnlen  !length of defaultname (7 or 8)
-      integer :: unitwidth !length of unit number
-      character (len=20):: unitnumberstr
+      character(len=20) fileName   ! name of full domain file
+      character(len=5), parameter :: prefix="fort."
 
       found = .false.
-      defaultName(:) = ' '  !initialize to all blanks
-      defaultName(1:5) = 'fort.'
 
-      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0))
-      dnlen = 5 + unitwidth
-      write(unitnumberstr,'(I0)') UnitNumber
-      defaultName = trim(adjustl(defaultName))// &
-     &              trim(adjustl(unitNumberStr))
-
-      ! Search for global file and give error message if not found
-      fileName = trim(defaultName(1:dnlen))
+      write(fileName, '(A5,I0)') prefix, UnitNumber
 
       ! Determine if full domain file exists
       inquire(file=fileName,exist=found)
 
       ! Log messages to user based on file existence
       if ( found ) then
-         write(screenUnit,1010) FileName
+         write(screenUnit,1010) trim(FileName)
          write(16,1010) FileName
       else
          if (UnitNumber .eq. 272) then
-            write(screenUnit,1011) FileName
-            write(16,1011) FileName
+            write(screenUnit,1011) trim(FileName)
+            write(16,1011) trim(FileName)
          else
-            write(screenUnit,1012) FileName
-            write(16,1012) FileName
+            write(screenUnit,1012) trim(FileName)
+            write(16,1012) trim(FileName)
          endif
       end if
 
 
- 1010 format(2X,'Global file ',A8,' was found!',/)
- 1011 format(2X,'WARNING: Regional basin file ',A8,' was NOT found!',   &
+ 1010 format(2X,'Global file ',A,' was found!',/)
+ 1011 format(2X,'WARNING: Regional basin file ',A,' was NOT found!',   &
      &     /,2X,'adcprep will complete but padcirc may fail at',/,      &
      &       2X,'runtime. Check fort.27 file.')
- 1012 format(2X,'WARNING: Global file ',A8,' was NOT found!',           &
+ 1012 format(2X,'WARNING: Global file ',A,' was NOT found!',           &
      &     /,2X,'adcprep will complete but padcirc will fail at',/,     &
      &       2X,'runtime: add file before running.')
 

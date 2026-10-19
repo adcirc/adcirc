@@ -116,8 +116,10 @@
       subroutine kdtsearch(XCoords,YCoords,FDEle,NumofStations,Desc)
 !----------------------------------------------------------------------
 
-      use PRE_Global
-      use kdtree2_module
+      use pre_global, only : slam,sfea,NNEG,RMax,BCXY,NELG, NFOVER,&
+     &    srchdp
+      use kdtree2_module, only : KDTree2, KDTree2_result, kdtree2_create,&
+     &    kdtree2_destroy, kdtree2_n_nearest
 
       implicit NONE
       INTEGER, intent(in) :: NumOfStations                     ! total
@@ -131,8 +133,8 @@
       real(8) :: Xsta,Ysta,dist
       real(8) :: x1,x2,x3,y1,y2,y3,A1,A2,A3,AA,AREASK,AE
       real(8) :: elmmin(2),xelm(3),yelm(3)
-      TYPE(KDTREE2), POINTER :: TREE
-      TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
+      TYPE(KDTree2), POINTER :: tree
+      TYPE(KDTree2_Result), ALLOCATABLE :: KDResults(:)
       LOGICAL ElementFound  ! .true. when a corresponding element is found
       INTEGER ClosestElement  ! element with closest match
       REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
@@ -141,13 +143,13 @@
 
 !    Be sure the maximum search depth is not larger than
 !    the number of elements being kept
-      if (nelg.lt.srchdp) srchdp = nelg
+      if (NELG.lt.srchdp) srchdp = NELG
 
 !     Create the search tree
-      tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
+      tree => kdtree2_create(BCXY,rearrange=.true.,sort=.true.)
 
 !     allocate space for the search results from the tree
-      allocate(KDRESULTS(srchdp))
+      allocate(KDResults(srchdp))
 
 
       do I = 1, NumOfStations
@@ -157,19 +159,19 @@
 
         ! Find the srchdp nearest elements to this point
          call kdtree2_n_nearest(tp=tree,qv=(/Xsta,Ysta/),               &
-     &                  nn=srchdp,results=KDRESULTS)
+     &                  nn=srchdp,results=KDResults)
          itc = 1
-         ClosestElement = KDRESULTS(itc)%idx
+         ClosestElement = KDResults(itc)%idx
 !       Check to see if the point lies with rmax of any of these elements
-         elmmin = minval(sqrt(KDRESULTS(1:srchdp)%dis)                  &
-     &                              - rmax(KDRESULTS(1:srchdp)%idx) )
+         elmmin = minval(sqrt(KDResults(1:srchdp)%dis)                  &
+     &                              - rmax(KDResults(1:srchdp)%idx) )
          if(elmmin(1).le.0.0D0) then  ! Point lies within search radius of an element
 !           loop through the elements in the search list
             do while ((ElementFound.eqv..false.).and.(itc.le.srchdp))
-               iek = KDRESULTS(itc)%idx  !Current search element number
+               iek = KDResults(itc)%idx  !Current search element number
 !              Get the distance from this point to the barycenter of the
 !              current element
-               dist = sqrt(KDRESULTS(itc)%dis)
+               dist = sqrt(KDResults(itc)%dis)
 !              If the distance is less than or equal to rmax (rmax=1.5*element radius)
 !              Then the point is near the element and might be in it
 !              Proceed with the weights test
@@ -211,12 +213,12 @@
             IF (NFOVER.EQ.1) THEN
                print *, "The program will estimate nearest element."
                print *, "WARNING. Distance to nearest element is ",     &
-     &                   sqrt(KDRESULTS(1)%dis)
+     &                   sqrt(KDResults(1)%dis)
                print *, " "
                FDEle(I) = ClosestElement
             ELSE
                print *, "ERROR. Distance to nearest element is ",       &
-     &                   sqrt(KDRESULTS(1)%dis)
+     &                   sqrt(KDResults(1)%dis)
                CALL EXIT(1)
             ENDIF
          ENDIF

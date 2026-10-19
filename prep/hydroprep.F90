@@ -69,7 +69,6 @@
 
       use mod_logging, only : screenUnit
       use mod_io, only : openFileForRead
-      use memory_usage
 
       implicit none
 
@@ -152,8 +151,7 @@
       ! Open and localize the global interiorHydrology discharges
       !   valid for all interiorHydrologyTypes (fort.430)
       !----------------------------------------------------------
-      call OpenPrepHydro(430, 'point source locations  ',&
-     &     1, nproc, sdu, success)
+      call OpenPrepHydro(430, 1, nproc, sdu, success)
       if (.not.success) then
          write(screenUnit,*) 'ERROR: Unit 430 file not preprocessed. '&
      &         //'Terminating adcprep.'
@@ -223,19 +221,16 @@
 
       implicit none
 
-      integer(8) :: nbytes = 0
       integer :: I,J,Iproc,Iproc2
       integer :: sdu(nproc) ! subdomain unit numbers
       integer :: indX   ! temp global node ID
       integer :: local  ! temp local node ID
-      integer :: maxNumHydro = -99  ! maximum number of sources
       character(6) :: PE
       logical :: success    ! .true. if files opened without errors
 
       integer, allocatable :: locID(:,:)  ! local node IDs
 
-      call OpenPrepHydro(420, 'point source information  ',&
-     &     1, nproc, sdu, success)
+      call OpenPrepHydro(420, 1, nproc, sdu, success)
       if (.not.Success) then
          !cms: change to stop since run will fail w/o files
          write(screenUnit,*) 'ERROR: Unit 420 file not preprocessed. '&
@@ -250,8 +245,6 @@
       allocate ( locID(numHydro,nproc) )
       allocate ( imap_hyd_LG(numHydro,nproc) ) ! module variable
       allocate ( numHydroProc(nproc) )  ! module variable
-      nbytes = (4+4*2*nproc)*NumHydro ! 3 integer: 2 dims
-      call memory_alloc(nbytes)
 
       !------------------------------------------------------
       ! Read global file for ADCIRC nodes and determine local
@@ -306,9 +299,6 @@
       ! deallocate local subroutine arrays - not module arrays
       if (allocated(locID)) then
          deallocate (locID)
-         nbytes = 4*nproc*numHydro
-         call memory_dealloc(nbytes)
-         call memory_status()
       endif
 
       return
@@ -343,9 +333,8 @@
 
       implicit none
 
-      integer :: nbytes = 0
-      integer :: I,J,K,KK  ! loop indices
-      integer :: iproc,iproc2 !PROC indices
+      integer :: I,J,K  ! loop indices
+      integer :: iproc  !PROC indice
       integer :: sdu(nproc) ! subdomain unit numbers
       integer indX
       logical success    ! .true. if files opened without errors
@@ -359,8 +348,7 @@
       !----------------------------------------------------------
       !Open and read the global interiorHydrology input locations
       !----------------------------------------------------------
-      call OpenPrepHydro(428, 'point source locations  ',&
-     &     1, nproc, sdu, success)
+      call OpenPrepHydro(428, 1, nproc, sdu, success)
       if (.not.Success) then
          !cms: change to stop since run will fail w/o files
          write(screenUnit,*) 'ERROR: Unit 428 file not preprocessed. '&
@@ -373,20 +361,14 @@
       read(428,*) numHydro
       if(ics.eq.1) then
          allocate ( xps(numHydro),yps(numHydro) )
-         nbytes = 8*2*numHydro  ! 2 real array
       else
          allocate ( xps(numHydro),yps(numHydro) )
          allocate ( slps(numHydro),sfps(numHydro) )
-         nbytes = 8*4*numHydro  ! 4 real arrays
       end if
       allocate ( globID(numHydro) )
       allocate ( numHydroProc(nproc) )
       numHydroProc(1:nproc) = 0 ! set initial counter value
       allocate ( imap_hyd_LG(numHydro,nproc) )
-
-      !Now update memory usage
-      nbytes = nbytes + 4*(numHydro+nproc+nproc*numHydro) ! integers
-      call memory_alloc(nbytes)
 
       ! Read in locations and transform if necessary
       do I=1,numHydro
@@ -405,7 +387,7 @@
       ! Determine which element each source is in
       if (.not. kdtSetup) call setup_kdt_search()
       call kdtsearch(xps,yps,globID,numHydro,&
-     &          'Interior hydrology Locations ')
+     &          'Interior hydrology Locations  ')
 
       ! Determine which PROC each source is on
       write(screenUnit,*) ' '
@@ -455,18 +437,13 @@
       if(ics.EQ.1) then
          if (allocated(xps)) then
             deallocate (xps,yps)
-            nbytes = 8*2*numHydro  ! 2 real array
          end if
       else
          if (allocated(slps)) then
             deallocate (xps,yps,slps,sfps)
-            nbytes = 8*4*numHydro  ! 4 real arrays
          end if
       end if
       deallocate (globID)
-      nbytes = nbytes + 4*numHydro  ! 1 integer array
-      call memory_dealloc(nbytes)
-      call memory_status()
 
       return
 !-----------------------------------------------------------------------
@@ -479,53 +456,36 @@
 !> dependency when compiling. Modified somewhat to suit needs of
 !> hydrology and add more descriptive messages.
 !-----------------------------------------------------------------------
-      subroutine OpenPrepHydro(UnitNumber, Description,  &
-     &     startProc, endProc, SDU, Success)
+      subroutine OpenPrepHydro(UnitNumber, startProc, endProc, sdu,& 
+     &     Success)
 !-----------------------------------------------------------------------
-      use pre_global
+      use pre_global, only : nproc
       implicit none
 
       integer, intent(in) :: UnitNumber     ! i/o unit number to open
-      character(*), intent(in) :: Description ! description of file
       integer, intent(in) :: startProc        ! subdomains to start with
       integer, intent(in) :: endProc          ! subdomain to end on
       integer, intent(out), dimension(nproc) :: sdu ! local unit numbers
       logical, intent(out):: Success     ! .true. if files opened w/o errors
       logical Found               !.true. if the full domain file exists
-      character(len=80) FileName   ! name of full domain file
-      character(len=80) DefaultName! default name of full domain file
-      integer :: dnlen  !length of defaultname (7 or 8)
+      character(len=5), parameter :: prefix="fort."
+      character(len=20) FileName   ! name of full domain file
       integer ErrorIO             ! zero if file opened successfully
       integer iproc               ! subdomain index
       character(len=20) sdFileName     ! subdomain file name
-      integer:: unitwidth
-      character (len=20):: unitnumberstr
 
       Found = .false.
       Success = .false.
       ErrorIO = 1
-      DefaultName(:) = ' '  !initialize to all blanks
-      DefaultName(1:5) = 'fort.'
-
-      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0))
-      dnlen = 5 + unitwidth
-      write(unitnumberstr,'(I0)') UnitNumber
-      DefaultName = trim(adjustl(DefaultName))// &
-     &              trim(adjustl(unitNumberStr))
-
-      ! Search for global file and give error message if not found
-      ! CMS: removed user opportunity to specify non-default filename
-      if (Use_Default) then
-         FileName = trim(DefaultName(1:dnlen))
-      end if
 
       ! Determine if full domain file exists
-      inquire(file=FileName,exist=found)
+      write(fileName, '(A5,I0)') prefix, UnitNumber
+      inquire(file=trim(FileName),exist=found)
 
       ! If it does exist, open it
       if ( found ) then
-         write(screenUnit,1011) FileName ! found
-         open(unit=UnitNumber, file=FileName, iostat=ErrorIO)
+         write(screenUnit,1011) trim(FileName) ! found
+         open(unit=UnitNumber, file=trim(FileName), iostat=ErrorIO)
          Success = .true.
          if ( ErrorIO .GT. 0 ) then
             write(screenUnit,*) "ERROR: Full domain file exists ",&
@@ -534,7 +494,7 @@
          end if
       else
       ! Provide message to user if does not exist
-         write(screenUnit,1010) FileName !not found
+         write(screenUnit,1010) trim(FileName) !not found
          Success = .false.
       end if
       ! return if cannot open global file
@@ -545,9 +505,9 @@
          sdFileName(:) = ' '
          sdu(iproc) = 505 + (iproc-1)
          sdFileName(1:7) = 'PE0000/'
-         sdFileName(8:) = trim(DefaultName)
+         sdFileName(8:) = trim(FileName)
 #ifdef ADCSWAN
-         sdFileName = 'PE0000/'//FileName
+         sdFileName = 'PE0000/'//trim(FileName)
 #endif
          write(sdFileName(3:6), '(I4.4)') iproc-1
          open (unit=sdu(iproc), file=trim(sdFileName), iostat=ErrorIO)
@@ -559,8 +519,8 @@
          end if
       end do
 
- 1010 format('File ',A8,/,' was not found!',/)
- 1011 format('File ',A8,/,' was found!  Opening & Processing file.',/)
+ 1010 format('File ',A,/,' was not found!',/)
+ 1011 format('File ',A,/,' was found!  Opening & Processing file.',/)
       return
 !------------------------------------------------------------------------
       end subroutine OpenPrepHydro
