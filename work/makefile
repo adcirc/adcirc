@@ -400,7 +400,7 @@ GL2LOC_MSRC = gl2loc_mapping.F90
 TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90 
 ITTIDE_MSRC = internaltide.F90
 # cms 101926: Precipitation and hydrology source terms
-RAIN_MSRC = rain.F90 owi_rain.F
+RAIN_MSRC = owi_rain.F rain.F90
 HYDR_MSRC = hydrology.F90
 
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
@@ -448,13 +448,14 @@ ITTIDE_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(ITTIDE_MSRC) )
 TIDE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(TIDE_MSRC) )
 NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 # cms 101926: Precipitaion and hydrology source terms
-RAIN_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(RAIN_MSRC) )
+RAIN_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(RAIN_MSRC) )
+RAIN_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(RAIN_MOBJ) )
 HYDR_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(HYDR_MSRC) )
 
 ############################# Source & Object Files ######################
 
 METIS_SRC  =  metis.F
-PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
+PREP_SRC   =  adcprep.F decomp.F prep_weir.F kdtreetools.F90 hydroprep.F90 rainprep.F90 read_global.F prep.F interp.F 
 ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
 P15_SRC    =  p15.F
@@ -759,15 +760,17 @@ $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)bound
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o
 $(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o $(O_DIR)terminate.o
 $(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o $(O_DIR)global.o
+$(O_DIR)prep_weir.o   :  prep_weir.F $(O_DIR)pre_global.o $(O_DIR)kdtree2.o $(LOG_MOBJ)
 $(O_DIR)kdtreetools.o :  kdtreetools.F90 $(O_DIR)kdtree2.o $(O_DIR)pre_global.o
 $(O_DIR)rainprep.o    :  rainprep.F90
 $(O_DIR)hydroprep.o   :  hydroprep.F90 $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)constants.o $(O_DIR)pre_global.o $(O_DIR)kdtreetools.o
+$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)prep_weir.o $(O_DIR)rainprep.o $(O_DIR)kdtreetools.o $(O_DIR)hydroprep.o
 
 #  adcprep
 
-$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ) $(SUBP_MOBJ)
+$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ) $(SUBP_MOBJ) $(O_DIR)kdtreetools.o $(O_DIR)rainprep.o $(O_DIR)hydroprep.o $(O_DIR)read_global.o
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
-$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)rainprep.o $(O_DIR)kdtreetools.o $(O_DIR)hydroprep.o
+#$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)rainprep.o $(O_DIR)kdtreetools.o $(O_DIR)hydroprep.o
 ifeq ($(NETCDF),enable)
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(NC_MOBJ) $(HARM_MOBJ) $(NA_MOBJ)
 else
@@ -878,8 +881,8 @@ $(O_DIR)quadrature.o : quadrature.F90
 # WJP
 $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 # CMS
-$(O_DIR)rain.o        : rain.F90 $(MESH_MOBJ) $(RAIN_MOBJ)
 $(O_DIR)owi_rain.o    : owi_rain.F
+$(O_DIR)rain.o        : rain.F90 $(MESH_MOBJ) $(RAIN_MOBJ)
 $(O_DIR)hydrology.o   : hydrology.F90 $(MESH_MOBJ) $(KDTREE_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC)
