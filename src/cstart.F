@@ -87,7 +87,7 @@
      &    initInundationOutput
       use time_varying_weir_boundary,only : weir_setup
       use gwce, only : etime1, etime2, etiminc
-#ifdef adcnetcdf
+#ifdef ADCNETCDF
       use couple2bc3d, only: initial_bc3d_netcdf
 #endif
       implicit none
@@ -371,7 +371,7 @@
 
 
 
-#ifdef adcnetcdf
+#ifdef ADCNETCDF
       ! Coupling to 3d Baroclinic Mode
       if (c2ddi.and.cbaroclinic.and.abs(iden).ge.5) then
          call initial_bc3d_netcdf(statim*86400.d0)
@@ -1260,7 +1260,7 @@ c...
 
       ! jlw: Adding subgrid lookup table read in
       if(level0.eqv..true.)then
-#ifdef adcnetcdf
+#ifdef ADCNETCDF
          ! cms 11/20/25: These are already initialized in call
          ! to initializeWettingAndDrying() at beginning of subroutine.
          ! Set all nodes and elements to wet by default.
