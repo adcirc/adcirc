@@ -508,7 +508,7 @@ Casey 110518: Enforce a lower limit on the Manning's n seen by SWAN.
          IF(N.LT.0.02D0) N = 0.02D0
 
          Z0 = ( H ) * EXP( -1.D0 * ( 1.D0 + K * H**(1.D0/6.D0)
-     &      / ( N * SQRT(G) ) ) )
+     &      / ( N * SQRT(G) ) ) ) * 30.0d0
 
 Casey 091216: If we get a junk number, then use the default value.
          IF(Z0.LE.0.D0)THEN
