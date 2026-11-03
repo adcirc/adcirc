@@ -386,7 +386,7 @@ WRIT_MSRC  =  write_output.F
 WRITER_MSRC = writer.F 
 NWS08_MSRC = nws08.F90
 #Casey 090302: Add file for coupling to unstructured SWAN.
-COUP_MSRC  =  couple2swan.F
+COUP_MSRC  =  couple2swan.F90
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
@@ -430,7 +430,7 @@ SG_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(SG_MSRC)  )
 NC_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(NC_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  )
 #Casey 090302: Add rules for coupling to unstructured SWAN.
-COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
+COUP_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(COUP_MSRC)  )
 # tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
 KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 ## DW
@@ -834,7 +834,7 @@ endif
 $(O_DIR)netcdfio.o    :  netcdfio.F90  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
 
 #Casey 090302: Added the next line.
-$(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
+$(O_DIR)couple2swan.o :  couple2swan.F90 $(O_DIR)write_output.o
 # jgf51.21.22: modularized mesh and boundaries
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(LIBADC) $(PARALLEL_ADCIRC) padcswan))
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)messenger.o $(O_DIR)terminate.o $(O_DIR)hashtable.o $(O_DIR)io.o

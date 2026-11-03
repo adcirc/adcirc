@@ -11,7 +11,7 @@
 src/subgridLookup.F @jlwoodr
 
 # SWAN Coupling
-src/couple2swan.F @caseydietrich
+src/couple2swan.F90 @caseydietrich
 
 # Vertical Element Walls
 src/vew1d.F @shinbunya
