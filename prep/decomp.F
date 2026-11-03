@@ -53,11 +53,18 @@ C
       INTEGER I1,DISC,BBN,IBP,NCOUNT
       INTEGER INDX,INDX2, KK
       INTEGER,ALLOCATABLE :: ITVECT(:)
+      LOGICAL(KIND=1),ALLOCATABLE :: ONPE(:)   ! node is on this subdomain
+      LOGICAL(KIND=1),ALLOCATABLE :: ISPAIR(:) ! node is on one of its weir pairs
       CHARACTER PE*6
       CHARACTER(6), PARAMETER :: STRINGGLOBAL = "GLOBAL"
 C
       VTMAX = 24*MNP
       ALLOCATE ( ITVECT(VTMAX) )
+C     ONPE and ISPAIR are all false between subdomains: each subdomain
+C     clears exactly the entries it set, from the same list
+      ALLOCATE ( ONPE(MNP), ISPAIR(MNP) )
+      ONPE(:) = .FALSE.
+      ISPAIR(:) = .FALSE.
 
 C   STEP 1:
 C-- Use Partition of nodes to compute the number of Resident Nodes
@@ -159,59 +166,24 @@ C        then make it and its dual a local Weir-node pair
 
       IF (NWEIR.GT.0) THEN
         DO I=1, NPROC
-           ITOT = 0
-!
-! Seizo 2008.07.14
-        DO J = 1, NWEIR
-           INDX = WEIR(J)
-           INDX2= WEIRD(J)
+C          Mark the subdomain's nodes, then keep each pair with a marked
+C          node, in the order of the global list
            DO K = 1, NNODP(I)
-              N1 = IMAP_NOD_LG(K,I)
-              IF( (N1 == INDX) .or. (N1 == INDX2) ) THEN
-                  ITOT = ITOT + 1
-                  ITVECT(ITOT) = J
-                  EXIT
+              ONPE(IMAP_NOD_LG(K,I)) = .TRUE.
+           ENDDO
+           ITOT = 0
+           DO J = 1, NWEIR
+              IF (ONPE(WEIR(J)).OR.ONPE(WEIRD(J))) THEN
+                 ITOT = ITOT + 1
+                 WEIRP_LG(ITOT,I)  = WEIR(J)
+                 WEIRDP_LG(ITOT,I) = WEIRD(J)
               ENDIF
            ENDDO
-        ENDDO
-!
-!Seizo 2008.07.14          DO J = 1,NNODP(I)
-!Seizo 2008.07.14             CALL SEARCH(WEIR,NWEIR,IMAP_NOD_LG(J,I),INDX)
-!Seizo 2008.07.14             IF (INDX.NE.0) THEN
-!Seizo 2008.07.14               ITOT = ITOT+1
-!Seizo 2008.07.14               ITVECT(ITOT) = INDX
-!Seizo 2008.07.14             ENDIF
-!Seizo 2008.07.14             CALL SEARCH(WEIRD,NWEIR,IMAP_NOD_LG(J,I),INDX2)
-!Seizo 2008.07.14             IF (INDX2.NE.0) THEN
-!Seizo 2008.07.14               ITOT = ITOT+1
-!Seizo 2008.07.14               ITVECT(ITOT) = INDX2
-!Seizo 2008.07.14             ENDIF
-!Seizo 2008.07.14          ENDDO
-           NWEIRP(I) = 0
-           ITEMP = ITOT
-           IF (ITOT.GT.VTMAX) THEN
-               WRITE(*,'(A)') 'Error during step4 decomp'
-               CALL EXIT(1)
-           ENDIF
-           IF (ITEMP.GT.1) THEN
-             CALL SORT(ITEMP,ITVECT)
-             ITOT=1
-             INDX = ITVECT(1)
-             WEIRP_LG(ITOT,I)  = WEIR(INDX)
-             WEIRDP_LG(ITOT,I) = WEIRD(INDX)
-             DO J = 2,ITEMP
-                IF (ITVECT(J).NE.INDX) THEN
-                  INDX = ITVECT(J)
-                  ITOT = ITOT+1
-                  WEIRP_LG(ITOT,I)  = WEIR(INDX)
-                  WEIRDP_LG(ITOT,I) = WEIRD(INDX)
-                ENDIF
-             ENDDO
-             NWEIRP(I) = ITOT
-           ENDIF
-c       DO J = 1, NWEIRP(I)
-c          print *, J, WEIRP_LG(J,I),WEIRDP_LG(J,I)
-c       ENDDO
+           NWEIRP(I) = ITOT
+           ! clear from the list that set them
+           DO K = 1, NNODP(I)
+              ONPE(IMAP_NOD_LG(K,I)) = .FALSE.
+           ENDDO
 c       print *, "decomp: Number of WEIR node-pairs on PE",I-1,
 c    &           " = ",NWEIRP(I)
         ENDDO
@@ -234,20 +206,22 @@ C         has the dual Weir node of a resident or ghost node
          DO I = 1,NPROC
             NELP(I) = 0
 c           print *, "PE = ",I-1
+            ! mark the nodes of this subdomain's weir pairs
+            DO J = 1, NWEIRP(I)
+               ISPAIR(WEIRP_LG(J,I)) = .TRUE.
+               ISPAIR(WEIRDP_LG(J,I)) = .TRUE.
+            ENDDO
             DO K = 1,NELG
                N1 = NNEG(1,K)
                N2 = NNEG(2,K)
                N3 = NNEG(3,K)
                PE1 = IMAP_NOD_GL(1,N1)   ! Is any vertex a resident node?
                PE2 = IMAP_NOD_GL(1,N2)
-               PE3 = IMAP_NOD_GL(1,N3)   ! belong to a Weir-node pair ?
-               CALL SEARCH3(WEIRP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX)
-               CALL SEARCH3(WEIRDP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX2)
-               ! if any vertex is a resident vertex, or is a weir node
-               ! paired to a resident vertex
+               PE3 = IMAP_NOD_GL(1,N3)
+               ! if any vertex is a resident vertex, or is a node of
+               ! one of this subdomain's weir pairs
                IF ((PE1.EQ.I).OR.(PE2.EQ.I).OR.(PE3.EQ.I)
-     &             .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
-c                 print *, K, PE1,PE2,PE3,INDX,INDX2
+     &             .OR.ISPAIR(N1).OR.ISPAIR(N2).OR.ISPAIR(N3)) THEN
                   ! increment the number of elements on this subdomain
                   NELP(I) = NELP(I) + 1
                   ! add the fulldomain element number to the mapping;
@@ -287,6 +261,11 @@ c                 print *, K, PE1,PE2,PE3,INDX,INDX2
 !c END DW
 !c 
                ENDIF
+            ENDDO
+            ! clear from the list that set them
+            DO J = 1, NWEIRP(I)
+               ISPAIR(WEIRP_LG(J,I)) = .FALSE.
+               ISPAIR(WEIRDP_LG(J,I)) = .FALSE.
             ENDDO
          IF (NELP(I).GT.MNEP) THEN
              WRITE(*,'(A)') "ERROR: NELP(I) > MNEP"
@@ -718,7 +697,6 @@ C
       INTEGER I,J,K,M,ITEMP
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3,PE1,PE2,PE3
-      INTEGER INDX,INDX2
       INTEGER RESNODE,NODES,NELEM,ONELEM,NLWEIR
 C
       INTEGER,ALLOCATABLE :: ITVECT(:)
@@ -727,6 +705,8 @@ C
       INTEGER,ALLOCATABLE :: NODE_GL2(:)
       INTEGER,ALLOCATABLE :: ELEM_LG(:)
       INTEGER,ALLOCATABLE :: LWEIR_LG(:),LWEIRD_LG(:)
+      LOGICAL(KIND=1),ALLOCATABLE :: ONPE(:)   ! node is on this subdomain
+      LOGICAL(KIND=1),ALLOCATABLE :: ISPAIR(:) ! node is on one of its weir pairs
 C
       VTMAX = 24*MNP
       ALLOCATE ( ITVECT(VTMAX) )
@@ -735,6 +715,11 @@ C
       ALLOCATE ( NODE_GL2(MNP) )
       ALLOCATE ( LWEIR_LG(MNP),LWEIRD_LG(MNP) )
       ALLOCATE ( ELEM_LG(MNE) )
+C     ONPE and ISPAIR are all false between subdomains: each subdomain
+C     clears exactly the entries it set, from the same list
+      ALLOCATE ( ONPE(MNP), ISPAIR(MNP) )
+      ONPE(:) = .FALSE.
+      ISPAIR(:) = .FALSE.
 C
       MNPP = 0
       MNEP = 0
@@ -833,55 +818,24 @@ C  Local-to-Global Weir Node maps
 C  Rule: if a global Weir node is assigned ( as resident or ghost node )
 C        then make it and its dual a local Weir-node pair
       IF (NWEIR.GT.0) THEN
-        ITOT = 0
-! Seizo 2008.07.14
-        DO J = 1, NWEIR
-           INDX = WEIR(J)
-           INDX2= WEIRD(J)
-           DO K = 1, NODES
-              N1 = NODE_LG(K)
-              IF( (N1 == INDX) .or. (N1 == INDX2) ) THEN
-                  ITOT = ITOT + 1
-                  ITVECT(ITOT) = J
-                  EXIT
-              ENDIF
-           ENDDO
-        ENDDO
-
-!Seizo 2008.07.14       DO J = 1,NODES
-!Seizo 2008.07.14          CALL SEARCH(WEIR,NWEIR,NODE_LG(J),INDX)
-!Seizo 2008.07.14          IF (INDX.NE.0) THEN
-!Seizo 2008.07.14            ITOT = ITOT+1
-!Seizo 2008.07.14            ITVECT(ITOT) = INDX
-!Seizo 2008.07.14          ENDIF
-!Seizo 2008.07.14          CALL SEARCH(WEIRD,NWEIR,NODE_LG(J),INDX2)
-!Seizo 2008.07.14          IF (INDX2.NE.0) THEN
-!Seizo 2008.07.14            ITOT = ITOT+1
-!Seizo 2008.07.14            ITVECT(ITOT) = INDX2
-!Seizo 2008.07.14          ENDIF
-!Seizo 2008.07.14       ENDDO
-        NLWEIR  = 0
-        ITEMP = ITOT
-        IF (ITOT.GT.VTMAX) THEN
-            WRITE(*,'(A)') "Error during step 4 decomp"
-            CALL EXIT(1)  
-        ENDIF
-        IF (ITEMP.GT.1) THEN
-          CALL SORT(ITEMP,ITVECT)
-          ITOT=1
-          INDX = ITVECT(1)
-          LWEIR_LG(ITOT)  = WEIR(INDX)
-          LWEIRD_LG(ITOT) = WEIRD(INDX)
-          DO J = 2,ITEMP
-             IF (ITVECT(J).NE.INDX) THEN
-               INDX = ITVECT(J)
-               ITOT = ITOT+1
-               LWEIR_LG(ITOT)  = WEIR(INDX)
-               LWEIRD_LG(ITOT) = WEIRD(INDX)
-             ENDIF
-          ENDDO
-          NLWEIR = ITOT
-        ENDIF
+C        Mark the subdomain's nodes, then keep each pair with a marked
+C        node, in the order of the global list
+         DO K = 1, NODES
+            ONPE(NODE_LG(K)) = .TRUE.
+         ENDDO
+         ITOT = 0
+         DO J = 1, NWEIR
+            IF (ONPE(WEIR(J)).OR.ONPE(WEIRD(J))) THEN
+               ITOT = ITOT + 1
+               LWEIR_LG(ITOT)  = WEIR(J)
+               LWEIRD_LG(ITOT) = WEIRD(J)
+            ENDIF
+         ENDDO
+         NLWEIR = ITOT
+         ! clear from the list that set them
+         DO K = 1, NODES
+            ONPE(NODE_LG(K)) = .FALSE.
+         ENDDO
       ELSE
           NLWEIR = 0
       ENDIF
@@ -902,20 +856,28 @@ C         has the dual Weir node of a resident or ghost node
       ONELEM = NELEM     ! Save NELEM for PEs with no WEIR-pairs
       NELEM  = 0
       IF (NLWEIR.GT.0) THEN
+        ! mark the nodes of this subdomain's weir pairs
+        DO J = 1, NLWEIR
+           ISPAIR(LWEIR_LG(J)) = .TRUE.
+           ISPAIR(LWEIRD_LG(J)) = .TRUE.
+        ENDDO
         DO K = 1,NELG
            N1 = NNEG(1,K)
            N2 = NNEG(2,K)
            N3 = NNEG(3,K)
            PE1 = NODE_GL1(N1)   ! Is any vertex a resident node?
            PE2 = NODE_GL1(N2)
-           PE3 = NODE_GL1(N3)   ! belong to a Weir-node pair ?
-           CALL SEARCH3(LWEIR_LG(1),NLWEIR,N1,N2,N3,INDX)
-           CALL SEARCH3(LWEIRD_LG(1),NLWEIR,N1,N2,N3,INDX2)
+           PE3 = NODE_GL1(N3)
            IF ((PE1.EQ.IPROC).OR.(PE2.EQ.IPROC).OR.(PE3.EQ.IPROC)
-     &          .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
+     &          .OR.ISPAIR(N1).OR.ISPAIR(N2).OR.ISPAIR(N3)) THEN
              NELEM = NELEM + 1
              ELEM_LG(NELEM) = K
            ENDIF
+        ENDDO
+        ! clear from the list that set them
+        DO J = 1, NLWEIR
+           ISPAIR(LWEIR_LG(J)) = .FALSE.
+           ISPAIR(LWEIRD_LG(J)) = .FALSE.
         ENDDO
 C
       ENDIF
@@ -956,7 +918,7 @@ c     print *, "Number of elements on PE",IPROC-1," = ",NELEM
 1000  CONTINUE
 C
       DEALLOCATE ( ITVECT,NODE_LG,NODE_GL1,NODE_GL2,ELEM_LG,
-     &             LWEIR_LG,LWEIRD_LG )
+     &             LWEIR_LG,LWEIRD_LG,ONPE,ISPAIR )
 C
       print *, " Setting MNPP = ",MNPP
       print *, " Setting MNEP = ",MNEP
@@ -1048,39 +1010,3 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 
-C----------------------------------------------------------------------
-C----------------------------------------------------------------------
-      SUBROUTINE SEARCH3(MAP,LENG,N1,N2,N3,INDX)
-      INTEGER MAP(*),LENG,N1,N2,N3,INDX,IP
-cvjp  rewritten 5/3/99
-      INDX = 0
-      DO I=1,LENG
-         IP = MAP(I)
-         IF (IP.EQ.N1.OR.IP.EQ.N2.OR.IP.EQ.N3) THEN
-           INDX = I
-           EXIT
-         ENDIF
-      ENDDO
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE SEARCH3
-C----------------------------------------------------------------------
-
-
-C----------------------------------------------------------------------
-C----------------------------------------------------------------------
-      SUBROUTINE SEARCH(MAP,N,TARGET,INDX)
-      INTEGER MAP(*),N,TARGET,INDX,I
-C
-      INDX = 0
-      IF (N.EQ.0) RETURN
-      DO I=1,N
-         IF (MAP(I).EQ.TARGET) THEN
-            INDX = I
-            EXIT
-         ENDIF
-      ENDDO
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE SEARCH
-C----------------------------------------------------------------------
