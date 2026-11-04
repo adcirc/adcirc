@@ -3,7 +3,7 @@
 # ADCIRC is compiled in the devel base image and shipped in the runtime base
 # image, which has the same libraries but no compilers. Both come from
 # https://github.com/adcirc/adcirc-ci-docker and must be the same version.
-ARG BASE_VERSION=2026.1.0
+ARG BASE_VERSION=2026.2.0
 ARG BUILD_IMAGE=adcircorg/adcirc-base:${BASE_VERSION}-devel
 ARG RUNTIME_IMAGE=adcircorg/adcirc-base:${BASE_VERSION}-runtime
 
