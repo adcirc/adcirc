@@ -24,7 +24,7 @@ parameters:
   # published for amd64 (Intel oneAPI) and arm64 (GCC).
   ci-image:
     type: string
-    default: "adcircorg/adcirc-ci:2026.1.0"
+    default: "adcircorg/adcirc-ci:2026.2.0"
 
 # #############################
 # Executor Definitions
