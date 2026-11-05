@@ -894,7 +894,7 @@
             IF (IOUTES .GT. ITEST) ITEST = IOUTES
 !ADC
 !ADC!           --- perform output of SWAN quantities                         41.20
-!ADC            CALL SwanOutput ( ITIME, IT )
+!ADC            CALL SwanOutput ()
 !ADC!           --- write the SWAN hot-start file, if necessary               41.20
 !ADC            IF ( WriteSwanHotStart ) THEN
 !ADC               CALL BACKUP ( AC2,SPCSIG,SPCDIR,KGRPNT,XCGRID,YCGRID )
