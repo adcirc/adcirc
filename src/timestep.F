@@ -157,7 +157,7 @@ Casey 090302: We need these values from other places.
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
-      USE subgrid, ONLY: level0, getVertLookup
+      USE subgrid, ONLY: level0, getVertLookup, gridDepthVertETA2
 
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
@@ -231,7 +231,12 @@ C.......
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
-           H2(I) = DP(I)+IFNLFA*ETA2(I)
+!JLW: add subgrid here to eliminate IF statements in gwce.F and momentum.F
+           IF(level0)THEN
+              H2(I) = gridDepthVertETA2(I)
+           ELSE
+              H2(I) = DP(I)+IFNLFA*ETA2(I)
+           ENDIF
            H1(I) = H2(I)
         ENDDO
       ENDIF
@@ -1099,7 +1104,13 @@ C...  Compute new water surface elevation
 !.....DMW202401 Add update for flow depth at current timestep
 !......We do this after wetting/drying since bathy could change with subgrid barriers.
       DO I = 1,NP
-         H2(I) = DP(I)+IFNLFA*ETA2(I)
+!JLW: add subgrid capability here to remove IF statements and look up 
+! from GWCE and MOMENTUM
+         IF(level0)THEN
+            H2(I) = gridDepthVertETA2(I) 
+         ELSE
+            H2(I) = DP(I)+IFNLFA*ETA2(I)
+         ENDIF
       ENDDO
 C...   
 C---------------2DDI Momentum Equation Solution-------------------------
