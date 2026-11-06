@@ -177,7 +177,8 @@ C*******************************************************************************
       USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, ALPHAL, CBaroclinic, C3D, IDEN,
      &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
      &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
-     &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM,SMAG_UPPER_LIM,
+     &  IFNLCT, IFNLTG, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM,
+     &  SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC,
@@ -247,6 +248,7 @@ C... SB
       REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
       REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
       REAL(8) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
+      REAL(8) TGS1, TGS2, TGS3, TGDU, TGDV, TGC
       REAL(8) U1N1, U1N2, U1N3, U1Avg
       REAL(8) U1AvgDU1DXA, U1AvgDV1DXA
       REAL(8) V1N1, V1N2, V1N3, V1Avg
@@ -674,6 +676,31 @@ C...  LATERAL VISCOUS TERMS
      &               + AreaIE*TANPHI(NM3)*(LSXXN3-LSYYN3))/H1N3
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+
+C...  TAYLOR-GALERKIN STREAMLINE CORRECTION OF THE ADVECTIVE TERMS (NOLICA=2)
+C...  Stepping the advection forward from level n leaves a per-step error
+C...  of -(DT**2/2)(Ubar.grad)**2 u, a negative diffusion along the
+C...  streamlines that grows with u**2 DT. This block adds the second-order
+C...  Taylor-Galerkin (Lax-Wendroff) term back in its weak form,
+C...  -(DT**2/2)*integral((Ubar.grad phi_i)(Ubar.grad u)) dA, with the
+C...  element gradients the advection uses. TGS_i = Ubar.(FDX_i,FDY_i) is
+C...  2A Ubar.grad phi_i and TGDU = A (Ubar.grad) u, so the weak form is
+C...  -DT**2*TGS_i*TGDU/(4A). Times 3, the lumping weight the TotalArea
+C...  division assumes, the load is -0.75*DT**2*TGS_i*TGDU/A.
+         IF ((IFNLTG.EQ.1).AND.(IFNLCT.EQ.1)) THEN
+            TGS1=U1Avg*FDX1+V1Avg*FDY1
+            TGS2=U1Avg*FDX2+V1Avg*FDY2
+            TGS3=U1Avg*FDX3+V1Avg*FDY3
+            TGDU=U1AvgDU1DXA+V1AvgDU1DYA
+            TGDV=U1AvgDV1DXA+V1AvgDV1DYA
+            TGC=NCEle*DT*0.75d0*DT/AreaIE
+            TEMP_LV_A1=TEMP_LV_A1-TGC*TGS1*TGDU
+            TEMP_LV_A2=TEMP_LV_A2-TGC*TGS2*TGDU
+            TEMP_LV_A3=TEMP_LV_A3-TGC*TGS3*TGDU
+            TEMP_LV_B1=TEMP_LV_B1-TGC*TGS1*TGDV
+            TEMP_LV_B2=TEMP_LV_B2-TGC*TGS2*TGDV
+            TEMP_LV_B3=TEMP_LV_B3-TGC*TGS3*TGDV
+         ENDIF
 
 C... SB 2022-09-14
 C        For condensed nodes

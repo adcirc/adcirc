@@ -120,7 +120,8 @@ C******************************************************************************
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2,
      &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
      &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, ncchange,
-     &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
+     &   ifnlcate, ifnlct, ifnlcte, ifnltg, ifnlfa, ifwind, ihot, im,
+     &   iths,
      &   nolica, nolicat, nolifa, nstae, nt,
      &   version_number, np_global, rnp_global,
      &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
@@ -376,6 +377,11 @@ C...Set flags for nonlinear terms
          IFNLCT=0
       ELSE
          IFNLCT=1
+      ENDIF
+      IF(NOLICA.EQ.2) THEN
+         IFNLTG=1
+      ELSE
+         IFNLTG=0
       ENDIF
       IF(NOLICAT.EQ.0) THEN
          IFNLCAT=0
