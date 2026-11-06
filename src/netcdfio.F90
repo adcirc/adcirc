@@ -329,6 +329,9 @@ module NETCDFIO
       type(nodalData) :: rs1, rs2
       type(nodalData) :: swan_rs1, swan_rs2
 
+!     Inline self attraction and loading      
+      type(nodalData) :: zetasaltm0, zetasaltm1, zetasaltm2
+
 !     3D simulation state
       type(nodalData) :: duu
       type(nodalData) :: duv
@@ -5238,20 +5241,27 @@ contains
 !     jgf49.35 Sets up netCDF variables and writes mesh data into netcdf
 !     hotstart file.
 !-----------------------------------------------------------------------
-   subroutine initNetCDFHotstart(lun, Elev1Descript, ncerror)
-      use GLOBAL, only: OutputDataDescript_t, IM, IMHS, NE_G, NP_G
+   subroutine initNetCDFHotstart(lun, Elev1Descript, ncerror, includeinlinesal )
+      use GLOBAL, only: OutputDataDescript_t, IM, IMHS, NE_G, NP_G, CInlineSAL
       use MESH, only: ICS
       implicit none
 
       integer, intent(in) :: lun
       type(OutputDataDescript_t), intent(inout) :: Elev1Descript
       logical, intent(out) :: ncerror
+      logical, intent(in), optional:: includeinlinesal
 
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
+      logical :: InlineSALfields = .false. 
 
+  
       LOG_SCOPE_TRACED("initNetCDFHotstart", NETCDFIO_TRACING)
       ncerror = .false.
+
+      if ( present(includeinlinesal) ) then
+         InLineSALfields = includeinlinesal ;
+      endif
 
 !     Point to the hotstart file we want to work on.
       if (lun == 67) then
@@ -5391,6 +5401,7 @@ contains
       iret = nf90_put_att(hs%ncid, hs%htot2%nodal_data_id, &
                           '_FillValue', doubleval)
       call check_err(iret)
+
 
 !     U V E L
       hs%vel%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
@@ -5671,6 +5682,7 @@ contains
                           //' file.')
       call check_err(iret)
 
+
       if ((IM == 10) .or. (IMHS == 10)) then
          iret = nf90_def_var(hs%ncid, 'nscouc', NF90_INT, varid=tempid)
          call check_err(iret)
@@ -5744,6 +5756,103 @@ contains
       iret = nf90_put_att(hs%ncid, tempid, 'standard_name', &
                           'time_step_counter_of_atm_press_and_wind_vel_at_model_nodes')
       call check_err(iret)
+
+! BEG DW:  A time stamps of inline SAL data in HS file
+      if ( CInlineSAL .or. InlineSALFields ) then
+!      type(nodalData) :: zetasaltm0, zetasaltm1, zetasaltm2
+!     zetasaltm0 1 : total water depth at t = tm
+        hs%zetasaltm0%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+        hs%zetasaltm0%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+        call define_netcdf_hotstart_variable(hs, 'zetasaltm0', hs%zetasaltm0%nodal_data_dims, &
+                NF90_DOUBLE, hs%zetasaltm0%nodal_data_id)
+  
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                            'long_name', 'inline self attraction and loading at t = tm') 
+        call check_err(iret)
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                            'standard_name', &
+                            'SAL_at_tm0')
+        call check_err(iret)
+        call putUnitsAttribute(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                               'm', 'ft')
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                            '_FillValue', doubleval)
+        call check_err(iret)
+  
+  !     zetasaltm1 : total water depth at t = tm - salinc
+        hs%zetasaltm1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+        hs%zetasaltm1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+        call define_netcdf_hotstart_variable(hs, 'zetasaltm1', hs%zetasaltm1%nodal_data_dims, &
+                NF90_DOUBLE, hs%zetasaltm1%nodal_data_id)
+  
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                            'long_name', 'inline self attraction and laoding at t = tm - salinc')
+        call check_err(iret)
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                            'standard_name', &
+                            'SAL_at_tm1')
+        call check_err(iret)
+        call putUnitsAttribute(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                               'm', 'ft')
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                            '_FillValue', doubleval)
+        call check_err(iret)
+  
+
+  !     zetasaltm2 : total water depth at t = tm - 2*salinc
+        hs%zetasaltm2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+        hs%zetasaltm2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+        call define_netcdf_hotstart_variable(hs, 'zetasaltm2', hs%zetasaltm2%nodal_data_dims, &
+                NF90_DOUBLE, hs%zetasaltm2%nodal_data_id)
+  
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm2%nodal_data_id, &
+                            'long_name', 'inline self attraction and laoding at t = tm - 2*salinc')
+        call check_err(iret)
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm2%nodal_data_id, &
+                            'standard_name', &
+                            'SAL_at_tm2')
+        call check_err(iret)
+        call putUnitsAttribute(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                               'm', 'ft')
+        iret = nf90_put_att(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                            '_FillValue', doubleval)
+        call check_err(iret)
+
+        !
+        iret = nf90_def_var( hs%ncid, 'saltimem0', NF90_DOUBLE, varid=tempid ) 
+        call check_err( iret ) ;
+
+        iret = nf90_put_att(hs%ncid, tempid, 'long_name', &
+                            'time of inline SAL variable etasaltm0' )
+        call check_err(iret)
+        iret = nf90_put_att(hs%ncid, tempid, 'standard_name', &
+                            'time_stamp_of_SAL_at_tm0')
+        call check_err(iret)
+
+        !
+        iret = nf90_def_var( hs%ncid, 'saltimem1', NF90_DOUBLE, varid=tempid ) 
+        call check_err( iret ) ; 
+
+        iret = nf90_put_att(hs%ncid, tempid, 'long_name', &
+                            'time of inline SAL variable etasaltm1' )
+        call check_err(iret)
+
+        iret = nf90_put_att(hs%ncid, tempid, 'standard_name', &
+                            'time_stamp_of_SAL_at_tm1')
+        call check_err(iret)
+
+        !
+        iret = nf90_def_var( hs%ncid, 'saltimem2', NF90_DOUBLE, varid=tempid ) ; 
+        call check_err( iret ) ; 
+        iret = nf90_put_att(hs%ncid, tempid, 'long_name', &
+                            'time of inline SAL variable etasaltm2' )
+        call check_err(iret)
+
+        iret = nf90_put_att(hs%ncid, tempid, 'standard_name', &
+                            'time_stamp_of_SAL_at_tm2')
+        call check_err(iret)
+      endif
+! END DW
 
 !     define time attributes
       call defineTimeAttributes(hs%ncid, hs%myTime)
@@ -6804,11 +6913,15 @@ contains
                                   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript, &
                                   NodeCodeDescript, NOFFDescript, H1_HS_Descript, &
                                   H2_HS_Descript, RS1Descript, RS2Descript, SWANRS1Descript, &
-                                  SWANRS2Descript, timesec, it)
+                                  SWANRS2Descript, timesec, it, &
+                                  ZetaSALTM0_HS_Descript, ZetaSALTM1_HS_Descript, &
+                                  ZetaSALTM2_HS_Descript, zetasalhstime )
+
       use SIZES, only: globaldir, mnproc
       use GLOBAL, only: OutputDataDescript_t, im, nscoue, imhs, &
                         nscouv, nscouc, nscoum, &
-                        nscouge, nscougv, nscougc, nscougw, nrs
+                        nscouge, nscougv, nscougc, nscougw, nrs, &
+                        CInlineSAL
       implicit none
 
       integer, intent(in) :: lun
@@ -6828,6 +6941,12 @@ contains
 
       real(8), intent(in) :: timesec
       integer, intent(in) :: it ! current ADCIRC time step
+
+      ! Inlines SAL
+      type(OutputDataDescript_t), optional, intent(in) :: ZetaSALTM0_HS_Descript
+      type(OutputDataDescript_t), optional, intent(in) :: ZetaSALTM1_HS_Descript
+      type(OutputDataDescript_t), optional, intent(in) :: ZetaSALTM2_HS_Descript
+      REAL (8), optional:: zetasalhstime(3)
 
       integer :: counti(1), starti(1)
       integer :: kount(2), start(2) ! for nodally based data
@@ -6903,6 +7022,18 @@ contains
       call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "h2", hs%htot2%nodal_data_id)
       call check_err(iret)
+
+      if ( CInlineSAL ) then
+        iret = nf90_inq_varid(hs%ncid, "zetasaltm0", hs%zetasaltm0%nodal_data_id)
+        call check_err(iret)
+
+        iret = nf90_inq_varid(hs%ncid, "zetasaltm1", hs%zetasaltm1%nodal_data_id)
+        call check_err(iret)            
+
+        iret = nf90_inq_varid(hs%ncid, "zetasaltm2", hs%zetasaltm2%nodal_data_id)
+        call check_err(iret)     
+      endif
+
       if (im == 10 .or. imhs == 10) then
          iret = nf90_inq_varid(hs%ncid, "ch1", hs%ch1%nodal_data_id)
          call check_err(iret)
@@ -6931,6 +7062,7 @@ contains
       end if
 !     Write the nodal data to the netcdf file
       if (MNPROC == 1) then
+         ! serial code 
          iret = nf90_put_var(hs%ncid, hs%zeta1%nodal_data_id, &
                              Elev1Descript%array, start, kount)
          call check_err(iret)
@@ -6998,7 +7130,33 @@ contains
             call check_err(iret)
          end if
 
-      else
+         if ( CInlineSAL ) then
+            iret = nf90_put_var(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                             zetasaltm0_hs_Descript%array, start, kount)
+            call check_err(iret)
+ 
+            iret = nf90_put_var(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                             zetasaltm1_hs_Descript%array, start, kount)
+            call check_err(iret)
+
+            iret = nf90_put_var(hs%ncid, hs%zetasaltm2%nodal_data_id, &
+                             zetasaltm2_hs_Descript%array, start, kount)
+            call check_err(iret)
+
+            iret = nf90_inq_varid(hs%ncid, "saltimem0", tempid)
+            call check_err(iret)
+            iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(1) )
+
+            iret = nf90_inq_varid(hs%ncid, "saltimem1", tempid)
+            call check_err(iret)
+            iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(2) )
+
+            iret = nf90_inq_varid(hs%ncid, "saltimem2", tempid)
+            call check_err(iret)
+            iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(3) )
+         endif        
+      else  
+         ! parallel 
          iret = nf90_put_var(hs%ncid, hs%zeta1%nodal_data_id, &
                              Elev1Descript%array_g, start, kount)
          call check_err(iret)
@@ -7068,6 +7226,32 @@ contains
             call check_err(iret)
          end if
 
+         ! Inline SAL !
+         if ( CInlineSAL ) then      
+            iret = nf90_put_var(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                             zetasaltm0_hs_Descript%array_g, start, kount)
+            call check_err(iret)
+ 
+            iret = nf90_put_var(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                             zetasaltm1_hs_Descript%array_g, start, kount)
+            call check_err(iret)
+
+            iret = nf90_put_var(hs%ncid, hs%zetasaltm2%nodal_data_id, &
+                             zetasaltm2_hs_Descript%array_g, start, kount)
+            call check_err(iret)
+
+            iret = nf90_inq_varid(hs%ncid, "saltimem0", tempid)
+            call check_err(iret)
+            iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(1) )
+
+            iret = nf90_inq_varid(hs%ncid, "saltimem1", tempid)
+            call check_err(iret)
+            iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(2) )
+
+            iret = nf90_inq_varid(hs%ncid, "saltimem2", tempid)
+            call check_err(iret)
+            iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(3) )
+         endif        
       end if
 
 !     Get each variable ID for the model parameters in the netcdf file
@@ -7909,7 +8093,11 @@ contains
                         UU2, VV2, NNODECODE, NOFF, &
                         IM, NP_G, NE_G, &
                         htot1 => H1, htot2 => H2, &
-                        nrs, rsnx1, rsnx2, rsny1, rsny2
+                        nrs, rsnx1, rsnx2, rsny1, rsny2, & 
+                        CInlineSAL, zetasaltm0, zetasaltm1, zetasaltm2, &
+                        zetasaltime
+                    
+                        
 #ifdef CSWAN
       use GLOBAL, only: swan_rsnx1, swan_rsnx2, swan_rsny1, swan_rsny2
 #endif
@@ -8031,6 +8219,18 @@ contains
       iret = nf90_inq_varid(hs%ncid, "h2", hs%htot2%nodal_data_id)
       call check_err(iret)
 
+
+      if ( CInlineSAL ) then
+        iret = nf90_inq_varid(hs%ncid, "zetasaltm0", hs%zetasaltm0%nodal_data_id)
+        call check_err(iret)
+
+        iret = nf90_inq_varid(hs%ncid, "zetasaltm1", hs%zetasaltm1%nodal_data_id)
+        call check_err(iret)
+
+        iret = nf90_inq_varid(hs%ncid, "zetasaltm2", hs%zetasaltm2%nodal_data_id)
+        call check_err(iret)
+      endif
+
       ! serial
       if (MNPROC == 1) then
 !        Elev1
@@ -8097,6 +8297,27 @@ contains
          call check_err(nf90_get_var(hs%ncid, hs%htot1%nodal_data_id, &
                                      htot1, start, kount))
 
+         if ( CInlineSAL ) then
+           ! hot start file containing inline SAL at computed time level
+           call check_err(nf90_get_var(hs%ncid, hs%zetasaltm0%nodal_data_id, &
+                                     zetasaltm0, start, kount))
+
+           call check_err(nf90_get_var(hs%ncid, hs%zetasaltm1%nodal_data_id, &
+                                     zetasaltm1, start, kount))
+
+           call check_err(nf90_get_var(hs%ncid, hs%zetasaltm2%nodal_data_id, &
+                                     zetasaltm2, start, kount))
+
+           call check_err( nf90_inq_varid(hs%ncid, "saltimem0", tempid) ) ; 
+           call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(1)) ) ; 
+          
+           call check_err( nf90_inq_varid(hs%ncid, "saltimem1", tempid) ) ; 
+           call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(2)) ) ;
+
+           call check_err( nf90_inq_varid(hs%ncid, "saltimem2", tempid) ) ; 
+           call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(3)) ) ; 
+         endif
+
 !        NOFF
          start(1) = 1
          kount(1) = hs%myMesh%num_elems
@@ -8104,12 +8325,14 @@ contains
                              noff, start, kount)
          call check_err(iret)
 
+
       else ! parallel
 
          ! Create the fulldomain node and element index lists for this subdomain
          call createFullDomainIndexLists()
 
          ! get fulldomain data and map the data to this subdomain
+         !  map node
          fullDomainIndexList => fullDomainNodeList
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes, &
                                        hs%zeta1%nodal_data_id, subdomain_reals=eta1)
@@ -8153,6 +8376,36 @@ contains
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes, &
                                        hs%htot1%nodal_data_id, subdomain_reals=htot1)
 
+
+         ! Inline SAL 
+         if ( CInlineSAL ) then      
+           ! zetasaltm0
+           ! print*, MyProc, hs%myMesh%num_nodes ; 
+
+           call mapFullDomainToSubdomain( hs%ncid, hs%myMesh%num_nodes, &
+                                       hs%zetasaltm0%nodal_data_id, subdomain_reals=zetasaltm0 )
+
+           ! zetasaltm1
+           call mapFullDomainToSubdomain( hs%ncid, hs%myMesh%num_nodes, &
+                                       hs%zetasaltm1%nodal_data_id, subdomain_reals=zetasaltm1 )
+
+           ! zetasaltm2
+           call mapFullDomainToSubdomain( hs%ncid, hs%myMesh%num_nodes, &
+                                       hs%zetasaltm2%nodal_data_id, subdomain_reals=zetasaltm2 )
+
+                               
+           call check_err( nf90_inq_varid(hs%ncid, "saltimem0", tempid) ) ; 
+           call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(1)) ) ; 
+          
+           call check_err( nf90_inq_varid(hs%ncid, "saltimem1", tempid) ) ; 
+           call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(2)) ) ;
+
+           call check_err( nf90_inq_varid(hs%ncid, "saltimem2", tempid) ) ; 
+           call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(3)) ) ; 
+         endif
+
+
+         ! map element
          fullDomainIndexList => fullDomainElementList
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_elems, &
                                        hs%noffnc%nodal_data_id, subdomain_ints=noff)
@@ -8591,7 +8844,8 @@ contains
 !     jgf50.60.03 Maps full domain data to subdomain.
 !-----------------------------------------------------------------------
    subroutine mapFullDomainToSubdomain(ncid, fd_array_size, &
-                                       data_id, subdomain_reals, subdomain_ints)
+                                       data_id, subdomain_reals, subdomain_ints )
+                         
       implicit none
       integer, intent(in) :: ncid ! file id to pull data from
       integer, intent(in) :: fd_array_size ! highest index in fulldomain array
@@ -8603,10 +8857,12 @@ contains
       integer, allocatable :: work_ints(:) ! holds fulldomain data
       integer :: iret ! success or failure of the netcdf call
 
+
       LOG_SCOPE_TRACED("mapFullDomainToSubDomain", NETCDFIO_TRACING)
 
       ! grab array of full domain data from netcdf file and pull out the
       ! data that is needed for this subdomain
+
       if (present(subdomain_reals)) then
          allocate (work_reals(fd_array_size))
          iret = nf90_get_var(ncid, data_id, work_reals)

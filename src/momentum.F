@@ -174,7 +174,8 @@ C*******************************************************************************
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
-     &  flgNodesMultipliedByTotalArea, ilump, H1, H2
+     &  flgNodesMultipliedByTotalArea, ilump, H1, H2, 
+     &  SAL2, SAL1, CInlineSAL
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -209,6 +210,10 @@ C... SB
 #ifdef CMPI
       USE MESSENGER, ONLY: UPDATER, UPDATEM4R
 #endif
+
+      ! DW
+      ! inline sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
 
       IMPLICIT NONE
 
@@ -253,6 +258,8 @@ C... SB
       REAL(8) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
       REAL(8) :: Ma2, Cfac1 = 1.0D0, Cfac2 = 1.0D0
       REAL(8), PARAMETER :: THIRD = 1.0D0/3.0D0
+
+      REAL(8):: CfacAPBeta = 1.D0 ! for SAL !
 C..... DW
       LOGICAL :: MOM_SPONGE = .false.
       REAL(8) :: SPNGCOEF_X, SPNGCOEF_Y
@@ -294,6 +301,11 @@ C..... DW
 C     WJP: initialize baroclinic pressure gradients to zero
       DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
       DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
+
+      CFacAPBeta = 1.D0 ;
+      if ( ssh_inline_sal%use_inline_sal ) then
+         CFacAPBeta = ssh_inline_sal%salAP_reduce_factor() ;
+      endif 
 
       DO IE=1,NE
 
@@ -383,13 +395,14 @@ C...  Compute element averaged quantities
          ENDIF         
 
 !...  Compute terms associated with the barotropic pressure
-!- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.         
-         BTP1N1=ALPHAL(IE)*ETA1(NM1)
-         BTP2N1=ALPHAL(IE)*ETA2(NM1)
-         BTP1N2=ALPHAL(IE)*ETA1(NM2)
-         BTP2N2=ALPHAL(IE)*ETA2(NM2)
-         BTP1N3=ALPHAL(IE)*ETA1(NM3)
-         BTP2N3=ALPHAL(IE)*ETA2(NM3)
+!- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.   
+!  DW - CFacAPBeta implement inline SAL using the scalar approximation         
+         BTP1N1=CFacAPBeta*ALPHAL(IE)*ETA1(NM1)
+         BTP2N1=CFacAPBeta*ALPHAL(IE)*ETA2(NM1)
+         BTP1N2=CFacAPBeta*ALPHAL(IE)*ETA1(NM2)
+         BTP2N2=CFacAPBeta*ALPHAL(IE)*ETA2(NM2)
+         BTP1N3=CFacAPBeta*ALPHAL(IE)*ETA1(NM3)
+         BTP2N3=CFacAPBeta*ALPHAL(IE)*ETA2(NM3)
 
 C.....If using atm pressure add it into the barotropic pressure
 C....... DW
@@ -447,6 +460,17 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TiP2(NM2)
             BTP1N3=BTP1N3-TiP1(NM3)
             BTP2N3=BTP2N3-TiP2(NM3)
+         ENDIF
+
+C...... if use inline SAL, add these into the barotrpoic pressure 
+         ! IF ( ssh_inline_sal%use_inline_sal ) THEN        
+         IF ( CInlineSAL ) THEN
+            BTP1N1=BTP1N1-SAL1(NM1)
+            BTP2N1=BTP2N1-SAL2(NM1)
+            BTP1N2=BTP1N2-SAL1(NM2)
+            BTP2N2=BTP2N2-SAL2(NM2)
+            BTP1N3=BTP1N3-SAL1(NM3)
+            BTP2N3=BTP2N3-SAL2(NM3)
          ENDIF
 
 C...  Compute the barotropic pressure gradient x area for the element
@@ -746,6 +770,11 @@ C......  DW : BEGIN !c absorbing layer
             SPNGCOEF_Y = absorblayer_sigma_mny(I,1)*sponge_dis_mthd
          END IF
 C......  END DW
+
+
+         ! DW -- experiment, preventing velocity  from reversing a sign !
+         IF ( 1.D0 - DTO2*TKM(1,I) < 0.D0 ) TKM(1,I) = 1.D0/DTO2 ; 
+         IF(  1.D0 - DTO2*TKM(2,I) < 0.D0 ) TKM(2,I) = 1.D0/DTO2 ; 
 
 C        WJP 02.24.2018: Get the cofficients of the matrix
          VCOEFXX = DTO2*(TKM(1,I) + SPNGCOEF_X) 
@@ -1236,7 +1265,9 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, windlim, H1, H2
+     & CBaroclinic, CAliDisp, windlim, H1, H2,
+     & SAL2, SAL1, CInlineSAL
+
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1252,7 +1283,12 @@ C
      &   , gridDepthVertETA2
      &   , gridDepthVertETA1
      &   , cadvVertETA2
-       
+     
+      ! DW 
+      ! inline sal
+      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
+
+
       IMPLICIT NONE
 
       INTEGER IE, I, J, N                           !local loop counters
@@ -1432,6 +1468,17 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TIP2(NM2)
             BTP1N3=BTP1N3-TIP1(NM3)
             BTP2N3=BTP2N3-TIP2(NM3)
+         ENDIF
+
+C...... if use inline SAL, add these into the barotrpoic pressure         
+        ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+        IF ( CInlineSAL ) THEN
+            BTP1N1=BTP1N1-SAL1(NM1)
+            BTP2N1=BTP2N1-SAL2(NM1)
+            BTP1N2=BTP1N2-SAL1(NM2)
+            BTP2N2=BTP2N2-SAL2(NM2)
+            BTP1N3=BTP1N3-SAL1(NM3)
+            BTP2N3=BTP2N3-SAL2(NM3)
          ENDIF
 
          GH1Avg = GO2*H1Avg
@@ -1762,8 +1809,8 @@ C        WJP 02.24.2018 Get the righthand side momentum
      &               - VCOEFYX*QX1(I)) !-VIDBCPDY) !-DispY)
          
 C        WJP 02.24.2018 Get the lefthand side momentum 
-         AUV(1,I) = 1d0 + VCOEFXX*NCI
-         AUV(2,I) = 1d0 + VCOEFYY*NCI
+         AUV(1,I) = 1.0d0 + VCOEFXX*NCI
+         AUV(2,I) = 1.0d0 + VCOEFYY*NCI
          AUV(3,I) = VCOEFXY*NCI
          AUV(4,I) = VCOEFYX*NCI
       ENDDO
@@ -2011,7 +2058,9 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic,
-     & windlim, H1, H2
+     & windlim, H1, H2,
+     & SAL2, SAL1
+
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,

@@ -78,6 +78,11 @@ C--------------------------------------------------------------------
       ALLOCATE(HTOT1_g(NP_G)) 
       ALLOCATE(HTOT2_g(NP_G)) 
 
+      ! inlnie SAL
+      ALLOCATE( zetasaltm0_g(NP_G) ) ; 
+      ALLOCATE( zetasaltm1_g(NP_G) ) ; 
+      ALLOCATE( zetasaltm2_g(NP_G) ) ;  
+
 C--------------------------------------------------------------------
       END SUBROUTINE allocateFullDomainIOArrays
 C--------------------------------------------------------------------

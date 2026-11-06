@@ -250,6 +250,11 @@ C
       type(OutputDataDescript_t) :: H1_HS_Descript
       type(OutputDataDescript_t) :: H2_HS_Descript
 
+
+      ! InlineSAL ZetaSAL
+      type(outputdatadescript_t):: zetasaltm0_hs_descript, 
+     &           zetasaltm1_hs_descript, zetasaltm2_hs_descript 
+
       !
       !  S W A N  O U T P U T  D A T A
       !
@@ -630,7 +635,7 @@ C        in use; allocate them before the first pointer association
          if ( OutputTau0 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTGE, TAU0VAR_g, NP_G ) ;
          endif 
-        ! ALLOCATE(TAU0VAR_g(NP_G)) ;
+         ! ALLOCATE(TAU0VAR_g(NP_G)) ;
       ENDIF
       Tau0Descript % lun                  = 90
       Tau0Descript % specifier            = NOUTGE
@@ -4540,6 +4545,9 @@ C-----------------------------------------------------------------------
      &     nolibf, nwp, tau0, cf, eslm
 #endif
 
+      USE MOD_INLINE_SAL, only: import_zetasal => export_zetasal, 
+     &            import_zetasaltime => export_zetasaltime
+
       IMPLICIT NONE
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: IT
@@ -4558,6 +4566,8 @@ C     !jgf49.44: harmonic analysis vars
       INTEGER N ! number of stations
       INTEGER NSTAEX  ! num of elev stations in either fulldomain or subdomain
       INTEGER NSTAVX  ! num of vel stations in either fulldomain or subdomain
+
+      REAL (8):: zetasalhstime(3) 
 C
       LOGICAL, SAVE :: FirstCall = .true.
 C
@@ -4597,8 +4607,8 @@ C
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNX1_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNY1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNX1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNY1_g, NP_G )
       ENDIF
          HotstartRS1Descript % specifier            = NHSTAR
          HotstartRS1Descript % initial_value        = 0.0
@@ -4613,8 +4623,8 @@ C
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNX2_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNY2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNX2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNY2_g, NP_G )
       ENDIF
          HotstartRS2Descript % specifier            = NHSTAR
          HotstartRS2Descript % initial_value        = 0.0
@@ -4630,8 +4640,8 @@ C
 #ifdef CSWAN
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.eq.3 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNX1_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNY1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNX1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNY1_g, NP_G )
       ENDIF
          HotstartSwanRS1Descript % specifier            = NHSTAR
          HotstartSwanRS1Descript % initial_value        = 0.0
@@ -4646,8 +4656,8 @@ C
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.eq.3 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNX2_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNY2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNX2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNY2_g, NP_G )
       ENDIF
          HotstartSwanRS2Descript % specifier            = NHSTAR
          HotstartSwanRS2Descript % initial_value        = 0.0
@@ -4660,6 +4670,12 @@ C
          HotstartSwanRS2Descript % array_g              => SWAN_RSNX2_g
          HotstartSwanRS2Descript % array2_g             => SWAN_RSNY2_g
 #endif
+
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &                   .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, HTOT1_g, NP_G )
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, HTOT2_g, NP_G )
+         ENDIF 
 
          H1_HS_Descript % specifier            = NHSTAR
          H1_HS_Descript % initial_value        = 0.0
@@ -4679,6 +4695,41 @@ C
          H2_HS_Descript % array                => H2
          H2_HS_Descript % array_g              => HTOT2_g
 
+         ! Inline SAL hotstart
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &                   .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, zetasaltm0_g, NP_G )
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, zetasaltm1_g, NP_G )
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, zetasaltm2_g, NP_G )
+         ENDIF     
+     
+         zetasaltm0_hs_Descript % specifier            = NHSTAR
+         zetasaltm0_hs_Descript % initial_value        = 0.0
+         zetasaltm0_hs_Descript % num_items_per_record = 1
+         zetasaltm0_hs_Descript % num_fd_records       = NP_G
+         zetasaltm0_hs_Descript % num_records_this     = NP
+         zetasaltm0_hs_Descript % imap                 => NODES_LG
+         zetasaltm0_hs_Descript % array                => zetasaltm0
+         zetasaltm0_hs_Descript % array_g              => zetasaltm0_g
+
+         zetasaltm1_hs_Descript % specifier            = NHSTAR
+         zetasaltm1_hs_Descript % initial_value        = 0.0
+         zetasaltm1_hs_Descript % num_items_per_record = 1
+         zetasaltm1_hs_Descript % num_fd_records       = NP_G
+         zetasaltm1_hs_Descript % num_records_this     = NP
+         zetasaltm1_hs_Descript % imap                 => NODES_LG
+         zetasaltm1_hs_Descript % array                => zetasaltm1
+         zetasaltm1_hs_Descript % array_g              => zetasaltm1_g
+
+         zetasaltm2_hs_Descript % specifier            = NHSTAR
+         zetasaltm2_hs_Descript % initial_value        = 0.0
+         zetasaltm2_hs_Descript % num_items_per_record = 1
+         zetasaltm2_hs_Descript % num_fd_records       = NP_G
+         zetasaltm2_hs_Descript % num_records_this     = NP
+         zetasaltm2_hs_Descript % imap                 => NODES_LG
+         zetasaltm2_hs_Descript % array                => zetasaltm2
+         zetasaltm2_hs_Descript % array_g              => zetasaltm2_g
+         ! Inline hotstart
 
          IF (IM.eq.10) THEN
             CH1Descript % specifier            = NHSTAR
@@ -4902,6 +4953,16 @@ C
       ENDIF
 
 C     collect up the data from subdomains if running in parallel
+
+      ! Inline SAL data !
+      if ( CInlineSAL ) then
+           zetasaltm0_hs_Descript%array(:) = import_zetasal( id = 1 ) ;
+           zetasaltm1_hs_Descript%array(:) = import_zetasal( id = 2 ) ; 
+           zetasaltm2_hs_Descript%array(:) = import_zetasal( id = 3 ) ;
+
+           zetasalhstime = import_zetasaltime( ) ; 
+      endif     
+
 #ifdef CMPI
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
@@ -4919,6 +4980,18 @@ C     collect up the data from subdomains if running in parallel
          ! H1, H2
          CALL collectFullDomainArray(H1_HS_Descript, packOne, unpackOne)
          CALL collectFullDomainArray(H2_HS_Descript, packOne, unpackOne)
+
+
+         ! Inline SAL, hotstart data
+         if ( CInlineSAL ) then 
+            
+             CALL collectFullDomainArray( zetasaltm0_hs_Descript, packOne, unpackOne )
+
+             CALL collectFullDomainArray( zetasaltm1_hs_Descript, packOne, unpackOne )
+
+             CALL collectFullDomainArray( zetasaltm2_hs_Descript, packOne, unpackOne )
+
+         endif
 
          CALL collectFullDomainArray(HotstartVelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
@@ -5588,11 +5661,24 @@ C
 
 #ifdef ADCNETCDF
          IF (myProc.eq.0) THEN
-            CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
-     &         Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
-     &         NodeCodeDescript, NOFFDescript, H1_HS_Descript,
-     &         H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
-     &         HotstartSWANRS2Descript, TimeLoc, it)
+
+            IF ( .NOT. CInlineSAL ) THEN     
+              CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
+     &           Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
+     &           NodeCodeDescript, NOFFDescript, H1_HS_Descript,
+     &           H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
+     &           HotstartSWANRS2Descript, TimeLoc, it)
+            ENDIF
+            IF ( CInlineSAL ) THEN
+              CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
+     &           Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
+     &           NodeCodeDescript, NOFFDescript, H1_HS_Descript,
+     &           H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
+     &           HotstartSWANRS2Descript, TimeLoc, it, 
+     &           zetasaltm0_hs_descript, zetasaltm1_hs_descript,
+     &           zetasaltm2_hs_descript, zetasalhstime ) ; 
+            ENDIF
+
             IF ((IHARIND.eq.1).and.(IT.gt.ITHAS)) THEN
                CALL writeNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,

@@ -153,9 +153,45 @@ C        initialize parameter arrays needed by iterative solver
          call alloc_main11_lumped()
       ENDIF
 
+      CALL initDensityRatio()
+
 !----------------------------------------------------------------------
       end subroutine initGWCE
 !----------------------------------------------------------------------
+
+!
+      subroutine initDensityRatio()
+        use mesh, only: np, dp
+        use ADC_CONSTANTS, ONLY: G, RHOWAT0, kappamodulus
+        use global, only: rhravg, CVariableDensityVCT
+               
+
+        integer:: i 
+        REAL (8):: RH, RAVG 
+
+        RHRAVG = 1.D0 ;
+
+        if ( CVariableDensityVCT ) then
+          !
+          do i = 1, np
+            !
+            if ( DP(i) > 100.D0 ) then
+               RH = RHOWAT0*G*DP(i)/kappamodulus ;
+               RH = RHOWAT0*(1.D0 + RH) ;
+
+               RAVG = RHOWAT0*G*DP(i)/(2.D0*kappamodulus) ;
+               RAVG = RHOWAT0*(1.D0 + RAVG) ; 
+
+               RHRAVG(i) = RH/RAVG ; 
+            endif
+            !       
+          enddo
+          !
+         endif
+
+        return ;                
+      end subroutine initDensityRatio
+!
 
 !----------------------------------------------------------------------
 !     S U B R O U T I N E   S O L V E   G   W   C   E
@@ -255,7 +291,8 @@ C
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
      &   dynamicWaterLevelCorrectionDelta, 
-     &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
+     &   COEFDTemp, COEFDTempMem,  ! Added for VED1D  08-11-2022 SB
+     &   SAL1, CInlineSAL, RHRAVG
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -300,6 +337,9 @@ C... SB
      &   , wetFracVertETA1, wetFracVertETA2
      &   , cadvVertETA2
      &   , dphidt
+
+      ! inline sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
 
       IMPLICIT NONE
 
@@ -394,6 +434,7 @@ C...... DW
       REAL(8) :: PHIAVG1, PHIAVG2
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
+      REAL(8) :: CSalAPBeta = 1.D0 ;
 
       LOG_SCOPE_TRACED("gwce_new", GWCE_TRACING)
 
@@ -410,6 +451,12 @@ C     Switch to the element table to the primary node
 C.....
 
       if (subdomainOn.and.enforceBN.eq.2) call checkChange()    ! NCSU Subdomain
+
+      !
+      IF ( ssh_inline_sal%use_inline_sal ) THEN
+         CSalAPBeta = ssh_inline_sal%salAP_reduce_factor() ; 
+      ENDIF   
+
 
 C     jgf45.11 Bug fix: calculate the integers OnDiag and OffDiag here
 C     instead of inside the GWCE lhs (system matrix) setup, since they
@@ -450,6 +497,7 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
      &   THEN
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
+
 
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
          COEFASSYM : IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
@@ -513,7 +561,7 @@ C              Ali et al. formula
                   Cfac = (1.0D0 - 0.25D0*Ma2 - Ad*DPavg**Bd)**2
                endif
                ! DMW 2022/06 Apply slope limiting to gravity
-               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
+               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac*CSalAPBeta/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
@@ -555,11 +603,11 @@ C
                J32 = CSR_POSITION(IE, 3, 2)
 
 C.........     WJP multiplying by cosine(lat) if doing the 
-C              spherical correction 
+C              spherical correction + water density variation
 C              Node-by-Node
-               SPM1 = SFCT(NMI1) 
-               SPM2 = SFCT(NMI2)
-               SPM3 = SFCT(NMI3)
+               SPM1 = SFCT(NMI1)*RHRAVG(NMI1) 
+               SPM2 = SFCT(NMI2)*RHRAVG(NMI2) 
+               SPM3 = SFCT(NMI3)*RHRAVG(NMI3)
 C              Assemble the LHS matrix
                Coef(NMI1,1)  = Coef(NMI1,1)   + (MsFacLOnDiag*SPM1
      &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX1*FDX1 +
@@ -625,9 +673,9 @@ C.............DW
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
 C              Node-by-Node
-               SPM1 = SFCT(NMI1) 
-               SPM2 = SFCT(NMI2)
-               SPM3 = SFCT(NMI3)
+               SPM1 = SFCT(NMI1)*RHRAVG(NMI1) 
+               SPM2 = SFCT(NMI2)*RHRAVG(NMI2) 
+               SPM3 = SFCT(NMI3)*RHRAVG(NMI3) 
 
                Coefd(NMI1) = Coefd(NMI1) + MsFacLOnDiag*SPM1*NCELE
                Coefd(NMI2) = Coefd(NMI2) + MsFacLOnDiag*SPM2*NCELE
@@ -1183,6 +1231,14 @@ C
             TiPN2=TiP1(NM2)
             TiPN3=TiP1(NM3)
          ENDIF
+
+         ! DW -- if use inline SAL, picky back it on tidal potential c!
+         ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+         IF ( CInlineSAL ) THEN
+            TiPN1 = TipN1 + SAL1(NM1) ;
+            TiPN2 = TipN2 + SAL1(NM2) ; 
+            TipN3 = TipN3 + SAL1(NM3) ;
+         ENDIF   
          IF (C2DDI) THEN                       !2D bottom friction
             !WJP taking into account the symmetrical friction matrix
             ! CPB: added resynthesized tidal velocity option
@@ -1328,10 +1384,11 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0D0 - 0.25D0*Ma2 - Ad*DPavgS0**Bd)**2D0
          endif
+
          ! DMW 202206 Apply slope limiting to gravity
-         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
+         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac*CSalAPBeta/AreaIE4
          ! DMW 202206 Apply slope limiting to gravity
-         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
+         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0*CSalAPBeta/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
          ! DMW 202206 Apply slope limiting to gravity
@@ -1524,9 +1581,9 @@ C...     Complete the JX, JY terms depending on the advection formulation
 C...... BEG: DW, DEC 2019         
 C...     Needs multiplying by cos(lat) in case of the correction 
 C        Node by node
-         SPM1 = SFCT(NM1) ; 
-         SPM2 = SFCT(NM2) ; 
-         SPM3 = SFCT(NM3) ;
+         SPM1 = SFCT(NM1)*RHRAVG(NM1) ; 
+         SPM2 = SFCT(NM2)*RHRAVG(NM2) ; 
+         SPM3 = SFCT(NM3)*RHRAVG(NM3) ;
 C...... END DW         
 
 C...     Assemble forcing for node NM1 (local index j=1)
@@ -2138,7 +2195,8 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
-     &   QX2, QY2, UU2, VV2, windlim
+     &   QX2, QY2, UU2, VV2, windlim,
+     &   SAL1, CInlineSAL
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -2155,6 +2213,10 @@ C
 #endif
       USE WIND, ONLY: windLimiter
       use mod_logging, only: nscreen, t_log_scope, init_log_scope
+
+      ! DW inline sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
+
 
       IMPLICIT NONE
 
@@ -2594,6 +2656,14 @@ C........DMW202401 Use saved H1 and H2
             TiPN2=TiP1(NM2)
             TiPN3=TiP1(NM3)
          ENDIF
+         ! DW -- if use inline SAL, picky back it on tidal potential c!
+         ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+         IF ( CInlineSAL ) THEN
+            TiPN1 = TipN1 + SAL1(NM1) ;
+            TiPN2 = TipN2 + SAL1(NM2) ; 
+            TipN3 = TipN3 + SAL1(NM3) ;
+         ENDIF   
+
          IF (C2DDI) THEN                       !2D bottom friction
             BSX0N1=TK0(NM1)*QX0N1
             BSY0N1=TK0(NM1)*QY0N1
