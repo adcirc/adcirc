@@ -1567,7 +1567,7 @@ C...
 C...  READ AND PROCESS NOLICA - ADVECTIVE TERM SPATIAL GRADIENT
 C...
       READ(15,*) NOLICA
-      IF((NOLICA.LT.0).OR.(NOLICA.GT.1)) THEN
+      IF((NOLICA.LT.0).OR.(NOLICA.GT.2)) THEN
          CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                  message="Your selection of NOLICA (a UNIT 15 input parameter) is not an allowable value.")
       ENDIF
@@ -1579,6 +1579,10 @@ C...
       IF(NOLICA.EQ.1) WRITE(16,2056)
  2056 FORMAT(9X,'THE MODEL WILL USE SPATIAL DERIVATIVE ',
      &     'COMPONENTS OF THE ADVECTIVE TERMS')
+      IF(NOLICA.EQ.2) WRITE(16,2059)
+ 2059 FORMAT(9X,'THE MODEL WILL USE SPATIAL DERIVATIVE ',
+     &     'COMPONENTS OF THE ADVECTIVE TERMS',
+     &     /,9X,'WITH A TAYLOR-GALERKIN STREAMLINE CORRECTION')
 
 C...
 C...  READ AND PROCESS NOLICAT - GWCE ADVECTIVE TERM TIME DERIVATIVE
@@ -1640,7 +1644,7 @@ C      ENDIF
          ENDIF
       ENDIF
 
-      IF(NOLICA.NE.NOLICAT) THEN
+      IF(MIN(NOLICA,1).NE.NOLICAT) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
@@ -2540,6 +2544,14 @@ ckmd   order to turn on the predictor-corrector algorithm.
       END IF
       WRITE(16,9) DTDP
     9 FORMAT(5X,'TIME STEP =',F12.6,5X,'SECONDS',/)
+C...  The streamline correction (NOLICA=2) is implemented only in the
+C...  2DDI non-conservative momentum equations.
+      IF ((NOLICA.EQ.2).AND..NOT.(C2DDI.AND.CME_New_NC)) THEN
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message="NOLICA = 2 requires a 2DDI run with "//
+     &                  "the non-conservative momentum equations "//
+     &                  "(fourth IM digit 1, positive DTDP).")
+      ENDIF
       DTDPHS = DTDP ! jgf51.14: Initialize; may be changed in hstart()
 
 C...

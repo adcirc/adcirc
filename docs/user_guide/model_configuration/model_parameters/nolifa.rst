@@ -35,11 +35,11 @@ details, and other necessary or recommended input parameters.
    * - 1
      - Finite amplitude terms without wetting-drying
      - Finite amplitude terms are included in the model run and wetting and drying of elements is disabled. Initial water depths are assumed equal to the bathymetric water depth specified in the :ref:`fort.14 file <fort14>`.
-     - :ref:`H0 <H0>`, :ref:`NOLICA <NOLICA>` = 1
+     - :ref:`H0 <H0>`, :ref:`NOLICA <NOLICA>` = 1 or 2
    * - 2
      - Finite amplitude terms with wetting-drying
      - Finite amplitude terms are included in the model run and wetting and drying of elements is enabled. Initial water depths are assumed equal to the bathymetric water depth specified in the :ref:`fort.14 file <fort14>`.
-     - :ref:`H0 <H0>`, :ref:`NOLICA <NOLICA>` = 1
+     - :ref:`H0 <H0>`, :ref:`NOLICA <NOLICA>` = 1 or 2
 
 
 Usage Notes

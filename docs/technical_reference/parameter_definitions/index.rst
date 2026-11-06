@@ -414,6 +414,16 @@ NOLICA
 
    = 1 advective terms ARE included in the computations
 
+   = 2 advective terms ARE included in the computations, with a Taylor-Galerkin streamline correction in the momentum equations
+
+   The momentum equations step the advective terms forward from the previous time level. That step adds a negative diffusion along the streamlines, :math:`-\frac{\Delta t}{2}(\bar{\mathbf{u}}\cdot\nabla)^{2}\mathbf{u}` per unit time, which grows with :math:`|\bar{\mathbf{u}}|^{2}\Delta t`. In fast flow, such as a jet through a narrow pass, it inflates the speed and can destabilize the run at time steps the rest of the model allows. NOLICA = 2 adds the second-order Taylor-Galerkin (Lax-Wendroff) term :math:`+\frac{\Delta t^{2}}{2}(\bar{\mathbf{u}}\cdot\nabla)^{2}\mathbf{u}` to each step in its weak form, built from the element-mean velocity :math:`\bar{\mathbf{u}}` and the element gradients the advective terms already use.
+
+   The correction only removes energy, and it vanishes where the velocity is uniform or its gradient is perpendicular to the flow. The advection_state nodal attribute switches it off wherever it switches off the advective terms.
+
+   The element streamline Courant number :math:`C_e = \frac{\Delta t}{2}\sum_{i=1}^{3}|\bar{\mathbf{u}}\cdot\nabla\phi_i|`, where :math:`\phi_i` are the element's linear basis functions, sets the stability limit. On a synthetic pass 300 m wide carrying 3.3 m/s, NOLICA = 2 kept the mean speed in the pass within 0.3% of the converged solution up to :math:`C_e = 1.46` and diverged at 1.76. With NOLICA = 1, the peak speed was 17% high at :math:`C_e = 0.15` and four times too high at 0.59, and the run diverged at 1.17.
+
+   NOLICA = 2 requires a 2DDI run with the non-conservative momentum equations (fourth IM digit 1) and a positive DTDP, which excludes the predictor-corrector. Other configurations stop at input. The advective terms in the GWCE are unchanged; set NOLICAT = 1.
+
    The NOLICA and NOLICAT parameters by themselves will activate or deactivate the advective terms over the full domain; however, these terms can also be activated or deactivated on an element-by-element basis. Please see the definition of the advection_state nodal attribute in the documentation for the Nodal Attributes File (fort.13) for details.
 
 .. _NOLICAT:

@@ -958,7 +958,7 @@ C
 C
       READ(15,80) ICAMSG
       READ(ICAMSG,*) NOLICA
-      IF ((NOLICA.LT.0).OR.(NOLICA.GT.1)) THEN
+      IF ((NOLICA.LT.0).OR.(NOLICA.GT.2)) THEN
          print *, "Value for NOLICA not allowed"
          CALL EXIT(1)
       ENDIF
