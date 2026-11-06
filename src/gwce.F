@@ -81,6 +81,8 @@ C******************************************************************************
      &   t_log_scope, allMessage
       implicit none
 
+      private
+
       real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
       real(8),allocatable :: etas0(:)      
       real(8),allocatable :: eta0(:)
@@ -97,7 +99,15 @@ C     Arrays used by JCG iterative solver
       real(8), allocatable :: wksp(:)
       integer, allocatable :: iparm(:)
       real(8), allocatable :: rparm(:)
-      integer :: numitr ! number of iterations per timestep 
+      integer :: numitr ! number of iterations per timestep
+
+C     GWCE coefficient arrays
+      real(8), allocatable :: obccoef(:,:)
+      real(8), allocatable, target :: coefd(:)
+      real(8), allocatable, target :: coefDTempMem(:)
+      real(8), pointer :: coefDTemp(:) => null()
+      real(8), allocatable :: coef(:,:)
+      real(8), allocatable :: gwce_lv(:) 
 
 cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
@@ -110,8 +120,14 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       ! activated on elevation-specified boundaries so that low pressure
       ! systems crossing the boundary won't trigger numerical instabilities.
       ! This is normally .false. but can be set to .true. in the fort.15
-      ! in the metControl namelist. 
+      ! in the metControl namelist.
       logical :: invertedBarometerOnElevationBoundary = .false.
+
+      character(len=256) :: scratchMessage
+
+      public :: initGWCE, solveGWCE, a00, b00, c00, convcr, isldia,
+     &          itmax, invertedBarometerOnElevationBoundary, etiminc,
+     &          etime1, etime2, numitr, gwce_lv_reset
 
       contains
 
@@ -121,8 +137,8 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
       subroutine initGWCE()
-      use sizes, only : mnp
-      use global, only : dt, ilump, alloc_main11, alloc_main11_lumped
+      use sizes, only : mnp, mneta, mnei
+      use global, only : dt, ilump
       USE ADC_CONSTANTS, only: g
       use mesh, only : np
       use itpackv, only : dfault
@@ -137,10 +153,17 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       dt2=dt*2.d0
       ga00=g*a00
 
+C     Allocate GWCE load vector (always needed)
+      allocate(gwce_lv(mnp))
+      gwce_lv = -99999.d0
+
 C     jgf48.4619: Accommodate Seizos changes for explicit solve
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C        allocate arrays needed by GWCE matrix and iterative solver
-         call alloc_main11()
+         allocate(coef(mnp,mnei))
+         coef = -99999.d0
+         allocate(obccoef(mneta,mnei-1))
+         obccoef = -99999.d0
 C        initialize parameter arrays needed by iterative solver
          CALL DFAULT(IPARM,RPARM)
          IPARM(1)=ITMAX
@@ -150,12 +173,21 @@ C        initialize parameter arrays needed by iterative solver
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX
       ELSE ! lumped LHS
-         call alloc_main11_lumped()
+C        jgf48.4619: Array used in lumped GWCE (from Seizo)
+         allocate(coefd(mnp), coefDTempMem(mnp))
+         coefd = -99999.d0
+         coefDTempMem = -99999.d0
       ENDIF
 
 !----------------------------------------------------------------------
       end subroutine initGWCE
 !----------------------------------------------------------------------
+
+      subroutine gwce_lv_reset(val)
+          implicit none
+          real(8), intent(in) :: val
+          gwce_lv(:) = 0d0
+      end subroutine gwce_lv_reset
 
 !----------------------------------------------------------------------
 !     S U B R O U T I N E   S O L V E   G   W   C   E
@@ -167,10 +199,10 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
       use sizes, only : mnp
       use global, only : CGWCE_New, CPRECOR, ETA2, QX2, QY2, UU2, VV2
 #ifdef CMPI
-     & , dumy1, dumy2
+      use global, only: dumy1, dumy2
       use messenger
 #endif
-      use momentum, only : mom_eqs_new_nc
+      use momentum2d, only : mom_eqs_new_nc
       use nodalattributes, only : loadEleSlopeLim
       implicit none
       integer, intent(in) :: it, ITIME_BGN ! time step 
@@ -240,7 +272,7 @@ C
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
       USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
+      USE GLOBAL, ONLY : ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
@@ -254,8 +286,7 @@ C
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
-     &   dynamicWaterLevelCorrectionDelta, 
-     &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
+     &   dynamicWaterLevelCorrectionDelta
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -288,13 +319,13 @@ C... SB
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
-     &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB,
+     &  checkChange, enforceEOB, enforceEIB, nobn, obn
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
       use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
 
 !JLW: add subgrid additions
-      USE subgrid, ONLY: level0, level1
+      USE subgrid, ONLY: subgrid_level0, subgrid_level1
      &   , subgridVertList
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , wetFracVertETA1, wetFracVertETA2
@@ -458,7 +489,7 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                NMI2=NM(IE,2)
                NMI3=NM(IE,3)
                !JLW: add subgrid additions
-               IF(level0)THEN
+               IF(subgrid_level0)THEN
                   H1N1 = gridDepthVertETA2(NMI1)
                   H1N2 = gridDepthVertETA2(NMI2)
                   H1N3 = gridDepthVertETA2(NMI3)
@@ -498,7 +529,7 @@ C.... End WJP/DW
                AreaIE =AreaIE2*0.5d0
                AreaIE4=AreaIE2*2.0d0
 !JLW: adding subgrid to water surface elevation gradiant term
-               IF(level0)THEN
+               IF(subgrid_level0)THEN
                   DPAvg = (H1N1+H1N2+H1N3)/3.d0
                ELSE
 C.... DW, Nov 2019 if IFNL_HDP = 1 use DP + ETA = H in the GWCE
@@ -538,7 +569,7 @@ C
                MsFacLOnDiag =OnDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
                MsFacLOffDiag=OffDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
 !JLW: adding subgrid to the on and off diagonal terms
-               IF(level0)THEN
+               IF(subgrid_level0)THEN
 !JLW: adding option to turn off dphidt term
                   MSFacLOnDiag = MSFacLOnDiag*PHIAVG2 + OnDiag
      &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
@@ -862,7 +893,7 @@ C........ END DW:
 
 
 !JLW: adding subgrid to velocity based lateral stress
-               IF(level0)THEN
+               IF(subgrid_level0)THEN
                   H2N = gridDepthVertETA2(I)
                ELSE
 C..............DMW202401 Use saved H2
@@ -1040,14 +1071,14 @@ Corbitt 120322: Localized Advection
 
 !JLW: similar to the LHS, look up wet area fraction, grid averaged water
 !depth, and advection
-        IF(level0)THEN
+        IF(subgrid_level0)THEN
             H0N1 = gridDepthVertETA1(NM1)
             H0N2 = gridDepthVertETA1(NM2)
             H0N3 = gridDepthVertETA1(NM3)
             H1N1 = gridDepthVertETA2(NM1)
             H1N2 = gridDepthVertETA2(NM2)
             H1N3 = gridDepthVertETA2(NM3)
-            IF(level1)THEN
+            IF(subgrid_level1)THEN
                CADV1 = cadvVertETA2(NM1)
                CADV2 = cadvVertETA2(NM2)
                CADV3 = cadvVertETA2(NM3)
@@ -1309,7 +1340,7 @@ C...     Compute elemental averages
          QY1Avg=(QY1N1+QY1N2+QY1N3)/3.d0
          ESAvg=(ESN1+ESN2+ESN3)/3.d0
 !JLW: add subgrid
-         IF(level0)THEN
+         IF(subgrid_level0)THEN
             DPAvg = (H1N1+H1N2+H1N3)/3.d0
             DPAvgS0 = (H0N1+H0N2+H0N3)/3.d0
          ELSE
@@ -1395,7 +1426,7 @@ C.....      DMW
             WSXAvg=(fwsx1*WSX1(NM1)+fwsx2*WSX1(NM2)+fwsx3*WSX1(NM3))/3.d0
             WSYAvg=(fwsy1*WSY1(NM1)+fwsy2*WSY1(NM2)+fwsy3*WSY1(NM3))/3.d0
 !JLW: adding subgrid
-            IF(level0)THEN
+            IF(subgrid_level0)THEN
                WSXAvg = PHIAVG2*WSXAvg
                WSYAvg = PHIAVG2*WSYAvg
             ENDIF
@@ -1433,7 +1464,7 @@ C
          GOAreaIE4=ALPHAL(IE)*G/AreaIE4
 !JLW: adding the wet area fraction to the time derivative terms and the
 !water surface gradient term
-         IF(level0)THEN
+         IF(subgrid_level0)THEN
 !JLW: adding dphidt option
             MSFacR = PHIAVG2*MSFacR - 
      &         dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
@@ -1480,7 +1511,7 @@ C...     Complete the JX, JY terms depending on the advection formulation
          ENDIF
          IF(CGWCE_Advec_C1) THEN        !conservative v1 advection
 !JLW: adding advection corrections
-           IF(level1)THEN
+           IF(subgrid_level1)THEN
               JXAvg = JXAvg - IFNLCT*(
      &                (CADV1*U1N1*QX1N1*FDX1+CADV2*U1N2*QX1N2
      &                *FDX2+CADV3*U1N3*QX1N3*FDX3)
@@ -2126,7 +2157,7 @@ C*******************************************************************************
       SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
 C
       USE SIZES
-      USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
+      USE GLOBAL, ONLY : ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
@@ -2137,7 +2168,7 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
-     &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
+     &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2,
      &   QX2, QY2, UU2, VV2, windlim
 #ifdef CMPI
      &   , dumy1, dumy2
@@ -3124,7 +3155,6 @@ C*************************************************************************
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
       character(1024) :: scratchMessage
 
-
       LOG_SCOPE_TRACED("check_slopes", GWCE_TRACING)
       ! jgf51.47: Per Rick's specification, start off by deactivating
       ! any slope limitation triggered in the previous time step;
@@ -3320,6 +3350,39 @@ C... Will apply the updating outside the subroutine
 
 C***********************************************************************
 
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   E N F O R C E  G  W  C  E  L  V  O  B
+!----------------------------------------------------------------------
+!     This subroutine changes the value of the GWCE_LV vector
+!     elements of the outer boundary nodes of subdomains so
+!     that jcg solver leads to the enforced values of ETA for
+!     the outer boundary nodes.
+!     (Moved from subdomain.F to gwce.F to allow GWCE_LV and COEF
+!     to be module-private to gwce)
+!----------------------------------------------------------------------
+      SUBROUTINE enforceGWCELVob()
+      use sizes, only : mnei
+      use global, only : etas
+      use mesh, only : neitab
+      use subdomain, only : nobn, obn
+      implicit none
+      integer :: i,j,n,neighbor
+      real(8) :: newGWCElv
+
+      do i=1,nobn
+          n = obn(i)
+          newGWCElv = 0.d0
+          do j=1,mnei
+              neighbor = neitab(n,j)
+              if (neighbor.ne.0) then
+                  newGWCElv = newGWCElv + COEF(n,j)*ETAS(neighbor)
+              endif
+          enddo
+          GWCE_LV(n) = newGWCElv
+      enddo
+
+      END SUBROUTINE enforceGWCELVob
+!----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------

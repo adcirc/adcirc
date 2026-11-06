@@ -102,8 +102,7 @@ C******************************************************************************
       IMPLICIT NONE
       PUBLIC
 
-      INTEGER, SAVE :: ITIME_BGN, ITIME_END
-
+      INTEGER :: ITIME_BGN, ITIME_END
 
       CONTAINS
 
@@ -137,7 +136,7 @@ C******************************************************************************
      &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
-      USE MOMENTUM, ONLY : initMomentumEq
+      USE MOMENTUM2D, ONLY : init2DMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
@@ -273,7 +272,7 @@ C     memory for internal use.
 
       !jgf53.dev: allocate memory for continuity and momentum eqns
       call initGWCE()
-      call initMomentumEq()
+      call init2DMomentumEq()
 
 C...Compute the reciprocal of the number of nodes in the entire domain
 
@@ -431,6 +430,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
      &                       PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
+      USE mod_timestep, ONLY: TIMESTEP
 #ifdef CMPI      
       USE MESSENGER, ONLY: writers_active, hs_writers_active
 #endif      
@@ -473,7 +473,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 
       call allMessage(INFO,"Begin timestepping.")
       DO ITIME=ITIME_BGN,ITIME_END
-        CALL TIMESTEP(ITIME,TimeLoc)
+        CALL TIMESTEP(ITIME,ITIME_BGN,TimeLoc)
 
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
