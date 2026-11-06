@@ -544,6 +544,7 @@ C     size has changed after a hotstart.
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
+      INTEGER :: IFNLTG = 0 ! Taylor-Galerkin advection correction (NOLICA=2)
       INTEGER :: IFNL_HDP = 0 ! use H (1) or D (0) in LHS surface gradient term
       INTEGER  IFWIND
       integer :: IFSFM = 0 ! corrected spherical coordinates (1) or not (0)
