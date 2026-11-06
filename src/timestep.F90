@@ -46,6 +46,9 @@ module mod_timestep
    real(8) :: hotstart_start_time = 0.0d0
    real(8) :: hotstart_reference_time = 0.0d0
 
+   real(8), parameter :: eps = epsilon(1.0d0)
+   real(8), parameter :: one_sixth_sp = 1.0d0/6.0d0
+
 contains
 
 !-----------------------------------------------------------------------
@@ -189,7 +192,7 @@ contains
       ! SAL       - for tidePotential%active() = .FALSE.
       if (NTIP == 2 .or. .not. tidePotential%active()) then
          do J = 1, NTIF
-            if (PERT(J) == 0d0) then
+            if (abs(PERT(J)) <= eps) then
                NCYC = 0
             else
                NCYC = int(timeh/PERT(J))
@@ -616,7 +619,7 @@ contains
       end do
 
       do J = 1, NP
-         if (TotalArea(J) /= 0.d0) then
+         if (abs(TotalArea(J)) > eps) then
             VIDBCPDXOH(J) = VIDBCPDXOH(J)/TotalArea(J)
             VIDBCPDYOH(J) = VIDBCPDYOH(J)/TotalArea(J)
          end if
@@ -650,6 +653,7 @@ contains
                         NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH, &
                         ETA2, H0, H2
       use mod_logging, only: t_log_scope, init_log_scope
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use ADC_CONSTANTS, only: SigT0
       use MESH, only: NM, X, Y, NP, AREAS, &
                       NEITABELE, SFAC, DP
@@ -679,6 +683,7 @@ contains
       integer :: NH !horizontal node loop counter
       integer :: N !neighbor node loop counter
       integer :: N1, N2, N3 !local node numbers used to compute gradients
+      integer :: LocalVertex !position of NH within the neighbor element
 
       real(8) :: Hs !Total water depth at time level s
       real(8) :: HsOAMB !Hs/(a-b)
@@ -711,6 +716,7 @@ contains
       integer :: IIP1, IIP2
       real(8) :: w(NumIP)
       complex(8) :: BCPGM(NumGQP*(NFEN - 1))
+      character(len=256) :: bpg_error_msg
 
       LOG_SCOPE_TRACED("bpg3d", TIMESTEP_TRACING)
 
@@ -766,7 +772,7 @@ contains
                SigT_mid_point = SIGTM(NH, NFEN - 1)
 
                ! 3. evaluate the integral at node NFEN-1
-               BCP(NH, NFEN - 1) = (1.0/6.0)*(Sigma(NFEN) - Sigma(NFEN - 1))*HGORhoOAMB* &
+               BCP(NH, NFEN - 1) = one_sixth_sp*(Sigma(NFEN) - Sigma(NFEN - 1))*HGORhoOAMB* &
                                    ((SigT(NH, NFEN) - SigT0) + 4.0d0*(SigT_mid_point - SigT0) + (SigT(NH, NFEN - 1) - SigT0))
 
                ! 4. evaluate the integral at the rest of the vertical nodes
@@ -786,7 +792,7 @@ contains
                   SigT_mid_point = SIGTM(NH, k)
 
                   ! 4.2. evaluate the integral
-                  BCP(NH, k) = BCP(NH, k + 1) + (1.0/6.0)*(Sigma(k + 1) - Sigma(k))*HGORhoOAMB &
+                  BCP(NH, k) = BCP(NH, k + 1) + one_sixth_sp*(Sigma(k + 1) - Sigma(k))*HGORhoOAMB &
                                *((SigT(NH, k + 1) - SigT0) + 4.0d0*(SigT_mid_point - SigT0) + (SigT(NH, k) - SigT0))
 
                end do
@@ -853,22 +859,17 @@ contains
                   NEle = NeiTabEle(NH, N)
                   ! Skip blank entries in NeiTabEle
                   if (NEle == 0) cycle
-                  ! Find vertices in counterclockwise order
-                  if (NM(NEle, 1) == NH) then
-                     N1 = NM(NEle, 1)
-                     N2 = NM(NEle, 2)
-                     N3 = NM(NEle, 3)
-                  elseif (NM(NEle, 2) == NH) then
-                     N1 = NM(NEle, 2)
-                     N2 = NM(NEle, 3)
-                     N3 = NM(NEle, 1)
-                  elseif (NM(NEle, 3) == NH) then
-                     N1 = NM(NEle, 3)
-                     N2 = NM(NEle, 1)
-                     N3 = NM(NEle, 2)
-                  else
-                     print *, "Aack! ", NH, NEle, NM(Nele, :)
+                  ! Find vertices in counterclockwise order, starting at NH
+                  LocalVertex = findloc(NM(NEle, :), NH, dim=1)
+                  if (LocalVertex == 0) then
+                     write (bpg_error_msg, '(A,I0,A,I0,A,3(1X,I0))') &
+                        "BPG3D: node ", NH, " is not a vertex of neighbor element ", &
+                        NEle, "; element vertices:", NM(NEle, :)
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(bpg_error_msg))
                   end if
+                  N1 = NM(NEle, LocalVertex)
+                  N2 = NM(NEle, mod(LocalVertex, 3) + 1)
+                  N3 = NM(NEle, mod(LocalVertex + 1, 3) + 1)
                   ! Skip dry elements
                   NCEle = NODECODE(N1)*NODECODE(N2) &
                           *NODECODE(N3)*NOFF(NEle)
@@ -911,7 +912,7 @@ contains
                   end if
                end do
                if (TotalBCPGArea2 > 0.0001d0) then
-                  BCPG(k) = (DBCPDX2A + iy*DBCPDY2A)/TotalBCPGArea2
+                  BCPG(k) = (cmplx(DBCPDX2A, kind=8) + iy*cmplx(DBCPDY2A, kind=8))/cmplx(TotalBCPGArea2, kind=8)
                   !Casey 230317 Debug
                   ! BCPG(k)=(0.D0,0.D0)
                end if
@@ -935,8 +936,8 @@ contains
             if (densityIntegrationID == DENSITY_INTEGRATION_TRAPEZOIDAL) then
                VIBCPG = (0.d0, 0.d0)
                do k = NFEN - 1, 1, -1
-                  VIBCPG = VIBCPG + 0.5d0*(BCPG(k + 1) + BCPG(k)) &
-                           *(Sigma(k + 1) - Sigma(k))
+                  VIBCPG = VIBCPG + cmplx(0.5d0, kind=8)*(BCPG(k + 1) + BCPG(k)) &
+                           *cmplx(Sigma(k + 1) - Sigma(k), kind=8)
                end do
                VIDBCPDXOH(NH) = real(VIBCPG)/AMB
                VIDBCPDYOH(NH) = aimag(VIBCPG)/AMB
@@ -959,11 +960,11 @@ contains
                f3 = ((SigmaMP - Sigma(NFEN))*(SigmaMP - Sigma(NFEN - 1))) &
                     /((Sigma(NFEN - 2) - Sigma(NFEN))*(Sigma(NFEN - 2) - Sigma(NFEN - 1)))
 
-               BCPG_mid_point = f1*BCPG(NFEN) + f2*BCPG(NFEN - 1) + f3*BCPG(NFEN - 2)
+               BCPG_mid_point = cmplx(f1, kind=8)*BCPG(NFEN) + cmplx(f2, kind=8)*BCPG(NFEN - 1) + cmplx(f3, kind=8)*BCPG(NFEN - 2)
 
                ! 3. evaluate the integral at node NFEN-1
-               VIBCPG = (1.0/6.0)*(Sigma(NFEN) - Sigma(NFEN - 1)) &
-                        *(BCPG(NFEN) + 4.0d0*BCPG_mid_point + BCPG(NFEN - 1))
+               VIBCPG = cmplx(one_sixth_sp*(Sigma(NFEN) - Sigma(NFEN - 1)), kind=8) &
+                        *(BCPG(NFEN) + cmplx(4.0d0, kind=8)*BCPG_mid_point + BCPG(NFEN - 1))
 
                ! 4. evaluate the integral at the rest of the vertical nodes
                do k = NFEN - 2, 1, -1
@@ -978,11 +979,11 @@ contains
                   f3 = ((SigmaMP - Sigma(k + 2))*(SigmaMP - Sigma(k + 1))) &
                        /((Sigma(k) - Sigma(k + 2))*(Sigma(k) - Sigma(k + 1)))
 
-                  BCPG_mid_point = f1*BCPG(k + 2) + f2*BCPG(k + 1) + f3*BCPG(k)
+                  BCPG_mid_point = cmplx(f1, kind=8)*BCPG(k + 2) + cmplx(f2, kind=8)*BCPG(k + 1) + cmplx(f3, kind=8)*BCPG(k)
 
                   ! 4.2. evaluate the integral
-                  VIBCPG = VIBCPG + (1.0/6.0)*(Sigma(k + 1) - Sigma(k)) &
-                           *(BCPG(k + 1) + 4.0d0*BCPG_mid_point + BCPG(k))
+                  VIBCPG = VIBCPG + cmplx(one_sixth_sp*(Sigma(k + 1) - Sigma(k)), kind=8) &
+                           *(BCPG(k + 1) + cmplx(4.0d0, kind=8)*BCPG_mid_point + BCPG(k))
 
                end do
 
@@ -1015,7 +1016,7 @@ contains
                      !                 IF(k.EQ.2)      IIP = IIP + 1
                      !                 IF(k.EQ.NFEN-1) IIP = IIP - 1
                      w = 1.d0
-                     BCPGM(GQI) = 0.d0
+                     BCPGM(GQI) = (0.d0, 0.d0)
                      do IIP1 = 1, NumIP
                         ! Multiply up the weight for this term.
                         do IIP2 = 1, NumIP
@@ -1026,10 +1027,10 @@ contains
                            end if
                         end do
                         ! Add to the weighted interpolation.
-                        BCPGM(GQI) = BCPGM(GQI) + w(IIP1)*BCPG(IIP(IIP1))
+                        BCPGM(GQI) = BCPGM(GQI) + cmplx(w(IIP1), kind=8)*BCPG(IIP(IIP1))
                      end do
-                     VIBCPG = VIBCPG + (Sigma(k + 1) - Sigma(k)) &
-                              *GQW(IGQ)/sum(GQW)*BCPGM(GQI)
+                     VIBCPG = VIBCPG + cmplx((Sigma(k + 1) - Sigma(k)) &
+                                             *GQW(IGQ)/sum(GQW), kind=8)*BCPGM(GQI)
                   end do
                end do
                VIDBCPDXOH(NH) = real(VIBCPG)/AMB
@@ -1159,13 +1160,13 @@ contains
       SigAbov = 0.d0
       needs_interpolation = .true.
 
-      if (SigmaNN <= 1.0001*B) then
+      if (SigmaNN <= 1.0001d0*B) then
          ! Into ground - skip
          SigBelo = -999.d0
          SigAbov = -999.d0
          BCPressNN = -999.d0
          needs_interpolation = .false.
-      else if ((SigmaNN > 1.0001*B) .and. (SigmaNN <= B)) then
+      else if ((SigmaNN > 1.0001d0*B) .and. (SigmaNN <= B)) then
          ! At bottom - use bottom value
          LBelo = 1
          BCPressNN = BCP(NN, LBelo)
@@ -1581,13 +1582,13 @@ contains
       end if
 
       ! jgf49.44: Cover the case where the ramp length is zero.
-      if (DRamp < 1.0e-6) Ramp = 1.0d0
-      if (DRampExtFlux < 1.0e-6) RampExtFlux = 1.0d0
-      if (DRampIntFlux < 1.0e-6) RampIntFlux = 1.0d0
-      if (DRampElev < 1.0e-6) RampElev = 1.0d0
-      if (DRampTip < 1.0e-6) RampTip = 1.0d0
-      if (DRampMete < 1.0e-6) RampMete = 1.0d0
-      if (DRampWRad < 1.0e-6) RampWRad = 1.0d0
+      if (DRamp < 1.0d-6) Ramp = 1.0d0
+      if (DRampExtFlux < 1.0d-6) RampExtFlux = 1.0d0
+      if (DRampIntFlux < 1.0d-6) RampIntFlux = 1.0d0
+      if (DRampElev < 1.0d-6) RampElev = 1.0d0
+      if (DRampTip < 1.0d-6) RampTip = 1.0d0
+      if (DRampMete < 1.0d-6) RampMete = 1.0d0
+      if (DRampWRad < 1.0d-6) RampWRad = 1.0d0
 
       !     Sponge layer sigma adjustment (DW)
       if (LoadAbsLayerSigma) then
@@ -1768,7 +1769,7 @@ contains
          end if
 
          ! Finalize bathymetry at end of change interval
-         if (TimeLoc == BTIME_END) then
+         if (abs(TimeLoc - BTIME_END) <= eps) then
             write (scratchMessage, '(A42,1X,E15.8,1X,A5)') &
                'BATHYMETRY VALUES ARE NOW FIXED AT TIME =', TimeLoc, '(SEC)'
             call allMessage(INFO, scratchMessage)
@@ -1810,7 +1811,7 @@ contains
          end if
 
          ! Finalize bathymetry at end of change interval
-         if (TimeLoc == BTIME_END) then
+         if (abs(TimeLoc - BTIME_END) <= eps) then
             write (scratchMessage, '(A42,1X,E15.8,1X,A5)') &
                'Bathymetry values are now fixed at time =', TimeLoc, '(sec).'
             call allMessage(INFO, scratchMessage)
@@ -2204,7 +2205,7 @@ contains
 
       if (NFFR > 0) then
          do J = 1, NFFR
-            if (FPER(J) == 0.d0) then
+            if (abs(FPER(J)) <= eps) then
                NCYC = 0
             else
                NCYC = int(TimeH/FPER(J))
@@ -2748,7 +2749,7 @@ contains
          VELMAX = VELMAX**0.5d0
          ITEST = (IT/NSCREEN)*NSCREEN
 
-         runperccomplete = real(IT - ITHS)/real(NT - ITHS)*100d0
+         runperccomplete = real(IT - ITHS, 8)/real(NT - ITHS, 8)*100d0
 #ifdef CMPI
          if (MYPROC == 0 .and. ELMAX < WarnElev .and. ITEST == IT) then
             if (KEMAX > 0) then
