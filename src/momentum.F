@@ -962,7 +962,8 @@ C     VEW: Sum front side values to back side
                   IF(ISSUBMERGED64(I).NE.0) THEN
                      NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                      NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                      IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                      IF(LoadCondensedNodes.AND.
+     &                CONDENSEDNODES(NNBB1,1).NE.0) THEN
                          NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
                          NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
                       ENDIF
@@ -1091,7 +1092,8 @@ C     VEW: Copy values from back side to front side
                         IF(ISSUBMERGED64(I).NE.0) THEN
                            NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                            NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                           IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                           IF(LoadCondensedNodes.AND.
+     &                CONDENSEDNODES(NNBB1,1).NE.0) THEN
                               NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
                               NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
                            ENDIF

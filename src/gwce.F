@@ -1918,7 +1918,8 @@ C     VEW: Sum front side values to back side
                         IF(ISSUBMERGED64(I).NE.0) THEN
                            NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                            NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                           IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                           IF(LoadCondensedNodes.AND.
+     &                CONDENSEDNODES(NNBB1,1).NE.0) THEN
                               NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
                               NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
                            ENDIF
@@ -1978,7 +1979,10 @@ C.... not enter the equation of the wet members.
 #ifdef CMPI
       IF ((NFLUXIB64_GBL.GT.0.OR.LoadCondensedNodes)
      &    .AND.(ILump.NE.0)) THEN
-         CALL UPDATER(COEFDTemp,GWCE_LV,DUMY1,2)
+C        ETA1 is included: the VEW and condensed-node loops above average
+C        it over coupled nodes, but only on subdomains that hold the whole
+C        group. Every copy must match its owner before the copy-back below.
+         CALL UPDATER(COEFDTemp,GWCE_LV,ETA1,3)
       ENDIF
 #endif      
       
@@ -1993,7 +1997,8 @@ C     VEW: Copy values from back side to front side
                         IF(ISSUBMERGED64(I).NE.0) THEN
                            NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                            NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                           IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                           IF(LoadCondensedNodes.AND.
+     &                CONDENSEDNODES(NNBB1,1).NE.0) THEN
                               NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
                               NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
                            ENDIF
