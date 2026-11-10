@@ -108,7 +108,7 @@ IBTYPE(k)
 
       = 52 external boundary with periodic non-zero normal flow combined with wave radiation normal to the boundary as natural boundary conditions and no constraint on the tangential flow. This is applied by specifying the non-zero contribution to the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. This boundary condition should correctly satisfy the flux balance in a global sense but will only satisfy the normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents a periodic river inflow or open ocean boundary with a weak specified normal flow condition and free tangential slip where waves are allowed to propagate freely out of the domain. Discharges are specified in the Model Parameter and Periodic Boundary Condition File as harmonic discharge forcing. Additional parameters, including DRampExtFlux and FluxSettlingTime must also be set in the Model Parameter and Periodic Boundary Condition File in order to use this boundary type.
 
-      = 64 vertical element wall boundary that allows the mesh to have two nodes at the same horizontal location with different depths and allows water to seemlessly flow over the boundary, by primarily consolidating the nodal equations and occasionally using the weir formula. This boundary type is useful to have steep-sided channels or other vertical features represented in the mesh while, unlike barrier boundaries that entirely depend on the weir formula, solutions along this boundary are primarily computed based on the governing equations. See :doc:`../../user_guide/special_features/vertical_element_walls` for more information.
+      = 64 vertical element wall boundary that allows the mesh to have two nodes at the same horizontal location with different depths and allows water to seemlessly flow over the boundary, by primarily consolidating the nodal equations and occasionally using the weir formula. This boundary type is useful to have steep-sided channels or other vertical features represented in the mesh while, unlike barrier boundaries that entirely depend on the weir formula, solutions along this boundary are primarily computed based on the governing equations. Its crest can vary in time to represent a moving gate (VaryType=4 in the :ref:`time varying weirs input file <fort142_varytype4>`). See :doc:`../../user_guide/special_features/vertical_element_walls` for more information.
 
       = 102, 112, or 122 flux specified baroclinic. In order to designate a river boundary as baroclinic, 100 should be added to the IBTYPE that would be appropriate in the barotropic case. For example, to convert a barotropic river boundary (IBTYPE of 22) to a baroclinic river boundary with freshwater inflow, change the IBTYPE to 122. If there is a 1 in the 100s place of the IBTYPE, ADCIRC will then try to read an input file (fort.39) for the salinity and/or temperature boundary condition. The format of the fort.39 file depends on the value of IDEN; see the documentation of the fort.39 file for more details.
 
@@ -2946,7 +2946,7 @@ inundationOutputControl
 .. _TVWControl:
 
 TVWControl
-   Fortran namelist that can be used to activate the time varying weirs feature (with use_TVW), specify the name of the input file that specifies the behavior of the time varying weir(s) (TVW_file), and the schedule for output of weir height to the fort.77 file (nout_TVW, touts_TVW, toutf_TVW, and nspool_TVW).
+   Fortran namelist that can be used to activate the time varying weirs feature (with use_TVW), specify the name of the input file that specifies the behavior of the time varying weir(s) (TVW_file), and the schedule for output of weir height to the fort.77 file (nout_TVW, touts_TVW, toutf_TVW, and nspool_TVW). TVV_DELTA and TVV_SEARCH_RADIUS apply to time-varying crest vertical element walls (VaryType=4 in the :ref:`TVW file <fort142_varytype4>`).
 
 .. _outputNodeCode:
 
@@ -3002,6 +3002,16 @@ toutf_TVW
 
 nspool_TVW
    Time step increment at which output will be written to the fort.77 file when the ADCIRC model time is between touts_TVW and toutf_TVW (in days since cold start).
+
+.. _TVV_DELTA:
+
+TVV_DELTA
+   Optional real value (m) for time-varying crest vertical element walls (VaryType=4 in the :ref:`TVW file <fort142_varytype4>`): the required distance δ between the crest and the wall-top node elevation of every gate pair. If given, the run stops when a pair's crest in the fort.14 file differs from its wall-top node elevation plus TVV_DELTA by more than 1e-6 m. If not given, δ is taken per pair from the fort.14 file and must be positive.
+
+.. _TVV_SEARCH_RADIUS:
+
+TVV_SEARCH_RADIUS
+   Optional real value (m): default search radius for locating the vertical element wall pair of each VaryType=4 line of the :ref:`TVW file <fort142_varytype4>` that does not give its own SearchRadius. If neither is given, 1e-6 m is used, so the search point must coincide with a node of the pair.
 
 .. _TVW:
 

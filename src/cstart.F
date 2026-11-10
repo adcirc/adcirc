@@ -77,6 +77,7 @@ C
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE MOD_TVV, ONLY : tvv_setup
       USE GWCE, ONLY : etime1, etime2, etiminc
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
@@ -110,6 +111,8 @@ C
 
 C SET UP TIME VARYING WEIRS IF NECESSARY
       CALL WEIR_SETUP()
+C SET UP TIME-VARYING CREST VEWS (VaryType=4) IF ANY
+      CALL tvv_setup()
 
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling

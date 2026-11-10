@@ -105,6 +105,7 @@ C
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
      &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM, ISSUBMERGED64
       USE GLOBAL_IO, ONLY : nddt2get
+      USE MOD_TVV, ONLY : tvv_apply
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections,
@@ -452,6 +453,10 @@ C.............................DW, sponge layer ..................
       END IF
 C.... END DW..........................................................
       
+C...  TIME-VARYING CREST VEWS: MOVE THE GATES TO THEIR POSITION AT TIMELOC
+C...  (CREST AND WALL-TOP DEPTH), BEFORE ANY USE OF DP IN THIS TIME STEP
+      CALL tvv_apply(TimeLoc)
+
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
 C

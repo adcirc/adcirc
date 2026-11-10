@@ -17,6 +17,8 @@ VEWs effectively create internal boundaries that allow water to flow between adj
 .. note::
    VEWs and the :ref:`condensed_nodes` nodal attribute are implemented only for :ref:`IM` values that run ADCIRC in the lumped explicit mode.
 
+The crest of a VEW can also vary in time to represent a moving gate; see :ref:`time_varying_crest_vew`.
+
 .. figure:: ../../_static/images/user_guide/special_features/vertical_element_walls/vertical_element_walls_schematic.png
    :width: 600
    :alt: Comparison between conventional trapezoidal approach and vertical element walls
@@ -76,6 +78,29 @@ Wet Perimeter Consideration
 Quasi 1D Solution with Rotated Flow Along Flowline
    For channels modeled with both vertical element walls and :ref:`condensed_nodes` nodal attribute, ADCIRC includes special handling of velocity components to ensure proper flow direction along the walls when they are not submerged. This prevents unrealistic cross-wall flow and maintains appropriate momentum balance in the system. This treatment gives 
 
+
+.. _time_varying_crest_vew:
+
+Time-Varying Crest VEWs (Moving Gates)
+--------------------------------------
+
+The crest of a VEW can follow a prescribed time series, to represent an overflow gate (crest gate) that rises from the bed to close and lowers to the bed to open. The gate is defined in the :ref:`Time Varying Weirs Input File <fort142>` with ``VaryType=4``; see :ref:`fort142_varytype4` for the input format and an example.
+
+A gate is modeled as a wall whose top is part of the mesh: the shallower node of each VEW pair is a wall-top node, and the crest lies a small, constant distance δ above it (e.g. 0.001 m). Every time step, ADCIRC moves the crest of all pairs of the gate to z\ :sub:`c`\ (t) and the wall-top nodes to z\ :sub:`c`\ (t) − δ, so the weir crest and the mesh always describe the same wall.
+
+When the crest moves by Δz\ :sub:`c`, the water level is adjusted so that no water is created or lost:
+
+- A wall-top node that is dry, or wet but not coupled to other nodes, keeps its water depth: its water level moves by Δz\ :sub:`c`.
+- Nodes that share one water level, i.e. a coupled group joined by submerged VEW pairs and :ref:`condensed_nodes` groups, are shifted together by ΣA\ :sub:`top`\ Δz\ :sub:`c` / ΣA, where A are the nodal areas and the numerator runs over the group's wall-top nodes. For a single submerged pair this is Δz\ :sub:`c` · A\ :sub:`top` / (A\ :sub:`top` + A\ :sub:`bed`).
+
+The water level is shifted at both time levels used by the GWCE. The gate position depends on time only, so it is restored exactly at a hot start, and all subdomains of a parallel run move the gate identically.
+
+Requirements and limitations:
+
+- lumped explicit GWCE (as for all VEWs) with a constant or prescribed :ref:`TAU0 <TAU0>` (TAU0 ≥ 0);
+- not combined with the :ref:`wet perimeter consideration <wet_perimeter_consideration>`;
+- condensed node groups that contain wall-top nodes must consist of wall-top nodes of one gate;
+- only the crest elevation varies; the weir coefficients are fixed.
 
 Defining VEWs in ADCIRC Input Files
 -----------------------------------

@@ -27,4 +27,6 @@ Notes
 * When using sparse format, only weir nodes are included in the output
 * Node numbers (k) reference the global node numbering system
 * The output frequency is controlled by :ref:`NSPOOL_TVW <NSPOOL_TVW>` parameter
-* TVW(k) represents the change in elevation at node k from the original fort.14 elevation 
+* TVW(k) represents the change in elevation at node k from the original fort.14 elevation
+* For time-varying crest vertical element walls (:ref:`VaryType=4 <fort142_varytype4>`), the crest change is written at both nodes of each pair (the wall-top node and the bed node)
+* In the netCDF formats the weir elevation change is stored without a time dimension, so the file holds only the most recent record; use an ASCII format (nout_TVW = 1 or 4) for a time series 

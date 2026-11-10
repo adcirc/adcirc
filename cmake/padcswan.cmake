@@ -149,6 +149,7 @@ set(PADCSWAN1_SOURCES
 set(PADCSWAN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tvv.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F

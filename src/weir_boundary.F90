@@ -200,6 +200,7 @@ module TIME_VARYING_WEIR_BOUNDARY
    real(8) :: FailureDurationDay, FailureDurationHour
    real(8) :: FailureDurationMin, FailureDurationSec
    real(8) :: HOTADD
+   real(8) :: SearchRadius !...Read for VaryType=4 lines, which are handled in mod_tvv
    integer :: VaryType, HOT
    integer :: LOOP, NLOOPS
 
@@ -214,7 +215,7 @@ module TIME_VARYING_WEIR_BOUNDARY
       TimeEndDay, TimeEndHour, TimeEndMin, TimeEndSec, &
       FailureDurationDay, FailureDurationHour, &
       FailureDurationMin, FailureDurationSec, &
-      ScheduleFile, HOT, LOOP, NLOOPS
+      ScheduleFile, HOT, LOOP, NLOOPS, SearchRadius
 
    public :: WEIR_SETUP, ALLOCATE_TIMEVARYINGWEIRS, &
              FIND_BOUNDARY_NODES, COMPUTE_BARRIER_HEIGHT, &
@@ -1047,6 +1048,7 @@ contains
       do I = 1, NTIMEVARYINGWEIRS
          call NULLIFY_TVW_NML()
          read (98, NML=TimeVaryingWeir, IOSTAT=IOS, ERR=200)
+         if (VARYTYPE == 4) cycle ! crest table, read by mod_tvv
          if (.not. ISNULL(S=SCHEDULEFILE)) then
             NSCHEDULES_RAW = NSCHEDULES_RAW + 1
          end if
@@ -1059,6 +1061,7 @@ contains
          do I = 1, NTIMEVARYINGWEIRS
             call NULLIFY_TVW_NML()
             read (98, NML=TimeVaryingWeir, IOSTAT=IOS)
+            if (VARYTYPE == 4) cycle
             if (.not. ISNULL(S=SCHEDULEFILE)) then
                IDX = IDX + 1
                SCHEDULE_LIST_RAW(IDX) = SCHEDULEFILE
@@ -1084,6 +1087,9 @@ contains
          call NULLIFY_TVW_NML()
          read (98, NML=TimeVaryingWeir, ERR=200, &
                IOSTAT=IOS)
+
+         !...................Time-varying crest VEW lines are handled by mod_tvv
+         if (VARYTYPE == 4) cycle
 
          if (VARYTYPE == 3) then
             if (ISNULL(TimeStartDay)) TimeStartDay = 0d0
@@ -1584,6 +1590,7 @@ contains
       VARYTYPE = -99999
       LOOP = -99999
       NLOOPS = -99999
+      SearchRadius = -99999d0
       ScheduleFile = "NOFILE"
 
       return

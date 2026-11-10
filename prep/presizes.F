@@ -140,6 +140,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &                         WaveStressGrad_CAP !tcm v56 2024: added
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
+     &    TVV_DELTA,TVV_SEARCH_RADIUS,
      &    outputWindDrag,slim,windlim,directvelWD,useHF,
      &    Limit_WaveStressGrad,  !tcm v56 2024: added
      &    PFile_inset, Wfile_inset, InsetControlFile, !aman added
@@ -279,7 +280,7 @@ Casey 251212: Adding time control.
      &                       invertedBarometerOnElevationBoundary,nPowellSearchDomains
 
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
-     &    TOUTF_TVW,NSPOOL_TVW
+     &    TOUTF_TVW,NSPOOL_TVW,TVV_DELTA,TVV_SEARCH_RADIUS
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.

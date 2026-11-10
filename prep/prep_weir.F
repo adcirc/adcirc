@@ -113,17 +113,31 @@ C
                 REAL(8) :: ETA_MAX,TimeStartDay,TimeStartSec
                 REAL(8) :: TimeStartHour,TimeEndDay,TimeEndHour
                 REAL(8) :: TimeEndSec,ZF
+                REAL(8) :: TimeStartMin,TimeEndMin
+                REAL(8) :: FailureDurationDay,FailureDurationHour
+                REAL(8) :: FailureDurationMin,FailureDurationSec
+                REAL(8) :: SearchRadius
+                INTEGER  :: HOT,LOOP,NLOOPS
                 INTEGER  :: VARYTYPE
                 INTEGER  :: IDX
                 INTEGER  :: IOS
                 INTEGER  :: I
                 LOGICAL  :: exists
                 
+C               Same variables as the ADCIRC TimeVaryingWeir namelist,
+C               so that any valid line can be read here
                 NAMELIST /TimeVaryingWeir/ X1,Y1,X2,Y2,VaryType,ZF,
      &                                     ETA_MAX,TimeStartDay,
-     &                                     TimeStartHour,TimeStartSec,
+     &                                     TimeStartHour,TimeStartMin,
+     &                                     TimeStartSec,
      &                                     TimeEndDay,TimeEndHour,
-     &                                     TimeEndSec
+     &                                     TimeEndMin,TimeEndSec,
+     &                                     FailureDurationDay,
+     &                                     FailureDurationHour,
+     &                                     FailureDurationMin,
+     &                                     FailureDurationSec,
+     &                                     ScheduleFile,HOT,LOOP,
+     &                                     NLOOPS,SearchRadius
 
                 CALL ALLOCATE_WEIRBOUNDARY()
 C...............OPEN THE TIME VARYING WEIR FILE IF FOUND
@@ -156,7 +170,12 @@ C...............WRITE NAMELIST INPUT TO SCRATCH FILE
                 DO I = 1,NTIMEVARYINGWEIR
                     X1 = -99999D0
                     Y1 = -99999D0
+                    VARYTYPE = -99999
                     READ(99,NML=TimeVaryingWeir,IOSTAT=IOS)
+C                   Time-varying crest VEW lines (VaryType=4) are read by
+C                   every subdomain from the fulldomain file, so they are
+C                   not distributed here
+                    IF(VARYTYPE.EQ.4) CYCLE
                     CALL FIND_BOUNDARY_NODES(X1,Y1,IDX)
                     NODES_TVW(I) = IDX
                 ENDDO    

@@ -63,6 +63,7 @@ C-----------------------------------------------------------------------
      &   noutv, toutsv, toutfv, nnv, statnamev, nstav, ntcysv, ntcyfv,
      &   nspoolv, staie1, staie2, staie3, xev, yev, ntrspv, slev, sfev,
      &   noutc, toutsc, nspoolc, nnc, statnamec, nstae, tvw_file, sfec,
+     &   tvv_delta, tvv_search_radius,
      &   slec, staic1, staic2, staic3, nstac, ntcysc, ntcyfc, mld,
      &   ntrspc, noutm, nspoolm, toutsm, nstam, xec, yec, slem, sfem,
      &   staim1, staim2, staim3, nnm, statnamem, ntcysge, ntcyfge, yem,
@@ -255,7 +256,8 @@ C.... SB
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
-     &                      TOUTF_TVW,NSPOOL_TVW
+     &                      TOUTF_TVW,NSPOOL_TVW,
+     &                      TVV_DELTA,TVV_SEARCH_RADIUS
       NAMELIST /dynamicWaterLevelCorrectionControl/
      &  dynamicWaterLevelCorrectionFileName,
      &  dynamicWaterLevelCorrectionMethod,

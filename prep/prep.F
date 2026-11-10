@@ -2328,7 +2328,9 @@ Casey 251212: Adding time control.
              write(15,*) "    NOUT_TVW=",NOUT_TVW,","
              write(15,*) "    TOUTS_TVW=",TOUTS_TVW,","
              write(15,*) "    TOUTF_TVW=",TOUTF_TVW,","
-             write(15,*) "    NSPOOL_TVW=",NSPOOL_TVW
+             write(15,*) "    NSPOOL_TVW=",NSPOOL_TVW,","
+             write(15,*) "    TVV_DELTA=",TVV_DELTA,","
+             write(15,*) "    TVV_SEARCH_RADIUS=",TVV_SEARCH_RADIUS
              write(15,*) "/"
              write(15,*) '! -- End TVW Control Namelist --'
          endif
