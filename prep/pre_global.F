@@ -356,6 +356,8 @@ C     the namelist written to each subdomain fort.15 reads back as the original
       REAL(8) :: BARSLIM64_ELEM=99999.D0   !...Water level elemental slope threhold. A weir is considered not submerged if the water level slope is greater than this value
       REAL(8) :: BARSLIM64_EDGE=99999.D0   !...Water level edge slope threhold. A weir is considered not submerged if the water level slope is greater than this value
       LOGICAL :: VEW_CREST_HYDRAULICS = .FALSE.
+      REAL(8) :: VEW_FROUDE_CRIT = 0.5D0
+      REAL(8) :: VEW_FROUDE_RECOUPLE = 0.8D0
       REAL(8) :: VEW_ADVECT_FR_ATTACH = 0.05D0
       REAL(8) :: VEW_ADVECT_FR_FULL = 0.1D0
       LOGICAL :: WEIR_ENERGY_HEAD = .FALSE.
@@ -363,6 +365,7 @@ C     the namelist written to each subdomain fort.15 reads back as the original
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE, VEW_CREST_HYDRAULICS,
+     &  VEW_FROUDE_CRIT, VEW_FROUDE_RECOUPLE,
      &  VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL,
      &  WEIR_ENERGY_HEAD, WEIR_SEMI_IMPLICIT
 

@@ -62,8 +62,25 @@ module WEIR
    !   Turns on, together:
    !   - the recovered crest velocity in the advective terms of coupled pairs (vew1d.F90);
    !   - the total energy head (static head + vn**2/(2g), raw nodal velocity normal to the boundary)
-   !     in the VEW weir formula.
+   !     in the VEW weir formula;
+   !   - the switch between the coupled and the weir mode described below.
+   !   The switch uncouples a submerged VEW pair (weir formula) when the crest Froude number
+   !   Fr = (q_nb/h_t)/sqrt(g*h_t) exceeds VEW_FROUDE_CRIT; q_nb is the wall-normal discharge averaged
+   !   over the foot's neighbours that are not on a VEW, h_t the depth over the crest. Recouple when
+   !   Fr < VEW_FROUDE_RECOUPLE*VEW_FROUDE_CRIT (default 0.8) and the head across the wall face is below
+   !   0.5*(VEW_FROUDE_RECOUPLE*VEW_FROUDE_CRIT)**2*h_t.
+   !   Replaces the depth thresholds BARMIN64_SUBM/NOSUBM (setting both is an error, see WEIR_SETUP).
+   !   On walls with condensed tops the test acts on the lee pair only, the pair whose
+   !   opposite foot's neighbours stand higher; the upstream pair is left to the depth test and stays
+   !   coupled, so the wall top keeps the upstream level and the lee pair is the one weir across the
+   !   wall. When a pair leaves coupled mode, its flux history (QN0, QN1) starts from the discharge of
+   !   the foot's neighbours, capped at the critical discharge over the crest, and its two levels are
+   !   split, conserving volume, to the head at which the weir formula gives that discharge: a coupled
+   !   pair has zero flux and one shared level, so otherwise the whole discharge would switch on in
+   !   one step from zero head.
    logical :: VEW_CREST_HYDRAULICS = .false.
+   real(8) :: VEW_FROUDE_CRIT = 0.5d0 !...Critical crest Froude number for the coupled/weir switch
+   real(8) :: VEW_FROUDE_RECOUPLE = 0.8d0 !...Recouple below VEW_FROUDE_RECOUPLE*VEW_FROUDE_CRIT (hysteresis)
    real(8) :: BARSLIM64_ELEM = 99999.d0 !...Water level elemental slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
    real(8) :: BARSLIM64_EDGE = 99999.d0 !...Water level edge slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
 
@@ -84,7 +101,7 @@ module WEIR
    public :: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, &
              BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
              BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN, WEIR_ENERGY_HEAD, &
-             VEW_CREST_HYDRAULICS, WEIR_SEMI_IMPLICIT
+             VEW_CREST_HYDRAULICS, VEW_FROUDE_CRIT, VEW_FROUDE_RECOUPLE, WEIR_SEMI_IMPLICIT
 
    !-----------------------------------------------------------------------
 contains
@@ -274,12 +291,22 @@ contains
       BARMIN64 = 1.2d0*H0 ! This is equivalent to HOFF in wetdry.F
       !               !...The submergence thresholds default to the same value unless set in the
       !               !   VEW1DChannelControl namelist (negative means not set)
+      !               !   With VEW_CREST_HYDRAULICS the Froude number decides between the coupled and the
+      !               !   weir mode, so the depth thresholds are not used (mutually exclusive): a pair
+      !               !   can couple as soon as the water on its lower ground side is above the crest.
       if (VEW_CREST_HYDRAULICS) then
          !...serial only for now: the per-wall state (one discharge per wall, weir mode of the
          !   lee pair) is formed from the pairs a subdomain holds, and a subdomain can hold one face
          !   of a wall without the other
          if (MNPROC > 1) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
                                         message="VEW_CREST_HYDRAULICS is serial only for now")
+         if (BARMIN64_SUBM >= 0.d0 .or. BARMIN64_NOSUBM >= 0.d0) then
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message="BARMIN64_SUBM/BARMIN64_NOSUBM and VEW_CREST_HYDRAULICS "// &
+                           "are mutually exclusive; remove the thresholds from VEW1DChannelControl")
+         end if
+         BARMIN64_NOSUBM = 0.d0
+         BARMIN64_SUBM = 0.d0
       end if
       if (BARMIN64_NOSUBM < 0.d0) BARMIN64_NOSUBM = 1.2d0*H0
       if (BARMIN64_SUBM < 0.d0) BARMIN64_SUBM = 1.2d0*H0
@@ -1736,7 +1763,7 @@ module WEIR_FLUX
                    INT_TVW, EXT_TVW, BARSLIM64_ELEM, BARSLIM64_EDGE, &
                    BARMIN64_SUBM, BARMIN64_SLIM, BARMIN64_NOSUBM, BARMIN64_CORNER, &
                    BARMIN64, BARMIN64_SLIM, WEIR_ENERGY_HEAD, &
-                   VEW_CREST_HYDRAULICS, WEIR_SEMI_IMPLICIT
+                   VEW_CREST_HYDRAULICS, VEW_FROUDE_CRIT, VEW_FROUDE_RECOUPLE, WEIR_SEMI_IMPLICIT
 
    implicit none
 
@@ -2008,9 +2035,10 @@ contains
    subroutine SET_SUBMERGED64_AT( &
       BARRIER_INDEX, BOUNDARYNODE, BOUNDARY, TIMELOC)
 
-      use BOUNDARIES, only: NVELL, IBCONN, BARINHT, ISSUBMERGED64, NBV
+      use BOUNDARIES, only: NVELL, IBCONN, BARINHT, ISSUBMERGED64, NBV, LBCODEI, CSII, SIII, BARINCFSB
       use GLOBAL, only: TVW, NODECODE, H0, &
-                        IFSFM, IFNLFA
+                        IFSFM, IFNLFA, UU1, VV1, QN0, QN1
+      use ADC_CONSTANTS, only: G
       use MESH, only: LBArray_Pointer, DP, AREAS, NM, &
                       NEITAB, NNEIGH, &
                       NNEIGHELE, NEITABELE, &
@@ -2037,6 +2065,9 @@ contains
       integer :: NNBBNEI, NWETNEI, II, JJ
       logical :: UNSUBMERGE
       real(8) :: X1, X2, Y1, Y2, ET1, ET2, LEN, SLP, HTOT
+      real(8) :: QNB, HTOP, FRCREST, FROFF
+      real(8) :: UNB, VNB, DXNB, DYNB, QCARRY, ETANEAR, ETAFAR
+      integer :: NB, NCNT, IBN, IFOOT, ITOP, OPPFOOT
 
       LOG_SCOPE_TRACED("SET_SUBMERGED64_AT", WEIR_BOUNDARY_TRACING)
 
@@ -2169,6 +2200,49 @@ contains
          end if
       end if
 
+      !...............VEW_CREST_HYDRAULICS: crest Froude number from the discharge of the foot's (lower
+      !               ground side node's) neighbours that are not on a VEW, so that the decision does
+      !               not depend on the pair's own (shared) velocity. Hysteresis: uncouple above
+      !               VEW_FROUDE_CRIT; recouple only below 0.8*VEW_FROUDE_CRIT and once the head across
+      !               the wall face has come down to the velocity head of that Froude number.
+      !               Only while the wall-top node is wet: a dry top (opening gate) is left to the
+      !               depth test, so that coupling can wet it.
+      if (VEW_CREST_HYDRAULICS .and. ISSUBMERGED64(I) /= 0 .and. NODECODE(NNBBH) /= 0) then
+         HTOP = ETA2(NNBBH) + dble(IFNLFA)*DP(NNBBH)
+         QNB = 0.d0
+         NCNT = 0
+         do JJ = 2, NNeigh(NNBBL)
+            NB = NeiTab(NNBBL, JJ)
+            if (NB == NNBBL .or. NODECODE(NB) == 0) cycle
+            IBN = LBArray_Pointer(NB)
+            if (IBN > 0) then
+               if (LBCODEI(IBN) == 64) cycle
+            end if
+            QNB = QNB + (UU1(NB)*CSII(I) + VV1(NB)*SIII(I))*(ETA2(NB) + dble(IFNLFA)*DP(NB))
+            NCNT = NCNT + 1
+         end do
+         !...walls with condensed tops: the Froude test acts on the lee pair only, the pair whose
+         !   opposite foot's neighbours stand higher; the upstream pair stays coupled
+         OPPFOOT = OPPOSITE_FOOT(I)
+         if (OPPFOOT > 0) then
+            ETANEAR = NEIGHBOR_LEVEL(NNBBL)
+            ETAFAR = NEIGHBOR_LEVEL(OPPFOOT)
+            if (.not. (ETANEAR > -9000.d0 .and. ETAFAR > -9000.d0 .and. ETAFAR > ETANEAR)) NCNT = 0
+         end if
+         if (NCNT > 0 .and. HTOP > H0) then
+            FRCREST = abs(QNB/dble(NCNT))/HTOP/sqrt(G*HTOP)
+            FROFF = VEW_FROUDE_RECOUPLE*VEW_FROUDE_CRIT
+            if ((ISSUBMP /= 0 .and. FRCREST > VEW_FROUDE_CRIT) .or. &
+                (ISSUBMP == 0 .and. (FRCREST >= FROFF .or. &
+                                     abs(ETA2(NNBB1) - ETA2(NNBB2)) >= 0.5d0*FROFF**2*HTOP))) then
+               ISSUBMERGED64(I) = 0
+               if (NNBB2 > 0) then
+                  ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+               end if
+            end if
+         end if
+      end if
+
       !...............Check if the water suraface slope along the weir is greater than a threshold
       !...............If the slope is greater than a threshold, then the weir is not submerged
       HTOT = ETA2(NNBB1) + dble(IFNLFA)*DP(NNBB1)
@@ -2221,9 +2295,232 @@ contains
          end if
       end if
 
+      !...............VEW_CREST_HYDRAULICS: the pair has just left coupled mode; carry the discharge into
+      !               its flux history and split its levels to the head that gives that discharge
+      if (VEW_CREST_HYDRAULICS .and. ISSUBMP /= 0 .and. &
+          ISSUBMERGED64(I) == 0 .and. NNBB2 > 0) then
+         if (NODECODE(NNBB1) /= 0 .and. NODECODE(NNBB2) /= 0) then
+            QNB = 0.d0
+            UNB = 0.d0
+            VNB = 0.d0
+            DXNB = 0.d0
+            DYNB = 0.d0
+            NCNT = 0
+            do JJ = 2, NNeigh(NNBBL)
+               NB = NeiTab(NNBBL, JJ)
+               if (NB == NNBBL) cycle
+               DXNB = DXNB + X(NB) - X(NNBBL)
+               DYNB = DYNB + Y(NB) - Y(NNBBL)
+               if (NODECODE(NB) == 0) cycle
+               IBN = LBArray_Pointer(NB)
+               if (IBN > 0) then
+                  if (LBCODEI(IBN) == 64) cycle
+               end if
+               QNB = QNB + (UU1(NB)*CSII(I) + VV1(NB)*SIII(I))*(ETA2(NB) + dble(IFNLFA)*DP(NB))
+               UNB = UNB + UU1(NB)
+               VNB = VNB + VV1(NB)
+               NCNT = NCNT + 1
+            end do
+            if (NCNT > 0) then
+               !...into the domain at the foot when the flow leaves the foot into its bed side
+               !   (at most the critical discharge over the crest: the neighbours' flow can be far more
+               !   than passes a nearly dry top, e.g. a wave reflecting off a closed gate)
+               HTOP = max(ETA2(NNBBH) + dble(IFNLFA)*DP(NNBBH), 0.d0)
+               QCARRY = min(abs(QNB/dble(NCNT)), HTOP*sqrt(G*HTOP))
+               if (UNB*DXNB + VNB*DYNB < 0.d0) QCARRY = -QCARRY
+               IFOOT = merge(I, LBArray_Pointer(NNBB2), NNBBL == NNBB1)
+               ITOP = merge(LBArray_Pointer(NNBB2), I, NNBBL == NNBB1)
+               QN0(IFOOT) = QCARRY
+               QN1(IFOOT) = QCARRY
+               QN0(ITOP) = -QCARRY
+               QN1(ITOP) = -QCARRY
+               if (HTOP > H0 .and. BARINCFSB(I) > 0.d0) then
+                  call SPLIT_PAIR_LEVELS(NNBBH, NNBBL, sign((QCARRY/(BARINCFSB(I)*HTOP))**2/(2.d0*G), QCARRY))
+               end if
+            end if
+         end if
+      end if
+
       return
       !-----------------------------------------------------------------------
    end subroutine SET_SUBMERGED64_AT
+   !-----------------------------------------------------------------------
+
+   !-----------------------------------------------------------------------
+   !  NEIGHBOR_LEVEL: mean water level of the wet neighbours of node NF that are not on a VEW, or
+   !  -99999 if there are none.
+   !-----------------------------------------------------------------------
+   real(8) function NEIGHBOR_LEVEL(NF)
+      use BOUNDARIES, only: LBCODEI
+      use GLOBAL, only: NODECODE
+      use MESH, only: LBArray_Pointer, NEITAB, NNEIGH
+      implicit none
+      integer, intent(IN) :: NF
+      integer :: JJ, NB, IBN, CNT
+
+      NEIGHBOR_LEVEL = 0.d0
+      CNT = 0
+      do JJ = 2, NNeigh(NF)
+         NB = NeiTab(NF, JJ)
+         if (NB == NF .or. NODECODE(NB) == 0) cycle
+         IBN = LBArray_Pointer(NB)
+         if (IBN > 0) then
+            if (LBCODEI(IBN) == 64) cycle
+         end if
+         NEIGHBOR_LEVEL = NEIGHBOR_LEVEL + ETA2(NB)
+         CNT = CNT + 1
+      end do
+      if (CNT > 0) then
+         NEIGHBOR_LEVEL = NEIGHBOR_LEVEL/dble(CNT)
+      else
+         NEIGHBOR_LEVEL = -99999.d0
+      end if
+   end function NEIGHBOR_LEVEL
+
+   !-----------------------------------------------------------------------
+   !  OPPOSITE_FOOT: the foot node on the other face of the wall from boundary entry I, through the
+   !  condensed wall tops; 0 if the entry's top is not in a two-node group.
+   !-----------------------------------------------------------------------
+   integer function OPPOSITE_FOOT(I)
+      use BOUNDARIES, only: NVEL, NBV, IBCONN
+      use MESH, only: LBArray_Pointer
+      use NodalAttributes, only: LoadCondensedNodes, NListCondensedNodes, ListCondensedNodes, &
+                                 NNodesListCondensedNodes
+      implicit none
+      integer, intent(IN) :: I
+      integer, allocatable, save :: OPP(:)
+      integer :: K, L, M, T1, T2, E1, E2, F1, F2
+
+      if (.not. allocated(OPP)) then
+         allocate (OPP(NVEL))
+         OPP = 0
+         if (LoadCondensedNodes) then
+            do K = 1, NListCondensedNodes
+               T1 = 0
+               T2 = 0
+               M = 0
+               do L = 1, NNodesListCondensedNodes(K)
+                  if (ListCondensedNodes(K, L) <= 0) cycle
+                  M = M + 1
+                  if (M == 1) T1 = ListCondensedNodes(K, L)
+                  if (M == 2) T2 = ListCondensedNodes(K, L)
+               end do
+               if (M /= 2) cycle
+               E1 = LBArray_Pointer(T1)
+               E2 = LBArray_Pointer(T2)
+               if (E1 <= 0 .or. E2 <= 0) cycle
+               F1 = merge(IBCONN(E1), NBV(E1), NBV(E1) == T1)
+               F2 = merge(IBCONN(E2), NBV(E2), NBV(E2) == T2)
+               OPP(E1) = F2
+               OPP(LBArray_Pointer(F1)) = F2
+               OPP(E2) = F1
+               OPP(LBArray_Pointer(F2)) = F1
+            end do
+         end if
+      end if
+      OPPOSITE_FOOT = OPP(I)
+   end function OPPOSITE_FOOT
+
+   !-----------------------------------------------------------------------
+   !  SPLIT_PAIR_LEVELS (VEW_CREST_HYDRAULICS): raise the wall-top side and lower the foot side of a
+   !  pair that has just left coupled mode so that their levels differ by HEAD (top minus foot),
+   !  conserving volume. Each side moves as its coupled group: VEW-coupled pairs and condensed
+   !  nodes (wet members), at both time levels of the water level.
+   !-----------------------------------------------------------------------
+   subroutine SPLIT_PAIR_LEVELS(NTOP, NFOOT, HEAD)
+      use BOUNDARIES, only: NBOU, NVELL, NBV, IBCONN, LBCODEI, ISSUBMERGED64
+      use GLOBAL, only: NODECODE, ETA1, ETA2, H2, IFNLFA
+      use MESH, only: NP, DP, TotalArea
+      use NodalAttributes, only: LoadCondensedNodes, NListCondensedNodes, ListCondensedNodes, &
+                                 NNodesListCondensedNodes
+      implicit none
+      integer, intent(IN) :: NTOP, NFOOT
+      real(8), intent(IN) :: HEAD
+      integer, allocatable :: root(:)
+      integer :: I, I0, J, K, L, NV, NA, RT, RF
+      real(8) :: AT, AF, DT1, DF1
+
+      allocate (root(NP))
+      root = [(J, J=1, NP)]
+      I0 = 0
+      do K = 1, NBOU
+         NV = NVELL(K)
+         select case (LBCODEI(I0 + 1))
+         case (64)
+            do J = 1, NV
+               I = I0 + J
+               if (ISSUBMERGED64(I) == 0) cycle
+               if (NBV(I) <= 0 .or. IBCONN(I) <= 0) cycle
+               if (NODECODE(NBV(I)) /= 0 .and. NODECODE(IBCONN(I)) /= 0) call join(NBV(I), IBCONN(I))
+            end do
+            I0 = I0 + 2*NV
+         case (4, 24, 5, 25)
+            I0 = I0 + 2*NV
+         case default
+            I0 = I0 + NV
+         end select
+      end do
+      if (LoadCondensedNodes) then
+         do K = 1, NListCondensedNodes
+            NA = 0
+            do L = 1, NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K, L)
+               if (J <= 0) cycle
+               if (NODECODE(J) == 0) cycle
+               if (NA == 0) then
+                  NA = J
+               else
+                  call join(NA, J)
+               end if
+            end do
+         end do
+      end if
+      RT = find(NTOP)
+      RF = find(NFOOT)
+      if (RT == RF) return ! still tied through another pair: one level, nothing to split
+      AT = 0.d0
+      AF = 0.d0
+      do J = 1, NP
+         if (NODECODE(J) == 0) cycle
+         if (find(J) == RT) AT = AT + TotalArea(J)
+         if (find(J) == RF) AF = AF + TotalArea(J)
+      end do
+      if (AT <= 0.d0 .or. AF <= 0.d0) return
+      DT1 = HEAD*AF/(AT + AF)
+      DF1 = -HEAD*AT/(AT + AF)
+      do J = 1, NP
+         if (NODECODE(J) == 0) cycle
+         if (find(J) == RT) then
+            ETA1(J) = ETA1(J) + DT1
+            ETA2(J) = ETA2(J) + DT1
+            H2(J) = DP(J) + dble(IFNLFA)*ETA2(J)
+         elseif (find(J) == RF) then
+            ETA1(J) = ETA1(J) + DF1
+            ETA2(J) = ETA2(J) + DF1
+            H2(J) = DP(J) + dble(IFNLFA)*ETA2(J)
+         end if
+      end do
+
+   contains
+
+      recursive integer function find(N) result(R)
+         integer, intent(IN) :: N
+         if (root(N) == N) then
+            R = N
+         else
+            root(N) = find(root(N))
+            R = root(N)
+         end if
+      end function find
+
+      subroutine join(A, B)
+         integer, intent(IN) :: A, B
+         integer :: RA, RB
+         RA = find(A)
+         RB = find(B)
+         if (RA /= RB) root(max(RA, RB)) = min(RA, RB)
+      end subroutine join
+   end subroutine SPLIT_PAIR_LEVELS
    !-----------------------------------------------------------------------
 
    !-----------------------------------------------------------------------

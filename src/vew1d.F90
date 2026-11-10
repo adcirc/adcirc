@@ -57,13 +57,17 @@ module vew1d
    !   - Froude cap: |v'n| <= sqrt(g*min(H1, H2)), so the recovered flow stays subcritical.
    !   - Condensed wall tops: both faces of a wall share one discharge, the one of the face
    !     whose foot is on the upstream side, stored per condensed group (QGROUP, keyed by the group's
-   !     first node).
+   !     first node). While a pair of a wall-top group is in weir mode (uncoupled with both nodes
+   !     wet), the coupled pairs of that group get no recovered velocity (GROUPWEIR), so the approach
+   !     to the wall is not drawn down onto the crest a second time: the weir formula on the lee pair
+   !     already represents the crest.
    real(8), allocatable, target :: UADV(:), VADV(:)
    real(8) :: VEW_ADVECT_FR_ATTACH = 0.05d0
    real(8) :: VEW_ADVECT_FR_FULL = 0.1d0
    real(8), allocatable :: QGROUP(:)
    logical, allocatable :: QGROUPSET(:)
    logical, allocatable :: ISVEWNODE(:)
+   logical, allocatable :: GROUPWEIR(:)
 
 contains
 
@@ -498,21 +502,27 @@ contains
          end do
       end if
 
-      !...Pass 1 (condensed wall tops): discharge of the upstream face of each condensed wall-top group
+      !...Pass 1 (condensed wall tops): discharge of the upstream face of each condensed wall-top group, and the
+      !   groups with a pair in weir mode
       if (LoadCondensedNodes) then
-         if (.not. allocated(QGROUP)) allocate (QGROUP(NP), QGROUPSET(NP))
+         if (.not. allocated(QGROUP)) allocate (QGROUP(NP), QGROUPSET(NP), GROUPWEIR(NP))
          QGROUPSET(:) = .false.
+         GROUPWEIR(:) = .false.
          I = 0
          do K = 1, NBOU
             select case (LBCODEI(I + 1))
             case (64)
                do J = 1, NVELL(K)
                   I = I + 1
-                  if (ISSUBMERGED64(I) == 0) cycle
                   N1 = NBV(I)
                   N2 = IBCONN(I)
                   if (DP(N1) == DP(N2)) cycle
                   if (NODECODE(N1) == 0 .or. NODECODE(N2) == 0) cycle
+                  if (ISSUBMERGED64(I) == 0) then
+                     KG = CONDENSED_GROUP(merge(N1, N2, DP(N2) > DP(N1)))
+                     if (KG > 0) GROUPWEIR(KG) = .true.
+                     cycle
+                  end if
                   NF = merge(N2, N1, DP(N2) > DP(N1))
                   NT = merge(N1, N2, NF == N2)
                   KG = CONDENSED_GROUP(NT)
@@ -548,6 +558,12 @@ contains
                HB = DP(N2) + IFNLFA*ETA2(N2)
                HMIN = min(HA, HB)
                if (HMIN <= H0) cycle
+               if (LoadCondensedNodes .and. DP(N1) /= DP(N2)) then
+                  KG = CONDENSED_GROUP(merge(N1, N2, DP(N2) > DP(N1)))
+                  if (KG > 0) then
+                     if (GROUPWEIR(KG)) cycle ! plain velocities at both nodes
+                  end if
+               end if
                FAC = 0.5d0*(HA + HB)/HMIN
                UAVG = 0.5d0*(UU1(N1) + UU1(N2))
                VAVG = 0.5d0*(VV1(N1) + VV1(N2))
