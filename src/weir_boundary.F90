@@ -53,8 +53,12 @@ module WEIR
    real(8) :: BARMIN64_NOSUBM = -1.d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is not submerged (negative: 1.2*H0, set in WEIR_SETUP)
    real(8) :: BARMIN64_CORNER = -1.d0 !...Wall-top depth below which a submerged VEW pair whose wall-top node has fewer than 3 wet neighbours (or a steep edge slope) is un-submerged (negative: 1.2*H0, set in WEIR_SETUP; was hard-coded 4*H0)
    real(8) :: BARMIN64_SLIM = 0.5d0 !...Minimum water depth above weir to consider submerged at vertical element walls no matter the slope
+   logical :: WEIR_ENERGY_HEAD = .false. !...Same for the internal barrier weirs (IBTYPE 4/24): total energy head in the weir formula
    !...VEW_CREST_HYDRAULICS (VEW1DChannelControl, default off): crest hydraulics at IBTYPE=64 VEWs.
-   !   Turns on the recovered crest velocity in the advective terms of coupled pairs (vew1d.F90).
+   !   Turns on, together:
+   !   - the recovered crest velocity in the advective terms of coupled pairs (vew1d.F90);
+   !   - the total energy head (static head + vn**2/(2g), raw nodal velocity normal to the boundary)
+   !     in the VEW weir formula.
    logical :: VEW_CREST_HYDRAULICS = .false.
    real(8) :: BARSLIM64_ELEM = 99999.d0 !...Water level elemental slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
    real(8) :: BARSLIM64_EDGE = 99999.d0 !...Water level edge slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
@@ -75,7 +79,7 @@ module WEIR
 
    public :: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, &
              BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
-             BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN, &
+             BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN, WEIR_ENERGY_HEAD, &
              VEW_CREST_HYDRAULICS
 
    !-----------------------------------------------------------------------
@@ -1727,7 +1731,8 @@ module WEIR_FLUX
    use WEIR, only: BARMIN, EXT_TVW, BARLANHT1, BARLANHT2, BARINHT1, BARINHT2, &
                    INT_TVW, EXT_TVW, BARSLIM64_ELEM, BARSLIM64_EDGE, &
                    BARMIN64_SUBM, BARMIN64_SLIM, BARMIN64_NOSUBM, BARMIN64_CORNER, &
-                   BARMIN64, BARMIN64_SLIM
+                   BARMIN64, BARMIN64_SLIM, WEIR_ENERGY_HEAD, &
+                   VEW_CREST_HYDRAULICS
 
    implicit none
 
@@ -1802,8 +1807,9 @@ contains
       BARRIER_INDEX, BOUNDARYNODE, BOUNDARY, TIMELOC, FLUX)
 
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, &
-                            NVELL, IBCONN, BARINHT
-      use GLOBAL, only: NIBNODECODE, TVW, NODECODE
+                            NVELL, IBCONN, BARINHT, &
+                            CSII, SIII
+      use GLOBAL, only: NIBNODECODE, TVW, NODECODE, UU1, VV1
       implicit none
       integer, intent(IN), target :: BARRIER_INDEX
       integer, intent(IN), target :: BOUNDARY
@@ -1817,6 +1823,7 @@ contains
       integer, pointer :: I, J, K
       real(8) :: RBARWL1, RBARWL2
       real(8) :: RBARWL1F, RBARWL2F
+      real(8) :: RBARWE1, RBARWE2, VN1, VN2 !...Heads for the flow direction and the formula
 
       LOG_SCOPE_TRACED("COMPUTE_INTERNAL_BOUNDARY_FLUX", WEIR_BOUNDARY_TRACING)
 
@@ -1889,18 +1896,31 @@ contains
       RBARWL1 = ETA2(NNBB1) - BARINHT2(I)
       RBARWL2 = ETA2(NNBB2) - BARINHT2(I)
 #endif
-      RBARWL1F = 2.d0*RBARWL1/3.d0
-      RBARWL2F = 2.d0*RBARWL2/3.d0
+      !..............Total energy head (WEIR_ENERGY_HEAD): add the velocity head of the raw nodal
+      !              velocity normal to the weir (CSII/SIII of this entry; only vn**2 is used).
+      !              The static heads are kept for the checks against 0/BARMIN and for the
+      !              downstream depth in the subcritical formula.
+      RBARWE1 = RBARWL1
+      RBARWE2 = RBARWL2
+      if (WEIR_ENERGY_HEAD) then
+         VN1 = UU1(NNBB1)*CSII(I) + VV1(NNBB1)*SIII(I)
+         VN2 = UU1(NNBB2)*CSII(I) + VV1(NNBB2)*SIII(I)
+         RBARWE1 = RBARWL1 + VN1*VN1/(2.d0*G)
+         RBARWE2 = RBARWL2 + VN2*VN2/(2.d0*G)
+      end if
+
+      RBARWL1F = 2.d0*RBARWE1/3.d0
+      RBARWL2F = 2.d0*RBARWE2/3.d0
       FLUX = 0.d0
 
       if ((RBARWL1 < 0.d0) .and. (RBARWL2 < 0.d0)) then
          !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
          FLUX = 0.d0
-      elseif (abs(RBARWL1 - RBARWL2) < 0.01d0) then
+      elseif (abs(RBARWE1 - RBARWE2) < 0.01d0) then
          !...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
          !................TO WITHIN TOLERANCE BARMIN -> CASE 2
          FLUX = 0.d0
-      elseif ((RBARWL1 > RBARWL2) .and. (RBARWL1 > BARMIN)) then
+      elseif ((RBARWE1 > RBARWE2) .and. (RBARWL1 > BARMIN)) then
          !...............WATER LEVEL GREATER ON THIS SIDE OF THE BARRIER AND IS SUCH
          !................THAT OVERTOPPING IS OCCURING
          !................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW ACROSS THE BARRIER
@@ -1917,7 +1937,7 @@ contains
                FLUX = 0.0d0
             else
                FLUX = -RampIntFlux*RBARWL2*BARINCFSB(I)* &
-                      (2.d0*G*(RBARWL1 - RBARWL2))**0.5d0
+                      (2.d0*G*(RBARWE1 - RBARWL2))**0.5d0
             end if
          else
             !..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
@@ -1928,7 +1948,7 @@ contains
                       (RBARWL1F*G)**0.5d0
             end if
          end if
-      elseif ((RBARWL2 > RBARWL1) .and. (RBARWL2 > BARMIN)) then
+      elseif ((RBARWE2 > RBARWE1) .and. (RBARWL2 > BARMIN)) then
          !...............WATER LEVEL LOWER ON THIS SIDE OF BARRIER AND IS SUCH
          !................THAT OVERTOPPING IS OCCURING
          !................THUS THIS IS THE RECEIVING SIDE OF THE FLOW ACROSS THE BARRIER
@@ -1946,7 +1966,7 @@ contains
                FLUX = 0.0d0
             else
                FLUX = RampIntFlux*RBARWL1*BARINCFSB(I)* &
-                      (2.0d0*G*(RBARWL2 - RBARWL1))**0.5d0
+                      (2.0d0*G*(RBARWE2 - RBARWL1))**0.5d0
                NIBNODECODE(NNBB1) = 1
             end if
          else
@@ -2209,8 +2229,9 @@ contains
       BARRIER_INDEX, BOUNDARYNODE, BOUNDARY, TIMELOC, FLUX)
 
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, &
-                            NVELL, NBV, IBCONN, BARINHT, ISSUBMERGED64, BNDEDGE3RD
-      use GLOBAL, only: TVW, NODECODE
+                            NVELL, NBV, IBCONN, BARINHT, ISSUBMERGED64, BNDEDGE3RD, &
+                            CSII, SIII
+      use GLOBAL, only: TVW, NODECODE, UU1, VV1
       use MESH, only: LBArray_Pointer, DP
       implicit none
       integer, intent(IN), target :: BARRIER_INDEX
@@ -2228,6 +2249,8 @@ contains
       integer :: FORCEDWET
       real(8) :: RBARWL1, RBARWL2, RBARWLL
       real(8) :: RBARWL1F, RBARWL2F
+      real(8) :: RBARWE1, RBARWE2 !...Heads used for the flow direction and in the weir formula
+      real(8) :: VN1, VN2
       logical :: CHECK
 
       LOG_SCOPE_TRACED("COMPUTE_INTERNAL_BOUNDARY64_FLUX", WEIR_BOUNDARY_TRACING)
@@ -2396,8 +2419,21 @@ contains
          RBARWLL = RBARWL2
       end if
 
-      RBARWL1F = 2.d0*RBARWL1/3.d0
-      RBARWL2F = 2.d0*RBARWL2/3.d0
+      !..............Total energy head (VEW_CREST_HYDRAULICS): add the velocity head of the raw nodal
+      !              velocity normal to the boundary, vn = u*cos + v*sin of the boundary normal.
+      !              The static heads RBARWL1/RBARWL2 are kept for the checks against BARMIN64 and
+      !              for the downstream depth in the subcritical formula.
+      RBARWE1 = RBARWL1
+      RBARWE2 = RBARWL2
+      if (VEW_CREST_HYDRAULICS) then
+         VN1 = UU1(NNBB1)*CSII(I) + VV1(NNBB1)*SIII(I)
+         VN2 = UU1(NNBB2)*CSII(I2) + VV1(NNBB2)*SIII(I2)
+         RBARWE1 = RBARWL1 + VN1*VN1/(2.d0*G)
+         RBARWE2 = RBARWL2 + VN2*VN2/(2.d0*G)
+      end if
+
+      RBARWL1F = 2.d0*RBARWE1/3.d0
+      RBARWL2F = 2.d0*RBARWE2/3.d0
       FLUX = 0.d0
 
       if (ISSUBMERGED64(I) /= 0) then
@@ -2407,11 +2443,11 @@ contains
       elseif ((RBARWL1 < BARMIN64) .and. (RBARWL2 < BARMIN64)) then
          !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
          FLUX = 0.d0
-      elseif (abs(RBARWL1 - RBARWL2) < 0.01d0) then
+      elseif (abs(RBARWE1 - RBARWE2) < 0.01d0) then
          !...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
          !................TO WITHIN TOLERANCE BARMIN -> CASE 2
          FLUX = 0.d0
-      elseif ((RBARWL1 > RBARWL2) .and. (RBARWL1 > BARMIN64)) then
+      elseif ((RBARWE1 > RBARWE2) .and. (RBARWL1 > BARMIN64)) then
          !...............WATER LEVEL GREATER ON THIS SIDE OF THE BARRIER AND IS SUCH
          !................THAT OVERTOPPING IS OCCURING
          !................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW ACROSS THE BARRIER
@@ -2429,7 +2465,7 @@ contains
                FLUX = 0.0d0
             else
                FLUX = -RampIntFlux*RBARWL2*BARINCFSB(I)* &
-                      (2.d0*G*(RBARWL1 - RBARWL2))**0.5d0
+                      (2.d0*G*(RBARWE1 - RBARWL2))**0.5d0
             end if
          else
             !..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
@@ -2441,7 +2477,7 @@ contains
                       (RBARWL1F*G)**0.5d0
             end if
          end if
-      elseif ((RBARWL2 > RBARWL1) .and. (RBARWL2 > BARMIN64)) then
+      elseif ((RBARWE2 > RBARWE1) .and. (RBARWL2 > BARMIN64)) then
          !...............WATER LEVEL LOWER ON THIS SIDE OF BARRIER AND IS SUCH
          !................THAT OVERTOPPING IS OCCURING
          !................THUS THIS IS THE RECEIVING SIDE OF THE FLOW ACROSS THE BARRIER
@@ -2460,7 +2496,7 @@ contains
                FLUX = 0.0d0
             else
                FLUX = RampIntFlux*RBARWL1*BARINCFSB(I)* &
-                      (2.0d0*G*(RBARWL2 - RBARWL1))**0.5d0
+                      (2.0d0*G*(RBARWE2 - RBARWL1))**0.5d0
                !                       ! WRITE(*,*) "Receiving flux, subcritical"
                !                       ! NIBNODECODE(NNBB1)=1
             end if
