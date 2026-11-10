@@ -108,6 +108,8 @@ set(ADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tvv.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
@@ -143,8 +145,6 @@ set(ADCSWAN1_SOURCES
 
 set(ADCSWAN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/tvv.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F

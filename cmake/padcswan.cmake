@@ -112,6 +112,8 @@ set(PADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tvv.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
@@ -148,8 +150,6 @@ set(PADCSWAN1_SOURCES
 
 set(PADCSWAN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/tvv.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
