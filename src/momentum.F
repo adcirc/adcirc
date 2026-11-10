@@ -217,6 +217,8 @@ C... SB
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
       INTEGER NNFirst
+      INTEGER NWETCN                    ! wet members of a condensed group
+      REAL(8) A1CN, A2CN, A3CN, A4CN, MXCN, MYCN ! sums over its wet members
 
       REAL(8) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
       REAL(8) DBTPDXA, DBTPDYA, DBTPDX1A, DBTPDY1A, DBTPDX2A, DBTPDY2A
@@ -960,6 +962,10 @@ C     VEW: Sum front side values to back side
                   IF(ISSUBMERGED64(I).NE.0) THEN
                      NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                      NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                      IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                         NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
+                         NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
+                      ENDIF
               
                      IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
                         IF ((flgNodesMultipliedByTotalArea(NNBB1).eq.0).and.
@@ -1017,63 +1023,52 @@ C     VEW: Sum front side values to back side
       ENDIF
 
 C.... CONDENSED NODES: Summing up the values at condensed nodes
+C.... Only wet members (NODECODE.NE.0) take part, as in the GWCE.
       IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
          DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
-            IF(I==0) CYCLE
-            IF((NODECODE(I).NE.0)) THEN
-               ! 1) Mutiply LHS & RHS by total area at Node I
-               IF ((flgNodesMultipliedByTotalArea(I).eq.0).and.
-     &             (TotalArea(I).ne.0.d0)) THEN
+            IF(ListCondensedNodes(K,1)==0) CYCLE
+            ! 1) Sum the area-weighted LHS & RHS of the wet members
+            NWETCN = 0
+            A1CN = 0.D0
+            A2CN = 0.D0
+            A3CN = 0.D0
+            A4CN = 0.D0
+            MXCN = 0.D0
+            MYCN = 0.D0
+            DO L=1,NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K,L)
+               IF(NODECODE(J).EQ.0) CYCLE
+               NWETCN = NWETCN + 1
+               IF ((flgNodesMultipliedByTotalArea(J).eq.0).and.
+     &            (TotalArea(J).ne.0.d0)) THEN
                   IF (CME_AreaInt_Corr) THEN       !Correct area integration
-                     TotalArea1 = TotalArea(I)
+                     TotalArea1 = TotalArea(J)
                   ENDIF
                   IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
-                     TotalArea1 = MJU(I)
+                     TotalArea1 = MJU(J)
                   ENDIF
                ELSE
                   TotalArea1 = 1.D0
                ENDIF
-               AUV(1,I) = TotalArea1*AUV(1,I)
-               AUV(2,I) = TotalArea1*AUV(2,I)
-               AUV(3,I) = TotalArea1*AUV(3,I)
-               AUV(4,I) = TotalArea1*AUV(4,I)
-               MOM_LV_X(I) = TotalArea1*MOM_LV_X(I)
-               MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
-
-               ! 2) Sum them up
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  IF ((flgNodesMultipliedByTotalArea(J).eq.0).and.
-     &               (TotalArea(J).ne.0.d0)) THEN
-                     IF (CME_AreaInt_Corr) THEN       !Correct area integration
-                        TotalArea1 = TotalArea(J)
-                     ENDIF
-                     IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
-                        TotalArea1 = MJU(J)
-                     ENDIF
-                  ELSE
-                     TotalArea1 = 1.D0
-                  ENDIF
-                  AUV(1,I) = AUV(1,I) + TotalArea1*AUV(1,J)
-                  AUV(2,I) = AUV(2,I) + TotalArea1*AUV(2,J)
-                  AUV(3,I) = AUV(3,I) + TotalArea1*AUV(3,J)
-                  AUV(4,I) = AUV(4,I) + TotalArea1*AUV(4,J)
-                  MOM_LV_X(I) = MOM_LV_X(I) + TotalArea1*MOM_LV_X(J)
-                  MOM_LV_Y(I) = MOM_LV_Y(I) + TotalArea1*MOM_LV_Y(J)
-               ENDDO
-
-               ! 3) Distribute them
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  AUV(1,J) = AUV(1,I)
-                  AUV(2,J) = AUV(2,I)
-                  AUV(3,J) = AUV(3,I)
-                  AUV(4,J) = AUV(4,I)
-                  MOM_LV_X(J) = MOM_LV_X(I)
-                  MOM_LV_Y(J) = MOM_LV_Y(I)
-               ENDDO
-            ENDIF
+               A1CN = A1CN + TotalArea1*AUV(1,J)
+               A2CN = A2CN + TotalArea1*AUV(2,J)
+               A3CN = A3CN + TotalArea1*AUV(3,J)
+               A4CN = A4CN + TotalArea1*AUV(4,J)
+               MXCN = MXCN + TotalArea1*MOM_LV_X(J)
+               MYCN = MYCN + TotalArea1*MOM_LV_Y(J)
+            ENDDO
+            IF(NWETCN.EQ.0) CYCLE
+            ! 2) Distribute them to the wet members
+            DO L=1,NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K,L)
+               IF(NODECODE(J).EQ.0) CYCLE
+               AUV(1,J) = A1CN
+               AUV(2,J) = A2CN
+               AUV(3,J) = A3CN
+               AUV(4,J) = A4CN
+               MOM_LV_X(J) = MXCN
+               MOM_LV_Y(J) = MYCN
+            ENDDO
          ENDDO
       ENDIF
 
@@ -1096,6 +1091,10 @@ C     VEW: Copy values from back side to front side
                         IF(ISSUBMERGED64(I).NE.0) THEN
                            NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                            NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                           IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                              NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
+                              NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
+                           ENDIF
                            IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
                               AUV(1,NNBB1) = AUV(1,NNBB2)
                               AUV(2,NNBB1) = AUV(2,NNBB2)

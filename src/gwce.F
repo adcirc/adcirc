@@ -276,7 +276,7 @@ C
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
      &     CalculateTimeVaryingTau0, LoadAdvectionState, advectlocal,
      &     LoadCondensedNodes, ListCondensedNodes, NListCondensedNodes, ! Added for VEW1D  08-11-2022 SB
-     &     NNodesListCondensedNodes, NCondensedNodes,                    !
+     &     CondensedNodes, NNodesListCondensedNodes, NCondensedNodes,                    !
 C... DW
      &     LoadAbsLayerSigma, absorblayer_sigma_eta,
      &     absorblayer_sigma_mnx, absorblayer_sigma_mny
@@ -338,6 +338,8 @@ C... SB
       REAL(8) Pr1N1, Pr1N2, Pr1N3
       REAL(8) Off1N1, Off1N2, Off1N3 ! water level offsets
       REAL(8) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
+      INTEGER NWETCN                    ! wet members of a condensed group
+      REAL(8) CDSUMCN, LVSUMCN, E1SUMCN ! sums over its wet members
       REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
       REAL(8) SFCXAvg, SFCYAvg, YCFACAvg, SFCXADJ, SFCYADJ, TANPHIAvg
       REAL(8) T0N1,T0N2, T0N3
@@ -1916,6 +1918,10 @@ C     VEW: Sum front side values to back side
                         IF(ISSUBMERGED64(I).NE.0) THEN
                            NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                            NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                           IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                              NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
+                              NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
+                           ENDIF
                            IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
                                COEFDTemp(NNBB2) =
      &                           COEFD(NNBB1) + COEFD(NNBB2)
@@ -1938,27 +1944,34 @@ C     VEW: Sum front side values to back side
       ENDIF
 
 C.... CONDENSED NODES: Summing up the values at condensed nodes
+C.... Only wet members (NODECODE.NE.0) take part: a dry node carries a
+C.... placeholder diagonal (EP above) and no meaningful ETA1, which must
+C.... not enter the equation of the wet members.
       IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
          DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
-            IF(I==0) CYCLE
-            IF((NODECODE(I).NE.0)) THEN
-               ! 1) Sum them up
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  COEFDTemp(I) = COEFDTemp(I) + COEFDTemp(J)
-                  GWCE_LV(I)   = GWCE_LV(I) + GWCE_LV(J)
-                  ETA1(I)      = ETA1(I) + ETA1(J)
-               ENDDO
-               ! 2) Distribute them
-               ETA1(I) = ETA1(I) / NNodesListCondensedNodes(K)
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  COEFDTemp(J) = COEFDTemp(I)
-                  GWCE_LV(J)   = GWCE_LV(I)
-                  ETA1(J)      = ETA1(I)
-               ENDDO
-            ENDIF
+            IF(ListCondensedNodes(K,1)==0) CYCLE
+            ! 1) Sum them up over the wet members
+            NWETCN = 0
+            CDSUMCN = 0.D0
+            LVSUMCN = 0.D0
+            E1SUMCN = 0.D0
+            DO L=1,NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K,L)
+               IF(NODECODE(J).EQ.0) CYCLE
+               NWETCN  = NWETCN + 1
+               CDSUMCN = CDSUMCN + COEFDTemp(J)
+               LVSUMCN = LVSUMCN + GWCE_LV(J)
+               E1SUMCN = E1SUMCN + ETA1(J)
+            ENDDO
+            IF(NWETCN.EQ.0) CYCLE
+            ! 2) Distribute them to the wet members
+            DO L=1,NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K,L)
+               IF(NODECODE(J).EQ.0) CYCLE
+               COEFDTemp(J) = CDSUMCN
+               GWCE_LV(J)   = LVSUMCN
+               ETA1(J)      = E1SUMCN / NWETCN
+            ENDDO
          ENDDO
       ENDIF
 
@@ -1980,6 +1993,10 @@ C     VEW: Copy values from back side to front side
                         IF(ISSUBMERGED64(I).NE.0) THEN
                            NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                            NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                           IF(CONDENSEDNODES(NNBB1,1).NE.0) THEN
+                              NNBB2=NBV(I)     ! FLIP NNBB1 and NNBB2 IF NNBB1 BELONGS
+                              NNBB1=IBCONN(I)  ! TO A CONDENSED NODE GROUP.
+                           ENDIF
                            IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
                               COEFDTemp(NNBB1) = COEFDTemp(NNBB2)
                               GWCE_LV(NNBB1) = GWCE_LV(NNBB2)
@@ -2018,6 +2035,11 @@ C...  JCG ITERATIVE MATRIX SOLVER
          NUMITR=0
          DO I=1,NP
             ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
+C           A dry node keeps its water level, so its increment is zero. ETAS
+C           would otherwise hold GWCE_LV/COEFD with the placeholder diagonal
+C           (EP above, which depends on the subdomain) and enter the next
+C           step's equations if the node wets.
+            IF(NODECODE(I).EQ.0) ETAS(I)=0.D0
          END DO
       ENDIF
 
