@@ -102,6 +102,43 @@ Requirements and limitations:
 - condensed node groups that contain wall-top nodes must consist of wall-top nodes of one gate;
 - only the crest elevation varies; the weir coefficients are fixed.
 
+.. _vew_crest_hydraulics:
+
+Crest Hydraulics at Submerged VEWs
+----------------------------------
+
+When the water on both sides of a VEW pair stands above the crest, ADCIRC couples the two nodes of the pair: they share one water level and one velocity, and the flow over the wall is computed by the shallow water equations instead of the weir formula. Without further treatment this coupled mode has two weaknesses for walls whose crest is well below the water surface, such as a gate that is being lowered or raised:
+
+- The shared velocity is the velocity of the deep (bed-side) node, so the advective terms do not see the faster flow over the crest, and the water surface is not drawn down onto the crest.
+- Coupled mode has no expansion loss behind the wall, and it carries flows that are far beyond what the crest can pass (critical flow), so it overestimates the discharge over a wall that should act as a control.
+
+Setting :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>` in the :ref:`VEW1DChannelControl <VEW1DChannelControl>` namelist turns on a set of treatments that address both. They act on every IBTYPE = 64 pair, with or without a time-varying crest, and are designed for walls whose top is part of the mesh, with the wall-top nodes of both faces joined by a :ref:`condensed_nodes` group (the layout described in :ref:`time_varying_crest_vew`).
+
+Recovered crest velocity
+   At coupled pairs, the advective terms of the momentum and continuity equations use a recovered velocity whose wall-normal component is v′ = q / h\ :sub:`t`, with q the wall-normal discharge averaged over the bed-side neighbours of the pair's foot node (the nodes not on a VEW) and h\ :sub:`t` the depth over the crest. With condensed wall tops, both faces of a wall use the discharge of the upstream face. The recovered velocity is limited to the critical velocity √(g h\ :sub:`t`), and it is tapered off for slow flows (crest Froude numbers below :ref:`VEW_ADVECT_FR_FULL <VEW_ADVECT_FR_FULL>`, none below :ref:`VEW_ADVECT_FR_ATTACH <VEW_ADVECT_FR_ATTACH>`). The foot node on the lee side keeps its own velocity, so the velocity head over the crest is lost behind the wall as an expansion loss.
+
+Switch between coupled and weir mode
+   A submerged pair leaves coupled mode and uses the weir formula when the crest Froude number Fr = (q / h\ :sub:`t`) / √(g h\ :sub:`t`) exceeds :ref:`VEW_FROUDE_CRIT <VEW_FROUDE_CRIT>`, and returns to coupled mode when Fr falls below :ref:`VEW_FROUDE_RECOUPLE <VEW_FROUDE_RECOUPLE>` × VEW_FROUDE_CRIT and the head across the wall face has come down accordingly. With condensed wall tops, only the lee pair of a wall is switched (the pair whose opposite foot's neighbours stand higher); the upstream pair stays coupled, so the wall top keeps the upstream level and the lee pair acts as the one weir across the wall. When a pair leaves coupled mode, its weir flux starts from the discharge the coupled flow carried (at most the critical discharge over the crest), and its two water levels are split, conserving volume, to the head at which the weir formula gives that discharge. While a wall is in weir mode, its coupled upstream pair does not use the recovered velocity, since the weir formula already represents the flow onto the crest. This mode switch replaces the submergence depth thresholds :ref:`BARMIN64_SUBM <BARMIN64_SUBM>` and :ref:`BARMIN64_NOSUBM <BARMIN64_NOSUBM>`, which must not be set together with VEW_CREST_HYDRAULICS.
+
+Total energy head in the weir formula
+   The VEW weir formula uses the total energy head, the water depth over the crest plus the velocity head v\ :sub:`n`\ :sup:`2`/2g of the node's velocity normal to the wall, on both sides of the pair.
+
+The weir flux itself can be computed semi-implicitly with :ref:`WEIR_SEMI_IMPLICIT <WEIR_SEMI_IMPLICIT>`, with both water levels at the new time level, which removes the oscillations of the explicit weir flux at large time steps. It applies to IBTYPE 4 and 24 barriers as well as to VEW pairs in weir mode. For gates, the recommended setting is:
+
+.. code-block:: fortran
+
+   &VEW1DChannelControl
+      VEW_CREST_HYDRAULICS = .true.
+      WEIR_SEMI_IMPLICIT = .true.
+   /
+
+In a test with a 1 m wide gate in a 10 km channel (water levels of ±0.25 m at the two ends, the gate lowered from closed to the bed over 55 min and raised again, a 5 s time step), this setting reproduced the water level difference across the gate of an IBTYPE 24 weir with the total energy head and the semi-implicit flux to within a few millimetres (RMS) through the whole opening and closing.
+
+Limitations:
+
+- VEW_CREST_HYDRAULICS is available in serial runs only for now; padcirc stops if it is set. Its per-wall quantities (the discharge of the upstream face and the weir mode of the lee pair) are formed from the pairs a subdomain holds, and a subdomain can hold one face of a wall without the other.
+- WEIR_SEMI_IMPLICIT requires the lumped GWCE, without the predictor-corrector. In parallel runs it is available for IBTYPE 4 and 24 barriers; on meshes with IBTYPE = 64 boundaries it is serial only for now, and padcirc stops if it is set.
+
 Defining VEWs in ADCIRC Input Files
 -----------------------------------
 

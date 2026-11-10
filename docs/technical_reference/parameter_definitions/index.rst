@@ -3013,6 +3013,76 @@ TVV_DELTA
 TVV_SEARCH_RADIUS
    Optional real value (m): default search radius for locating the vertical element wall pair of each VaryType=4 line of the :ref:`TVW file <fort142_varytype4>` that does not give its own SearchRadius. If neither is given, 1e-6 m is used, so the search point must coincide with a node of the pair.
 
+.. _VEW1DChannelControl:
+
+VEW1DChannelControl
+   Fortran namelist for :doc:`vertical element walls <../../user_guide/special_features/vertical_element_walls>` (IBTYPE = 64) and internal barrier weirs: wet perimeter of VEW channels (activateVEW1DChannelWetPerimeter), submergence thresholds of VEW pairs, crest hydraulics at submerged VEWs, and the weir flux options. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
+
+.. _BARMIN64_SUBM:
+
+BARMIN64_SUBM
+   Optional real value (m): depth over the crest, on the lower ground side, above which a VEW pair that is already submerged (coupled) stays submerged. Defaults to 1.2 :ref:`H0 <H0>`. Must not be set together with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`.
+
+.. _BARMIN64_NOSUBM:
+
+BARMIN64_NOSUBM
+   Optional real value (m): depth over the crest, on the lower ground side, above which a VEW pair that is not submerged becomes submerged (coupled). Defaults to 1.2 :ref:`H0 <H0>`. Must not be set together with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`.
+
+.. _BARMIN64_SLIM:
+
+BARMIN64_SLIM
+   Optional real value (m), default 0.5: depth over the crest above which a VEW pair is considered submerged regardless of the water surface slope tests (BARSLIM64_ELEM, BARSLIM64_EDGE).
+
+.. _BARMIN64_CORNER:
+
+BARMIN64_CORNER
+   Optional real value (m): wall-top depth below which a submerged VEW pair whose wall-top node has fewer than three wet neighbours, or a steep water surface along the wall, is un-submerged. Defaults to 1.2 :ref:`H0 <H0>`.
+
+.. _BARSLIM64_ELEM:
+
+BARSLIM64_ELEM
+   Optional real value, default 99999 (off): water surface slope, averaged over the elements around the higher ground node of a VEW pair, above which the pair is considered not submerged.
+
+.. _BARSLIM64_EDGE:
+
+BARSLIM64_EDGE
+   Optional real value, default 99999 (off): water surface slope along the wall edges above which a VEW pair is considered not submerged.
+
+.. _VEW_CREST_HYDRAULICS:
+
+VEW_CREST_HYDRAULICS
+   Optional logical value, default .false.: crest hydraulics at submerged vertical element walls, i.e. the recovered crest velocity in the advective terms, the switch between coupled and weir mode by the crest Froude number, and the total energy head in the VEW weir formula. See :ref:`vew_crest_hydraulics`. Serial runs only for now.
+
+.. _VEW_FROUDE_CRIT:
+
+VEW_FROUDE_CRIT
+   Optional real value, default 0.5: crest Froude number above which a submerged VEW pair leaves coupled mode and uses the weir formula (with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`).
+
+.. _VEW_FROUDE_RECOUPLE:
+
+VEW_FROUDE_RECOUPLE
+   Optional real value, default 0.8: a pair in weir mode returns to coupled mode when the crest Froude number falls below VEW_FROUDE_RECOUPLE × :ref:`VEW_FROUDE_CRIT <VEW_FROUDE_CRIT>` and the head across the wall face is below the velocity head of that Froude number (with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`).
+
+.. _VEW_ADVECT_FR_ATTACH:
+
+VEW_ADVECT_FR_ATTACH
+   Optional real value, default 0.05: crest Froude number below which coupled VEW pairs get no recovered velocity and no lee loss (flow attached to the wall), with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`.
+
+.. _VEW_ADVECT_FR_FULL:
+
+VEW_ADVECT_FR_FULL
+   Optional real value, default 0.1: crest Froude number above which coupled VEW pairs get the full recovered velocity; between :ref:`VEW_ADVECT_FR_ATTACH <VEW_ADVECT_FR_ATTACH>` and VEW_ADVECT_FR_FULL it is tapered linearly (with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`).
+
+.. _WEIR_ENERGY_HEAD:
+
+WEIR_ENERGY_HEAD
+   Optional logical value, default .false.: use the total energy head, the depth over the crest plus the velocity head of the node's velocity normal to the barrier, in the weir formula of internal barrier boundaries (IBTYPE 4 and 24).
+
+.. _WEIR_SEMI_IMPLICIT:
+
+WEIR_SEMI_IMPLICIT
+   Optional logical value, default .false.: compute the weir flux of internal barrier pairs (IBTYPE 4 and 24, and IBTYPE 64 pairs in weir mode) with both water levels at the new time level, solved per pair together with the lumped GWCE, instead of with the levels of the previous time step. Removes the oscillations of the explicit weir flux at large time steps. Requires the lumped GWCE without the predictor-corrector. Parallel runs are supported unless the mesh has IBTYPE = 64 boundaries, for which it is serial only for now.
+
 .. _TVW:
 
 TVW
