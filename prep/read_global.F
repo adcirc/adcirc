@@ -582,10 +582,7 @@ C.....tcm v52.30.01 added for Smag_Control
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
 
-C.....Control for VEW1D channels 11/06/2023 sb
-      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
-     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
-     &  BARSLIM64_ELEM, BARSLIM64_EDGE
+C.....Control for VEW1D channels 11/06/2023 sb: namelist VEW1DChannelControl in PRE_GLOBAL
 
       LOG_SCOPE_TRACED("read15", READ_GLOBAL_TRACING)
 c.....tcm v51.20.03 initialize external station location specifications

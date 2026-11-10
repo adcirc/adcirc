@@ -49,8 +49,9 @@ module WEIR
    real(8), allocatable :: BARLANHT2(:) !...External Barrier elevation at current timestep
    real(8), parameter :: BARMIN = 0.04d0 !...Minimum water depth above weir to appply weir formula
    real(8) :: BARMIN64 = 0.04d0 !...Minimum water depth above weir to appply weir formula along vertical element walls
-   real(8) :: BARMIN64_SUBM = 0.04d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is already submerged
-   real(8) :: BARMIN64_NOSUBM = 0.04d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is not submerged
+   real(8) :: BARMIN64_SUBM = -1.d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is already submerged (negative: 1.2*H0, set in WEIR_SETUP)
+   real(8) :: BARMIN64_NOSUBM = -1.d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is not submerged (negative: 1.2*H0, set in WEIR_SETUP)
+   real(8) :: BARMIN64_CORNER = -1.d0 !...Wall-top depth below which a submerged VEW pair whose wall-top node has fewer than 3 wet neighbours (or a steep edge slope) is un-submerged (negative: 1.2*H0, set in WEIR_SETUP; was hard-coded 4*H0)
    real(8) :: BARMIN64_SLIM = 0.5d0 !...Minimum water depth above weir to consider submerged at vertical element walls no matter the slope
    real(8) :: BARSLIM64_ELEM = 99999.d0 !...Water level elemental slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
    real(8) :: BARSLIM64_EDGE = 99999.d0 !...Water level edge slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
@@ -71,7 +72,7 @@ module WEIR
 
    public :: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, &
              BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
-             BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN
+             BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN
 
    !-----------------------------------------------------------------------
 contains
@@ -132,7 +133,7 @@ module TIME_VARYING_WEIR_BOUNDARY
    use KDTREE2_MODULE, only: KDTREE2, KDTREE2_CREATE, KDTREE2_N_NEAREST, KDTREE2_RESULT, KDTREE2_DESTROY
    use WEIR, only: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, found_tvw_nml, &
                    BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
-                   BARMIN64, INT_TVW, EXT_TVW
+                   BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW
 
    implicit none
 
@@ -240,6 +241,7 @@ contains
       use GLOBAL, only: H0
       use BOUNDARIES, only: NFLUXIB, NFLUXIBP, NFLUXB
       implicit none
+      character(1024) :: ScratchMessage
 
       LOG_SCOPE_TRACED("WEIR_SETUP", WEIR_BOUNDARY_TRACING)
 
@@ -257,8 +259,14 @@ contains
 
       !               !...Set the minimum water depth above weir to appply weir formula along vertical element walls
       BARMIN64 = 1.2d0*H0 ! This is equivalent to HOFF in wetdry.F
-      BARMIN64_NOSUBM = 1.2d0*H0
-      BARMIN64_SUBM = 1.2d0*H0
+      !               !...The submergence thresholds default to the same value unless set in the
+      !               !   VEW1DChannelControl namelist (negative means not set)
+      if (BARMIN64_NOSUBM < 0.d0) BARMIN64_NOSUBM = 1.2d0*H0
+      if (BARMIN64_SUBM < 0.d0) BARMIN64_SUBM = 1.2d0*H0
+      if (BARMIN64_CORNER < 0.d0) BARMIN64_CORNER = 1.2d0*H0
+      write (ScratchMessage, '(a,f15.7,a,f15.7,a,f15.7)') "VEW submergence thresholds: BARMIN64_SUBM=", &
+         BARMIN64_SUBM, " BARMIN64_NOSUBM=", BARMIN64_NOSUBM, " BARMIN64_CORNER=", BARMIN64_CORNER
+      call allMessage(INFO, ScratchMessage)
 
       return
 
@@ -1706,7 +1714,7 @@ module WEIR_FLUX
                                          BAR_DEG
    use WEIR, only: BARMIN, EXT_TVW, BARLANHT1, BARLANHT2, BARINHT1, BARINHT2, &
                    INT_TVW, EXT_TVW, BARSLIM64_ELEM, BARSLIM64_EDGE, &
-                   BARMIN64_SUBM, BARMIN64_SLIM, BARMIN64_NOSUBM, &
+                   BARMIN64_SUBM, BARMIN64_SLIM, BARMIN64_NOSUBM, BARMIN64_CORNER, &
                    BARMIN64, BARMIN64_SLIM
 
    implicit none
@@ -2122,7 +2130,7 @@ contains
       HTOT = ETA2(NNBB1) + dble(IFNLFA)*DP(NNBB1)
       if (ISSUBMERGED64(I) /= 0 .and. &
           NODECODE(NNBB1) /= 0 .and. &
-          HTOT < 4.d0*H0) then
+          HTOT < BARMIN64_CORNER) then
          UNSUBMERGE = .false.
          X1 = X(NNBB1)
          Y1 = Y(NNBB1)

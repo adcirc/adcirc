@@ -131,6 +131,7 @@ Casey 251212: Adding time control.
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
+     &   BARMIN64_CORNER,
      &   BARSLIM64_ELEM, BARSLIM64_EDGE
 
       USE WEIR, ONLY: FOUND_TVW_NML
@@ -252,7 +253,7 @@ C.... "new" formula for computing vel in wetting/drying routine
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
 C.... SB
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
-     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
+     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,

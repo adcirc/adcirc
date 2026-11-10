@@ -345,13 +345,19 @@ Casey 180318: Added NWS=13
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
 C     VEW1D channel namelist 11/06/2023 sb
+C     Same entries and defaults as in read_input.F (WEIR module), so that
+C     the namelist written to each subdomain fort.15 reads back as the original
       logical :: foundVEW1DChannelControlNamelist = .false. 
-      logical :: activateVEW1DChannelWetPerimeter
-      REAL(8)                 :: BARMIN64_SUBM=0.04D0   !...Minimum water depth above weir to consider submerged when the weir is already submerged
-      REAL(8)                 :: BARMIN64_NOSUBM=0.04D0  !...Minimum water depth above weir to consider submerged when the weir is not submerged
-      REAL(8)                 :: BARMIN64_SLIM=0.5D0    !...Minimum water depth above weir to consider submerged no matter the slope
-      REAL(8)                 :: BARSLIM64_ELEM=4D-4   !...Water level elemental slope threhold. A weir is considered not submerged if the water level slope is greater than this value
-      REAL(8)                 :: BARSLIM64_EDGE=1D-4   !...Water level edge slope threhold. A weir is considered not submerged if the water level slope is greater than this value
+      logical :: activateVEW1DChannelWetPerimeter = .false.
+      REAL(8) :: BARMIN64_SUBM=-1.D0   !...Minimum water depth above weir to consider submerged when the weir is already submerged (negative: not set)
+      REAL(8) :: BARMIN64_NOSUBM=-1.D0  !...Minimum water depth above weir to consider submerged when the weir is not submerged (negative: not set)
+      REAL(8) :: BARMIN64_SLIM=0.5D0    !...Minimum water depth above weir to consider submerged no matter the slope
+      REAL(8) :: BARMIN64_CORNER=-1.D0  !...Wall-top depth for the corner un-submerge test (negative: not set)
+      REAL(8) :: BARSLIM64_ELEM=99999.D0   !...Water level elemental slope threhold. A weir is considered not submerged if the water level slope is greater than this value
+      REAL(8) :: BARSLIM64_EDGE=99999.D0   !...Water level edge slope threhold. A weir is considered not submerged if the water level slope is greater than this value
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
+     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
+     &  BARSLIM64_ELEM, BARSLIM64_EDGE
 
 C     Full luni-solar tidal potential namelist: 2024
       logical:: foundTidalPotentialControlNamelist = .false. 
