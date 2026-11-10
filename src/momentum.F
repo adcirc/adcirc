@@ -204,7 +204,9 @@ C... SB
       USE VEW1D, ONLY :
      &     ROTATE_AT_CONDENSEDNODES_ALL,
      &     ROTATEBACK_AT_CONDENSEDNODES_ALL,
-     &     REMOVE_NORMAL_AT_CONDENSEDNODES
+     &     REMOVE_NORMAL_AT_CONDENSEDNODES,
+     &     UADV, VADV
+      USE WEIR, ONLY : VEW_CREST_HYDRAULICS
 C... SB
 #ifdef CMPI
       USE MESSENGER, ONLY: UPDATER, UPDATEM4R
@@ -212,6 +214,8 @@ C... SB
 
       IMPLICIT NONE
 
+      REAL(8) UA1N1,UA1N2,UA1N3,VA1N1,VA1N2,VA1N3,UA1Avg,VA1Avg
+      REAL(8) DUA1DXA,DUA1DYA,DVA1DXA,DVA1DYA
       INTEGER IE, I, J, N, K, L                       !local loop counters
       INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
@@ -484,10 +488,30 @@ C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
 
 C...  Compute the advective term gradients x area for the element
          
-         U1AvgDU1DXA=U1Avg*DU1DXA
-         V1AvgDU1DYA=V1Avg*DU1DYA
-         U1AvgDV1DXA=U1Avg*DV1DXA
-         V1AvgDV1DYA=V1Avg*DV1DYA
+         IF (VEW_CREST_HYDRAULICS) THEN
+C...        Recovered velocities at coupled VEW pairs (VEW1D module)
+            UA1N1=UADV(NM1)
+            UA1N2=UADV(NM2)
+            UA1N3=UADV(NM3)
+            VA1N1=VADV(NM1)
+            VA1N2=VADV(NM2)
+            VA1N3=VADV(NM3)
+            UA1Avg=THIRD*(UA1N1+UA1N2+UA1N3)
+            VA1Avg=THIRD*(VA1N1+VA1N2+VA1N3)
+            DUA1DXA=(UA1N1*FDX1+UA1N2*FDX2+UA1N3*FDX3)*0.5d0
+            DUA1DYA=(UA1N1*FDY1+UA1N2*FDY2+UA1N3*FDY3)*0.5d0
+            DVA1DXA=(VA1N1*FDX1+VA1N2*FDX2+VA1N3*FDX3)*0.5d0
+            DVA1DYA=(VA1N1*FDY1+VA1N2*FDY2+VA1N3*FDY3)*0.5d0
+            U1AvgDU1DXA=UA1Avg*DUA1DXA
+            V1AvgDU1DYA=VA1Avg*DUA1DYA
+            U1AvgDV1DXA=UA1Avg*DVA1DXA
+            V1AvgDV1DYA=VA1Avg*DVA1DYA
+         ELSE
+            U1AvgDU1DXA=U1Avg*DU1DXA
+            V1AvgDU1DYA=V1Avg*DU1DYA
+            U1AvgDV1DXA=U1Avg*DV1DXA
+            V1AvgDV1DYA=V1Avg*DV1DYA
+         ENDIF
 
 C...  Compute the lateral viscous terms for the element (flux formulation)
 

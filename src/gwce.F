@@ -283,7 +283,9 @@ C... DW
       USE SPONGELAYER
 C... DW
 C... SB
-      USE VEW1D, ONLY : ROTATE_AT_CONDENSEDNODES_ALL
+      USE VEW1D, ONLY : ROTATE_AT_CONDENSEDNODES_ALL,
+     &     UADV, VADV
+      USE WEIR, ONLY : VEW_CREST_HYDRAULICS
 C... SB
 #ifdef CMPI
       USE MESSENGER
@@ -302,6 +304,7 @@ C... SB
      &   , dphidt
 
       IMPLICIT NONE
+      REAL(8) UA1N1,UA1N2,UA1N3,VA1N1,VA1N2,VA1N3   ! VEW advective velocities
 
       INTEGER IE, JN, IJ, I, J, K, L                     !local loop counters
       INTEGER IT, ITIME_BGN
@@ -1471,13 +1474,29 @@ C--- end DW
 
 C...     Complete the JX, JY terms depending on the advection formulation
          IF(CGWCE_Advec_NC) THEN        !nonconservative advection
+           IF (VEW_CREST_HYDRAULICS) THEN
+C...         Recovered velocities at coupled VEW pairs (VEW1D module)
+             UA1N1=UADV(NM1)
+             UA1N2=UADV(NM2)
+             UA1N3=UADV(NM3)
+             VA1N1=VADV(NM1)
+             VA1N2=VADV(NM2)
+             VA1N3=VADV(NM3)
+           ELSE
+             UA1N1=U1N1
+             UA1N2=U1N2
+             UA1N3=U1N3
+             VA1N1=V1N1
+             VA1N2=V1N2
+             VA1N3=V1N3
+           ENDIF
            JXAvg = JXAvg - IFNLCT*(
-     &              QX1Avg*(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)
-     &             +QY1Avg*(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3))/AreaIE2
+     &              QX1Avg*(UA1N1*FDX1+UA1N2*FDX2+UA1N3*FDX3)
+     &             +QY1Avg*(UA1N1*FDY1+UA1N2*FDY2+UA1N3*FDY3))/AreaIE2
      &             +IFNLCAT*U1Avg*ESAvg/DT
            JYAvg = JYAvg - IFNLCT*(
-     &              QX1Avg*(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)
-     &             +QY1Avg*(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3))/AreaIE2
+     &              QX1Avg*(VA1N1*FDX1+VA1N2*FDX2+VA1N3*FDX3)
+     &             +QY1Avg*(VA1N1*FDY1+VA1N2*FDY2+VA1N3*FDY3))/AreaIE2
      &             +IFNLCAT*V1Avg*ESAvg/DT
          ENDIF
          IF(CGWCE_Advec_C1) THEN        !conservative v1 advection

@@ -53,6 +53,9 @@ module WEIR
    real(8) :: BARMIN64_NOSUBM = -1.d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is not submerged (negative: 1.2*H0, set in WEIR_SETUP)
    real(8) :: BARMIN64_CORNER = -1.d0 !...Wall-top depth below which a submerged VEW pair whose wall-top node has fewer than 3 wet neighbours (or a steep edge slope) is un-submerged (negative: 1.2*H0, set in WEIR_SETUP; was hard-coded 4*H0)
    real(8) :: BARMIN64_SLIM = 0.5d0 !...Minimum water depth above weir to consider submerged at vertical element walls no matter the slope
+   !...VEW_CREST_HYDRAULICS (VEW1DChannelControl, default off): crest hydraulics at IBTYPE=64 VEWs.
+   !   Turns on the recovered crest velocity in the advective terms of coupled pairs (vew1d.F90).
+   logical :: VEW_CREST_HYDRAULICS = .false.
    real(8) :: BARSLIM64_ELEM = 99999.d0 !...Water level elemental slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
    real(8) :: BARSLIM64_EDGE = 99999.d0 !...Water level edge slope threhold for vertical element walls. A weir is considered not submerged if the water level slope is greater than this value
 
@@ -72,7 +75,8 @@ module WEIR
 
    public :: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, &
              BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
-             BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN
+             BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN, &
+             VEW_CREST_HYDRAULICS
 
    !-----------------------------------------------------------------------
 contains
@@ -133,7 +137,7 @@ module TIME_VARYING_WEIR_BOUNDARY
    use KDTREE2_MODULE, only: KDTREE2, KDTREE2_CREATE, KDTREE2_N_NEAREST, KDTREE2_RESULT, KDTREE2_DESTROY
    use WEIR, only: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, found_tvw_nml, &
                    BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
-                   BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW
+                   BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, VEW_CREST_HYDRAULICS
 
    implicit none
 
@@ -239,6 +243,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine WEIR_SETUP()
       use GLOBAL, only: H0
+      use SIZES, only: MNPROC
       use BOUNDARIES, only: NFLUXIB, NFLUXIBP, NFLUXB
       implicit none
       character(1024) :: ScratchMessage
@@ -261,6 +266,13 @@ contains
       BARMIN64 = 1.2d0*H0 ! This is equivalent to HOFF in wetdry.F
       !               !...The submergence thresholds default to the same value unless set in the
       !               !   VEW1DChannelControl namelist (negative means not set)
+      if (VEW_CREST_HYDRAULICS) then
+         !...serial only for now: the per-wall state (one discharge per wall, weir mode of the
+         !   lee pair) is formed from the pairs a subdomain holds, and a subdomain can hold one face
+         !   of a wall without the other
+         if (MNPROC > 1) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                        message="VEW_CREST_HYDRAULICS is serial only for now")
+      end if
       if (BARMIN64_NOSUBM < 0.d0) BARMIN64_NOSUBM = 1.2d0*H0
       if (BARMIN64_SUBM < 0.d0) BARMIN64_SUBM = 1.2d0*H0
       if (BARMIN64_CORNER < 0.d0) BARMIN64_CORNER = 1.2d0*H0

@@ -345,7 +345,7 @@ Casey 180318: Added NWS=13
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
 C     VEW1D channel namelist 11/06/2023 sb
-C     Same entries and defaults as in read_input.F (WEIR module), so that
+C     Same entries and defaults as in read_input.F (WEIR and VEW1D modules), so that
 C     the namelist written to each subdomain fort.15 reads back as the original
       logical :: foundVEW1DChannelControlNamelist = .false. 
       logical :: activateVEW1DChannelWetPerimeter = .false.
@@ -355,9 +355,13 @@ C     the namelist written to each subdomain fort.15 reads back as the original
       REAL(8) :: BARMIN64_CORNER=-1.D0  !...Wall-top depth for the corner un-submerge test (negative: not set)
       REAL(8) :: BARSLIM64_ELEM=99999.D0   !...Water level elemental slope threhold. A weir is considered not submerged if the water level slope is greater than this value
       REAL(8) :: BARSLIM64_EDGE=99999.D0   !...Water level edge slope threhold. A weir is considered not submerged if the water level slope is greater than this value
+      LOGICAL :: VEW_CREST_HYDRAULICS = .FALSE.
+      REAL(8) :: VEW_ADVECT_FR_ATTACH = 0.05D0
+      REAL(8) :: VEW_ADVECT_FR_FULL = 0.1D0
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
-     &  BARSLIM64_ELEM, BARSLIM64_EDGE
+     &  BARSLIM64_ELEM, BARSLIM64_EDGE, VEW_CREST_HYDRAULICS,
+     &  VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL
 
 C     Full luni-solar tidal potential namelist: 2024
       logical:: foundTidalPotentialControlNamelist = .false. 

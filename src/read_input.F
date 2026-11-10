@@ -132,7 +132,9 @@ Casey 251212: Adding time control.
       USE HARM
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &   BARMIN64_CORNER,
-     &   BARSLIM64_ELEM, BARSLIM64_EDGE
+     &   BARSLIM64_ELEM, BARSLIM64_EDGE,
+     &   VEW_CREST_HYDRAULICS
+      USE VEW1D, ONLY: VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL
 
       USE WEIR, ONLY: FOUND_TVW_NML
       USE TIME_VARYING_WEIR_BOUNDARY
@@ -254,7 +256,8 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... SB
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
-     &  BARSLIM64_ELEM, BARSLIM64_EDGE
+     &  BARSLIM64_ELEM, BARSLIM64_EDGE, VEW_CREST_HYDRAULICS,
+     &  VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW,
@@ -803,6 +806,12 @@ C     Channel wet perimeter for bottom friction 11/06/2023 sb
       write(scratchMessage,'(a,f15.7)') "BARSLIM64_ELEM=",BARSLIM64_ELEM
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "BARSLIM64_EDGE=",BARSLIM64_EDGE
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l1)') "VEW_CREST_HYDRAULICS=",
+     &   VEW_CREST_HYDRAULICS
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f8.4,a,f8.4)') "VEW_ADVECT_FR_ATTACH=",
+     &   VEW_ADVECT_FR_ATTACH, " VEW_ADVECT_FR_FULL=", VEW_ADVECT_FR_FULL
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 

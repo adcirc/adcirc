@@ -92,6 +92,7 @@ C
      &                         WaveStressGrad_Cap, G
      
       USE GWCE, ONLY : solveGWCE, numitr
+      USE VEW1D, ONLY : COMPUTE_VEW_ADVECT_VELOCITY
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
@@ -1074,6 +1075,8 @@ C...
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
+C...  Velocities for the advective terms (recovered at coupled VEW pairs if enabled)
+      call COMPUTE_VEW_ADVECT_VELOCITY()
 C...  Compute new water surface elevation 
       call solveGWCE(it, ITIME_BGN, timeloc, timeh)
 

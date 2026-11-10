@@ -33,7 +33,37 @@ module vew1d
    private
 
    public :: ROTATE_AT_CONDENSEDNODES_ALL, ROTATEBACK_AT_CONDENSEDNODES_ALL, &
-             REMOVE_NORMAL_AT_CONDENSEDNODES, GET_STREAMDIRECTION_AT_ELEMENT
+             REMOVE_NORMAL_AT_CONDENSEDNODES, GET_STREAMDIRECTION_AT_ELEMENT, &
+             COMPUTE_VEW_ADVECT_VELOCITY, UADV, VADV, &
+             VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL
+
+   !...Recovered crest velocity at coupled (submerged) IBTYPE=64 VEW node pairs, on with
+   !   VEW_CREST_HYDRAULICS (WEIR module, VEW1DChannelControl namelist). A coupled pair shares one
+   !   velocity, so the shallower (wall-top) side carries less than the discharge reaching the wall.
+   !   The momentum and GWCE advective terms then use, at the nodes of each coupled pair, a velocity
+   !   whose wall-normal component (boundary normal CSII/SIII of the pair) is
+   !      v'n = q / min(H1, H2),
+   !   q the wall-normal discharge averaged over the wet neighbours of the pair's foot (deeper) node
+   !   that are not on an IBTYPE=64 boundary; the tangential component is kept as is. Where the foot
+   !   has no such neighbour, or both nodes have the same depth, v'n = vn*0.5*(H1 + H2)/min(H1, H2).
+   !   UADV/VADV hold the velocities those terms use. Further:
+   !   - Lee loss: the foot node of a pair whose bed side is downstream (flow leaving the wall, judged
+   !     from the neighbours' flow) keeps its own velocity. The approach side and the whole crest carry
+   !     v', the lee-side bed elements see the v' -> v drop, so the velocity head over the crest is lost
+   !     as in the broad-crested weir formulas (expansion loss) instead of recovered.
+   !   - Froude taper: with Fr = |v'n|/sqrt(g*min(H)), the recovery has weight 0 (flow attached to the
+   !     wall, no recovery and no lee loss) below VEW_ADVECT_FR_ATTACH, 1 above VEW_ADVECT_FR_FULL,
+   !     linear between.
+   !   - Froude cap: |v'n| <= sqrt(g*min(H1, H2)), so the recovered flow stays subcritical.
+   !   - Condensed wall tops: both faces of a wall share one discharge, the one of the face
+   !     whose foot is on the upstream side, stored per condensed group (QGROUP, keyed by the group's
+   !     first node).
+   real(8), allocatable, target :: UADV(:), VADV(:)
+   real(8) :: VEW_ADVECT_FR_ATTACH = 0.05d0
+   real(8) :: VEW_ADVECT_FR_FULL = 0.1d0
+   real(8), allocatable :: QGROUP(:)
+   logical, allocatable :: QGROUPSET(:)
+   logical, allocatable :: ISVEWNODE(:)
 
 contains
 
@@ -421,5 +451,241 @@ contains
          if (found) exit
       end do
    end function FIND_IB2
+
+   !-------------------------------------------------------------
+   !  COMPUTE_VEW_ADVECT_VELOCITY
+   !  Fill UADV/VADV with UU1/VV1 and, if VEW_CREST_HYDRAULICS is set, overwrite them
+   !  at both nodes of each coupled IBTYPE=64 pair (both nodes wet, min depth > H0)
+   !  with the recovered velocity above. Called once per time step before the GWCE.
+   !-------------------------------------------------------------
+   subroutine COMPUTE_VEW_ADVECT_VELOCITY()
+      use GLOBAL, only: UU1, VV1, ETA2, NODECODE, IFNLFA, H0
+      use ADC_CONSTANTS, only: G
+      use MESH, only: NP, DP, X, Y, NNeigh, NeiTab
+      use BOUNDARIES, only: NBOU, NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, CSII, SIII
+      use NodalAttributes, only: LoadCondensedNodes, CondensedNodes
+      use WEIR, only: VEW_CREST_HYDRAULICS
+      implicit none
+      integer :: I, J, K, N1, N2, NF, JJ, NT, KG
+      real(8) :: HA, HB, HMIN, FAC, UAVG, VAVG, UN, U0, V0, DX, DY, QN, VNP, VCRIT
+      real(8) :: UNB, VNB, WREC, FRC
+      integer :: NB, CNT, II
+      logical :: LEEFOOT
+
+      if (.not. allocated(UADV)) allocate (UADV(NP), VADV(NP))
+      UADV(:) = UU1(:)
+      VADV(:) = VV1(:)
+      if (.not. VEW_CREST_HYDRAULICS) return
+
+      if (.not. allocated(ISVEWNODE)) then
+         allocate (ISVEWNODE(NP))
+         ISVEWNODE(:) = .false.
+         II = 0
+         do K = 1, NBOU
+            select case (LBCODEI(II + 1))
+            case (64)
+               do J = 1, NVELL(K)
+                  II = II + 1
+                  ISVEWNODE(NBV(II)) = .true.
+                  ISVEWNODE(IBCONN(II)) = .true.
+               end do
+               II = II + NVELL(K)
+            case (4, 24, 5, 25)
+               II = II + NVELL(K)*2
+            case default
+               II = II + NVELL(K)
+            end select
+         end do
+      end if
+
+      !...Pass 1 (condensed wall tops): discharge of the upstream face of each condensed wall-top group
+      if (LoadCondensedNodes) then
+         if (.not. allocated(QGROUP)) allocate (QGROUP(NP), QGROUPSET(NP))
+         QGROUPSET(:) = .false.
+         I = 0
+         do K = 1, NBOU
+            select case (LBCODEI(I + 1))
+            case (64)
+               do J = 1, NVELL(K)
+                  I = I + 1
+                  if (ISSUBMERGED64(I) == 0) cycle
+                  N1 = NBV(I)
+                  N2 = IBCONN(I)
+                  if (DP(N1) == DP(N2)) cycle
+                  if (NODECODE(N1) == 0 .or. NODECODE(N2) == 0) cycle
+                  NF = merge(N2, N1, DP(N2) > DP(N1))
+                  NT = merge(N1, N2, NF == N2)
+                  KG = CONDENSED_GROUP(NT)
+                  if (KG == 0) cycle
+                  call NEIGHBOR_FLOW(NF, I, QN, UNB, VNB, DX, DY, CNT)
+                  if (CNT == 0) cycle
+                  !...upstream face: the flow goes from the foot's neighbours towards the wall
+                  if (UNB*DX + VNB*DY < 0.d0) then
+                     QGROUP(KG) = QN
+                     QGROUPSET(KG) = .true.
+                  end if
+               end do
+               I = I + NVELL(K)
+            case (4, 24, 5, 25)
+               I = I + NVELL(K)*2
+            case default
+               I = I + NVELL(K)
+            end select
+         end do
+      end if
+
+      I = 0
+      do K = 1, NBOU
+         select case (LBCODEI(I + 1))
+         case (64)
+            do J = 1, NVELL(K)
+               I = I + 1
+               if (ISSUBMERGED64(I) == 0) cycle
+               N1 = NBV(I)
+               N2 = IBCONN(I)
+               if (NODECODE(N1) == 0 .or. NODECODE(N2) == 0) cycle
+               HA = DP(N1) + IFNLFA*ETA2(N1)
+               HB = DP(N2) + IFNLFA*ETA2(N2)
+               HMIN = min(HA, HB)
+               if (HMIN <= H0) cycle
+               FAC = 0.5d0*(HA + HB)/HMIN
+               UAVG = 0.5d0*(UU1(N1) + UU1(N2))
+               VAVG = 0.5d0*(VV1(N1) + VV1(N2))
+               U0 = UAVG
+               V0 = VAVG
+               !...Lee-side foot: the deeper node of the pair, if the flow goes from it into the
+               !   bed-side domain. Its neighbours all lie on the bed side (the coincident wall-top
+               !   node is not connected to it), so their mean position minus its own points into it.
+               LEEFOOT = .false.
+               if (DP(N1) /= DP(N2)) then
+                  NF = N1
+                  if (DP(N2) > DP(N1)) NF = N2
+                  DX = 0.d0
+                  DY = 0.d0
+                  do JJ = 2, NNeigh(NF)
+                     DX = DX + X(NeiTab(NF, JJ)) - X(NF)
+                     DY = DY + Y(NeiTab(NF, JJ)) - Y(NF)
+                  end do
+                  LEEFOOT = (U0*DX + V0*DY) > 0.d0
+               end if
+               !...scale only the normal component: u' = u + (FAC - 1)*(u.n)n
+               UN = UAVG*CSII(I) + VAVG*SIII(I)
+               UAVG = UAVG + (FAC - 1.d0)*UN*CSII(I)
+               VAVG = VAVG + (FAC - 1.d0)*UN*SIII(I)
+               if (DP(N1) /= DP(N2)) then
+                  NF = N1
+                  if (DP(N2) > DP(N1)) NF = N2
+                  call NEIGHBOR_FLOW(NF, I, QN, UNB, VNB, DX, DY, CNT)
+                  if (CNT > 0) then
+                     !...one discharge per wall with condensed tops: the upstream face's (magnitude), with
+                     !   the sign of this face's normal flux
+                     if (LoadCondensedNodes) then
+                        KG = CONDENSED_GROUP(merge(N1, N2, NF == N2))
+                        if (KG > 0) then
+                           if (QGROUPSET(KG)) QN = sign(abs(QGROUP(KG)), QN)
+                        end if
+                     end if
+                     VNP = QN/HMIN
+                     UN = U0*CSII(I) + V0*SIII(I)
+                     UAVG = U0 + (VNP - UN)*CSII(I)
+                     VAVG = V0 + (VNP - UN)*SIII(I)
+                     !...lee side from the neighbours' flow, not the pair's own velocity
+                     LEEFOOT = (UNB*DX + VNB*DY) > 0.d0
+                     !...taper with the crest Froude number
+                     FRC = abs(VNP)/sqrt(G*HMIN)
+                     if (FRC <= VEW_ADVECT_FR_ATTACH) then
+                        WREC = 0.d0
+                     elseif (FRC >= VEW_ADVECT_FR_FULL) then
+                        WREC = 1.d0
+                     else
+                        WREC = (FRC - VEW_ADVECT_FR_ATTACH)/(VEW_ADVECT_FR_FULL - VEW_ADVECT_FR_ATTACH)
+                     end if
+                     if (WREC <= 0.d0) cycle ! attached: plain velocities at both nodes, no lee loss
+                     UAVG = U0 + WREC*(UAVG - U0)
+                     VAVG = V0 + WREC*(VAVG - V0)
+                  end if
+               end if
+               !...Froude cap
+               VCRIT = sqrt(G*HMIN)
+               UN = UAVG*CSII(I) + VAVG*SIII(I)
+               if (abs(UN) > VCRIT) then
+                  VNP = sign(VCRIT, UN)
+                  UAVG = UAVG + (VNP - UN)*CSII(I)
+                  VAVG = VAVG + (VNP - UN)*SIII(I)
+               end if
+               if (LEEFOOT) then
+                  !...recovered velocity at the wall-top node only; the lee foot keeps its own
+                  N1 = merge(N2, N1, NF == N1) ! N1 := the wall-top node
+                  UADV(N1) = UAVG
+                  VADV(N1) = VAVG
+               else
+                  UADV(N1) = UAVG
+                  UADV(N2) = UAVG
+                  VADV(N1) = VAVG
+                  VADV(N2) = VAVG
+               end if
+            end do
+            I = I + NVELL(K)
+         case (4, 24, 5, 25)
+            I = I + NVELL(K)*2
+         case default
+            I = I + NVELL(K)
+         end select
+      end do
+   end subroutine COMPUTE_VEW_ADVECT_VELOCITY
+
+   !-------------------------------------------------------------
+   !  NEIGHBOR_FLOW: mean wall-normal discharge QN (boundary normal of entry IB) and mean velocity
+   !  (UNB, VNB) over the wet neighbours of the foot node NF that are not on a VEW (CNT of them),
+   !  and the sum (DX, DY) of the offsets of all its neighbours (points from NF into its bed side).
+   !-------------------------------------------------------------
+   subroutine NEIGHBOR_FLOW(NF, IB, QN, UNB, VNB, DX, DY, CNT)
+      use GLOBAL, only: UU1, VV1, ETA2, NODECODE, IFNLFA
+      use MESH, only: DP, X, Y, NNeigh, NeiTab
+      use BOUNDARIES, only: CSII, SIII
+      implicit none
+      integer, intent(IN) :: NF, IB
+      real(8), intent(OUT) :: QN, UNB, VNB, DX, DY
+      integer, intent(OUT) :: CNT
+      integer :: JJ, NB
+
+      QN = 0.d0
+      UNB = 0.d0
+      VNB = 0.d0
+      DX = 0.d0
+      DY = 0.d0
+      CNT = 0
+      do JJ = 2, NNeigh(NF)
+         NB = NeiTab(NF, JJ)
+         DX = DX + X(NB) - X(NF)
+         DY = DY + Y(NB) - Y(NF)
+         if (NB == NF .or. ISVEWNODE(NB) .or. NODECODE(NB) == 0) cycle
+         QN = QN + (UU1(NB)*CSII(IB) + VV1(NB)*SIII(IB))*(DP(NB) + IFNLFA*ETA2(NB))
+         UNB = UNB + UU1(NB)
+         VNB = VNB + VV1(NB)
+         CNT = CNT + 1
+      end do
+      if (CNT > 0) then
+         QN = QN/CNT
+         UNB = UNB/CNT
+         VNB = VNB/CNT
+      end if
+   end subroutine NEIGHBOR_FLOW
+
+   !-------------------------------------------------------------
+   !  CONDENSED_GROUP: first node of the condensed node group of node N (0 if not condensed)
+   !-------------------------------------------------------------
+
+   integer function CONDENSED_GROUP(N)
+      use NodalAttributes, only: CondensedNodes
+      implicit none
+      integer, intent(IN) :: N
+      CONDENSED_GROUP = 0
+      if (CondensedNodes(N, 1) > 0) then
+         CONDENSED_GROUP = N
+      elseif (CondensedNodes(N, 1) < 0) then
+         CONDENSED_GROUP = -CondensedNodes(N, 1)
+      end if
+   end function CONDENSED_GROUP
 
 end module vew1d
