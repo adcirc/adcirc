@@ -133,7 +133,7 @@ Casey 251212: Adding time control.
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &   BARMIN64_CORNER,
      &   BARSLIM64_ELEM, BARSLIM64_EDGE,
-     &   WEIR_ENERGY_HEAD, VEW_CREST_HYDRAULICS
+     &   WEIR_ENERGY_HEAD, VEW_CREST_HYDRAULICS, WEIR_SEMI_IMPLICIT
       USE VEW1D, ONLY: VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL
 
       USE WEIR, ONLY: FOUND_TVW_NML
@@ -258,7 +258,7 @@ C.... SB
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE, VEW_CREST_HYDRAULICS,
      &  VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL,
-     &  WEIR_ENERGY_HEAD
+     &  WEIR_ENERGY_HEAD, WEIR_SEMI_IMPLICIT
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW,
@@ -813,6 +813,9 @@ C     Channel wet perimeter for bottom friction 11/06/2023 sb
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f8.4,a,f8.4)') "VEW_ADVECT_FR_ATTACH=",
      &   VEW_ADVECT_FR_ATTACH, " VEW_ADVECT_FR_FULL=", VEW_ADVECT_FR_FULL
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l1)') "WEIR_SEMI_IMPLICIT=",
+     &   WEIR_SEMI_IMPLICIT
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l1)') "WEIR_ENERGY_HEAD=",
      &   WEIR_ENERGY_HEAD

@@ -359,11 +359,12 @@ C     the namelist written to each subdomain fort.15 reads back as the original
       REAL(8) :: VEW_ADVECT_FR_ATTACH = 0.05D0
       REAL(8) :: VEW_ADVECT_FR_FULL = 0.1D0
       LOGICAL :: WEIR_ENERGY_HEAD = .FALSE.
+      LOGICAL :: WEIR_SEMI_IMPLICIT = .FALSE.
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARMIN64_CORNER,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE, VEW_CREST_HYDRAULICS,
      &  VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL,
-     &  WEIR_ENERGY_HEAD
+     &  WEIR_ENERGY_HEAD, WEIR_SEMI_IMPLICIT
 
 C     Full luni-solar tidal potential namelist: 2024
       logical:: foundTidalPotentialControlNamelist = .false. 

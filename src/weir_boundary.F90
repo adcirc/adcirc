@@ -54,6 +54,10 @@ module WEIR
    real(8) :: BARMIN64_CORNER = -1.d0 !...Wall-top depth below which a submerged VEW pair whose wall-top node has fewer than 3 wet neighbours (or a steep edge slope) is un-submerged (negative: 1.2*H0, set in WEIR_SETUP; was hard-coded 4*H0)
    real(8) :: BARMIN64_SLIM = 0.5d0 !...Minimum water depth above weir to consider submerged at vertical element walls no matter the slope
    logical :: WEIR_ENERGY_HEAD = .false. !...Same for the internal barrier weirs (IBTYPE 4/24): total energy head in the weir formula
+   !...WEIR_SEMI_IMPLICIT (lumped GWCE only): internal barrier pairs (IBTYPE 4/24, and IBTYPE 64 pairs in
+   !   weir mode) with both nodes wet get their weir flux with both water levels at the new time level
+   !   (SEMI_WEIR_SOLVE), instead of from the previous step's levels.
+   logical :: WEIR_SEMI_IMPLICIT = .false.
    !...VEW_CREST_HYDRAULICS (VEW1DChannelControl, default off): crest hydraulics at IBTYPE=64 VEWs.
    !   Turns on, together:
    !   - the recovered crest velocity in the advective terms of coupled pairs (vew1d.F90);
@@ -80,7 +84,7 @@ module WEIR
    public :: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, &
              BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
              BARMIN64_CORNER, BARMIN64, INT_TVW, EXT_TVW, found_tvw_nml, BARMIN, WEIR_ENERGY_HEAD, &
-             VEW_CREST_HYDRAULICS
+             VEW_CREST_HYDRAULICS, WEIR_SEMI_IMPLICIT
 
    !-----------------------------------------------------------------------
 contains
@@ -1732,17 +1736,25 @@ module WEIR_FLUX
                    INT_TVW, EXT_TVW, BARSLIM64_ELEM, BARSLIM64_EDGE, &
                    BARMIN64_SUBM, BARMIN64_SLIM, BARMIN64_NOSUBM, BARMIN64_CORNER, &
                    BARMIN64, BARMIN64_SLIM, WEIR_ENERGY_HEAD, &
-                   VEW_CREST_HYDRAULICS
+                   VEW_CREST_HYDRAULICS, WEIR_SEMI_IMPLICIT
 
    implicit none
 
    private
 
+   !...Semi-implicit weir pairs (WEIR_SEMI_IMPLICIT): per boundary entry, active flag, nodal boundary
+   !   length (lumped), partner entry
+   logical, allocatable :: SW_ACT(:)
+   real(8), allocatable :: SW_LEN(:)
+   integer, allocatable :: SW_PARTNER(:)
+   logical :: SW_ANY = .false.
+
    public :: COMPUTE_EXTERNAL_BOUNDARY_FLUX, &
              COMPUTE_INTERNAL_BOUNDARY_FLUX, &
              COMPUTE_CROSS_BARRIER_PIPE_FLUX, &
              COMPUTE_INTERNAL_BOUNDARY64_FLUX, &
-             SET_SUBMERGED64_AT, RESTART_VEW64_FLUXES
+             SET_SUBMERGED64_AT, RESTART_VEW64_FLUXES, &
+             SEMI_WEIR_PREPARE, SEMI_WEIR_SOLVE, SW_ACT, SW_ANY
 
    !-----------------------------------------------------------------------
 contains
@@ -2519,7 +2531,306 @@ contains
       return
       !-----------------------------------------------------------------------
    end subroutine COMPUTE_INTERNAL_BOUNDARY64_FLUX
+
    !-----------------------------------------------------------------------
+   !  SEMI_WEIR_PREPARE (WEIR_SEMI_IMPLICIT): mark the boundary entries of the pairs solved at the
+   !  new time level this step (IBTYPE 4/24 pairs and IBTYPE 64 pairs in weir mode, both nodes wet),
+   !  and on the first call set each entry's lumped boundary length (3/4 of BndLen2O3 of each adjacent
+   !  edge on the same side of the barrier) and its partner entry. Called before the GWCE load vector
+   !  takes the flux-boundary forcing; the active entries are skipped there.
+   !-----------------------------------------------------------------------
+   subroutine SEMI_WEIR_PREPARE()
+      use BOUNDARIES, only: NBOU, NVELL, NVEL, NBV, IBCONN, LBCODEI, ISSUBMERGED64, BndLen2O3, &
+                            NFLUXIB64_GBL
+      use GLOBAL, only: NODECODE, ILUMP, CPRECOR
+      use SIZES, only: MNPROC
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      implicit none
+      integer :: I0, K, J, NV, IA, IB
+
+      SW_ANY = .false.
+      if (.not. WEIR_SEMI_IMPLICIT) return
+      if (.not. allocated(SW_ACT)) then
+         if (ILUMP == 0) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+            message="WEIR_SEMI_IMPLICIT needs the lumped GWCE (IM digit 6 = 2)")
+         !...in parallel runs for IBTYPE 4/24 only for now: an IBTYPE=64 pair's coupled group (condensed
+         !   wall top and coupled feet) can be split between subdomains
+         if (MNPROC > 1 .and. NFLUXIB64_GBL > 0) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+            message="WEIR_SEMI_IMPLICIT is serial only for now on meshes with IBTYPE=64 boundaries")
+         if (CPRECOR) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+            message="WEIR_SEMI_IMPLICIT does not support the predictor-corrector GWCE yet")
+         allocate (SW_ACT(NVEL), SW_LEN(NVEL), SW_PARTNER(NVEL))
+         SW_LEN = 0.d0
+         SW_PARTNER = 0
+         I0 = 0
+         do K = 1, NBOU
+            NV = NVELL(K)
+            select case (LBCODEI(I0 + 1))
+            case (4, 24, 64)
+               do J = 1, NV
+                  SW_PARTNER(I0 + J) = I0 + NV + J
+                  SW_PARTNER(I0 + NV + J) = I0 + J
+               end do
+               do J = 2, NV ! edges within each side
+                  SW_LEN(I0 + J - 1) = SW_LEN(I0 + J - 1) + 0.75d0*BndLen2O3(I0 + J - 1)
+                  SW_LEN(I0 + J) = SW_LEN(I0 + J) + 0.75d0*BndLen2O3(I0 + J - 1)
+                  SW_LEN(I0 + NV + J - 1) = SW_LEN(I0 + NV + J - 1) + 0.75d0*BndLen2O3(I0 + NV + J - 1)
+                  SW_LEN(I0 + NV + J) = SW_LEN(I0 + NV + J) + 0.75d0*BndLen2O3(I0 + NV + J - 1)
+               end do
+               I0 = I0 + 2*NV
+            case (5, 25)
+               I0 = I0 + 2*NV
+            case default
+               I0 = I0 + NV
+            end select
+         end do
+      end if
+      SW_ACT = .false.
+      I0 = 0
+      do K = 1, NBOU
+         NV = NVELL(K)
+         select case (LBCODEI(I0 + 1))
+         case (4, 24, 64)
+            do J = 1, NV
+               IA = I0 + J
+               IB = I0 + NV + J
+               if (NBV(IA) <= 0 .or. IBCONN(IA) <= 0) cycle
+               if (NODECODE(NBV(IA)) == 0 .or. NODECODE(IBCONN(IA)) == 0) cycle
+               if (LBCODEI(IA) == 64) then
+                  if (ISSUBMERGED64(IA) /= 0 .or. ISSUBMERGED64(IB) /= 0) cycle
+               end if
+               SW_ACT(IA) = .true.
+               SW_ACT(IB) = .true.
+               SW_ANY = .true.
+            end do
+            I0 = I0 + 2*NV
+         case (5, 25)
+            I0 = I0 + 2*NV
+         case default
+            I0 = I0 + NV
+         end select
+      end do
+   end subroutine SEMI_WEIR_PREPARE
+
+   !-----------------------------------------------------------------------
+   !  SEMI_WEIR_SOLVE (WEIR_SEMI_IMPLICIT): after the lumped GWCE division without the active pairs'
+   !  forcing (ETAS = increment, COEFDT = diagonal after the VEW / condensed-node summation), solve
+   !  each active pair's flux with both levels at the new time level and correct the increments of
+   !  the coupled groups of its two nodes. The pair forcing is f = c+ q(n+1) - c- q(n-1),
+   !  c+- = 1/(2 dt) +- tau0/2, through one length per pair; the root of
+   !  G(f) = f + c- q(n-1) - c+ q(eta_A* - a_A f, eta_B* + a_B f) is found by false position (Illinois).
+   !  The solved flux is written to QN2 (positive into the domain) for the momentum equations.
+   !-----------------------------------------------------------------------
+   subroutine SEMI_WEIR_SOLVE(ETAS, COEFDT, ETA1, TAU0V, DTS, QN0, QN2)
+      use BOUNDARIES, only: NBOU, NVELL, NVEL, NBV, IBCONN, LBCODEI, ISSUBMERGED64, &
+                            BARINCFSB, BARINCFSP, CSII, SIII
+      use GLOBAL, only: NODECODE, UU1, VV1, RampIntFlux
+      use MESH, only: NP
+      use NodalAttributes, only: LoadCondensedNodes, NListCondensedNodes, ListCondensedNodes, &
+                                 NNodesListCondensedNodes
+      implicit none
+      real(8), intent(INOUT) :: ETAS(:)
+      real(8), intent(IN) :: COEFDT(:), ETA1(:), TAU0V(:), QN0(:)
+      real(8), intent(IN) :: DTS
+      real(8), intent(INOUT) :: QN2(:)
+      integer, allocatable :: root(:), kcnt(:)
+      real(8), allocatable :: deta(:)
+      integer :: I, I2, J, K, L, NA, NB, RA, RB, I0, NV, IT, SIDE
+      real(8) :: ell, aa, ab, ea, eb, qold, cp, cm, tau, zc, csb, csp, hva, hvb, va, vb
+      real(8) :: fl, fa, fb, ga, gb, fm, gm, qnew, s
+
+      if (.not. SW_ANY) return
+      allocate (root(NP), kcnt(NP), deta(NP))
+      root = [(J, J=1, NP)]
+      kcnt = 0
+      deta = 0.d0
+      !...coupled groups: VEW-coupled pairs and condensed nodes (wet members), as in the GWCE summation
+      I0 = 0
+      do K = 1, NBOU
+         NV = NVELL(K)
+         select case (LBCODEI(I0 + 1))
+         case (64)
+            do J = 1, NV
+               I = I0 + J
+               if (ISSUBMERGED64(I) == 0) cycle
+               if (NBV(I) <= 0 .or. IBCONN(I) <= 0) cycle
+               if (NODECODE(NBV(I)) /= 0 .and. NODECODE(IBCONN(I)) /= 0) call join(NBV(I), IBCONN(I))
+            end do
+            I0 = I0 + 2*NV
+         case (4, 24, 5, 25)
+            I0 = I0 + 2*NV
+         case default
+            I0 = I0 + NV
+         end select
+      end do
+      if (LoadCondensedNodes) then
+         do K = 1, NListCondensedNodes
+            NA = 0
+            do L = 1, NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K, L)
+               if (J <= 0) cycle
+               if (NODECODE(J) == 0) cycle
+               if (NA == 0) then
+                  NA = J
+               else
+                  call join(NA, J)
+               end if
+            end do
+         end do
+      end if
+      !...number of active pairs on each group
+      do I = 1, NVEL
+         if (.not. SW_ACT(I)) cycle
+         I2 = SW_PARTNER(I)
+         if (I2 < I) cycle
+         RA = find(NBV(I))
+         RB = find(IBCONN(I))
+         kcnt(RA) = kcnt(RA) + 1
+         kcnt(RB) = kcnt(RB) + 1
+      end do
+      !...pair solves
+      do I = 1, NVEL
+         if (.not. SW_ACT(I)) cycle
+         I2 = SW_PARTNER(I)
+         if (I2 < I) cycle
+         NA = NBV(I)
+         NB = IBCONN(I)
+         RA = find(NA)
+         RB = find(NB)
+         if (COEFDT(NA) <= 0.d0 .or. COEFDT(NB) <= 0.d0) cycle
+         ell = 0.5d0*(SW_LEN(I) + SW_LEN(I2))
+         if (ell <= 0.d0) cycle
+         aa = ell*dble(kcnt(RA))/COEFDT(NA)
+         ab = ell*dble(kcnt(RB))/COEFDT(NB)
+         ea = ETA1(NA) + ETAS(NA)
+         eb = ETA1(NB) + ETAS(NB)
+         zc = BARINHT2(I)
+         csb = BARINCFSB(I)
+         csp = BARINCFSP(I)
+         hva = 0.d0
+         hvb = 0.d0
+         if ((LBCODEI(I) == 64 .and. VEW_CREST_HYDRAULICS) .or. &
+             (LBCODEI(I) /= 64 .and. WEIR_ENERGY_HEAD)) then
+            va = UU1(NA)*CSII(I) + VV1(NA)*SIII(I)
+            vb = UU1(NB)*CSII(I2) + VV1(NB)*SIII(I2)
+            hva = va*va/(2.d0*G)
+            hvb = vb*vb/(2.d0*G)
+         end if
+         qold = 0.5d0*(QN0(I2) - QN0(I)) ! A -> B, from the into-the-domain fluxes of both sides
+         tau = 0.5d0*(TAU0V(NA) + TAU0V(NB))
+         cp = 0.5d0/DTS + 0.5d0*tau
+         cm = 0.5d0/DTS - 0.5d0*tau
+         !...bracket the root of the increasing G around the level-equalising f
+         fl = (ea - eb)/(aa + ab)
+         gm = gfun(fl)
+         s = abs(fl) + abs(cm*qold) + 1.d-12
+         if (gm > 0.d0) then
+            fb = fl
+            gb = gm
+            fa = min(fl, -cm*qold) - s
+            ga = gfun(fa)
+            do IT = 1, 60
+               if (ga <= 0.d0) exit
+               s = 2.d0*s
+               fa = fa - s
+               ga = gfun(fa)
+            end do
+         else
+            fa = fl
+            ga = gm
+            fb = max(fl, -cm*qold) + s
+            gb = gfun(fb)
+            do IT = 1, 60
+               if (gb >= 0.d0) exit
+               s = 2.d0*s
+               fb = fb + s
+               gb = gfun(fb)
+            end do
+         end if
+         !...false position with the Illinois modification
+         SIDE = 0
+         fm = fa
+         do IT = 1, 100
+            if (gb == ga) exit
+            fm = (fa*gb - fb*ga)/(gb - ga)
+            gm = gfun(fm)
+            if (abs(gm) <= 1.d-14*(abs(fm) + abs(cm*qold) + 1.d-30) .or. abs(fb - fa) <= 1.d-14*(abs(fm) + 1.d-30)) exit
+            if (gm > 0.d0) then
+               fb = fm
+               gb = gm
+               if (SIDE == 1) ga = 0.5d0*ga
+               SIDE = 1
+            else
+               fa = fm
+               ga = gm
+               if (SIDE == -1) gb = 0.5d0*gb
+               SIDE = -1
+            end if
+         end do
+         qnew = (fm + cm*qold)/cp
+         deta(RA) = deta(RA) - ell*fm/COEFDT(NA)
+         deta(RB) = deta(RB) + ell*fm/COEFDT(NB)
+         QN2(I) = -qnew
+         QN2(I2) = qnew
+      end do
+      !...correct the increments of every wet member of each group
+      do J = 1, NP
+         if (NODECODE(J) == 0) cycle
+         RA = find(J)
+         if (deta(RA) /= 0.d0) ETAS(J) = ETAS(J) + deta(RA)
+      end do
+      deallocate (root, kcnt, deta)
+
+   contains
+
+      real(8) function gfun(f)
+         real(8), intent(IN) :: f
+         gfun = f + cm*qold - cp*qlaw(ea - aa*f - zc, eb + ab*f - zc)
+      end function gfun
+
+      !...signed weir discharge A -> B for heads ha, hb over the crest (ADCIRC IBTYPE 24/64 law)
+      real(8) function qlaw(ha, hb)
+         real(8), intent(IN) :: ha, hb
+         real(8) :: eu, hd, hu
+         if (ha + hva >= hb + hvb) then
+            hu = ha
+            eu = ha + hva
+            hd = hb
+            qlaw = 1.d0
+         else
+            hu = hb
+            eu = hb + hvb
+            hd = ha
+            qlaw = -1.d0
+         end if
+         if (hu <= 0.d0 .or. eu <= 0.d0) then
+            qlaw = 0.d0
+         elseif (hd > 2.d0*eu/3.d0) then
+            qlaw = qlaw*RampIntFlux*csb*hd*sqrt(2.d0*G*max(eu - hd, 0.d0))
+         else
+            qlaw = qlaw*RampIntFlux*csp*(2.d0*eu/3.d0)*sqrt(2.d0*eu*G/3.d0)
+         end if
+      end function qlaw
+
+      recursive integer function find(i) result(ri)
+         integer, intent(IN) :: i
+         if (root(i) == i) then
+            ri = i
+         else
+            root(i) = find(root(i))
+            ri = root(i)
+         end if
+      end function find
+
+      subroutine join(i, j)
+         integer, intent(IN) :: i, j
+         integer :: ri, rj
+         ri = find(i)
+         rj = find(j)
+         if (ri /= rj) root(max(ri, rj)) = min(ri, rj)
+      end subroutine join
+
+   end subroutine SEMI_WEIR_SOLVE
 
    !-----------------------------------------------------------------------
    !     S U B R O U T I N E

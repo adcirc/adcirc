@@ -270,6 +270,8 @@ C
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC,
      &   NBOU, NVELL, IBCONN, ISSUBMERGED64, NFLUXIB64_GBL  ! Added for VEW1D  08-11-2022 SB
+      USE WEIR_FLUX, ONLY : SEMI_WEIR_PREPARE, SEMI_WEIR_SOLVE, SW_ACT,
+     &   SW_ANY
       USE ITPACKV
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM, NOLIBF,
@@ -1755,11 +1757,17 @@ C...  the formulation these terms must be explicitly multiplied by -1.
 
 C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
+C...  Semi-implicit weir pairs (WEIR_SEMI_IMPLICIT): mark them; their forcing is
+C...  left out here and solved with the new levels after the GWCE division
+      CALL SEMI_WEIR_PREPARE()
       IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
      &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
          NBDJ=NBV(1)
          IF ((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))    ! 64 is added for VEW  08-11-2022 SB
      &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
+         IF (SW_ANY) THEN
+            IF (SW_ACT(1)) QFORCEJ=0.D0
+         ENDIF
 
          IF (LBCODEI(1).EQ.30) THEN
 C...........DMW202401 Use saved H1
@@ -1802,6 +1810,9 @@ C
 
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
      &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
+            IF (SW_ANY) THEN
+               IF (SW_ACT(J)) QFORCEJ=0.D0
+            ENDIF
             IF(LBCODEI(J).EQ.30) THEN
 C..............DMW202401 Use saved H1
                CELERITY=SQRT(G*H1(NBDJ))
@@ -2056,6 +2067,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
             ENDIF
             ETAS(I) = GWCE_LV(I) * RDIAG
          ENDDO
+C...     Semi-implicit weir pairs: flux with both levels at the new time level
+         IF (SW_ANY) CALL SEMI_WEIR_SOLVE(ETAS, COEFDTemp, ETA1,
+     &      Tau0VAR, DT, QN0, QN2)
          NUMITR=0
          DO I=1,NP
             ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
