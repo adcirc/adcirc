@@ -40,9 +40,9 @@
       implicit none
       CHARACTER(200) :: subgridFilename = 'null'
       ! Flag for subgrid corrections to wetting and drying
-      LOGICAL :: subgrid_level0
+      LOGICAL :: subgrid_level0 = .false.
       ! Flag for subgrid corrections to bottom friction and advection
-      LOGICAL :: subgrid_level1
+      LOGICAL :: subgrid_level1 = .false.
 !JLW: adding logical for dphidt to be turned off - set default to off
       LOGICAL :: phi_time_derivative = .false.
       INTEGER :: dphidt ! used to 0 out the term
