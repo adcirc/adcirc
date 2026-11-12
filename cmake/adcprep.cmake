@@ -57,6 +57,7 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/baroclinic.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 

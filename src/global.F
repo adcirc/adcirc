@@ -404,7 +404,6 @@ C- DMW
       REAL(8),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       INTEGER :: NBFR, NCOR
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
-      REAL(8),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
       REAL(8),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
       REAL(8),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
 
@@ -589,11 +588,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
       INTEGER  BCFLAG_LNM   ! boundary condition flag for levels of no motion
       INTEGER  BCFLAG_TEMP  ! boundary condition flag for heat flux (top temperature)
-      REAL(8) RBCTIMEINC, RBCTIME1, RBCTIME2  ! time information for level of no motion
+      REAL(8) RBCTIMEINC  ! time information for level of no motion
       REAL(8) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity
       REAL(8) TBCTIMEINC, TBCTIME1, TBCTIME2  ! time information for temperature
       REAL(8) TTBCTIMEINC, TTBCTIME1, TTBCTIME2  ! time information for heat flux (top temperature)
-      REAL(8) BCSTATIM, RBCRATIO
+      REAL(8) BCSTATIM
       REAL(8) SBCSTATIM, SBCRATIO
       REAL(8) TBCSTATIM, TBCRATIO
       REAL(8) TTBCSTATIM, TTBCRATIO
@@ -959,12 +958,6 @@ C...
       IMPLICIT NONE
 C
       ALLOCATE ( ESBIN1(MNETA),ESBIN2(MNETA))
-
-C    kmd48.33bc - arrays for boundary conditions
-      IF (CBAROCLINIC) THEN
-         ALLOCATE ( LNM_BC1(MNETA), LNM_BC2(MNETA) )
-         ALLOCATE ( LNM_BC(MNETA) )
-      END IF
 C
       RETURN
       END SUBROUTINE ALLOC_MAIN2

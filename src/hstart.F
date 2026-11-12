@@ -2068,18 +2068,18 @@ c******************************************************************************
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
-      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, 
+      USE BOUNDARIES, ONLY : NOPE, NETA, totalbcrivernodes, 
      &   BndBCRiver 
 C   kmd48.33bc - variable information needed from the global.F file
 ! kmd - added variables for river information
-      USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
-     &                   RBCTIMEINC, SBCTIME1, SBCTIME2,
+      USE GLOBAL, ONLY : RES_BC_FLAG,
+     &                   SBCTIME1, SBCTIME2,
      &                   SBCTIMEINC, TBCTIME1, TBCTIME2,
-     &                   TBCTIMEINC, BCSTATIM, RBCRATIO,
-     &                   LNM_BC1, LNM_BC2, TIMEIT, STATIM,
+     &                   TBCTIMEINC,
+     &                   TIMEIT, STATIM,
      &                   SBCSTATIM, TBCSTATIM, SBCRATIO,
-     &                   TBCRATIO, DTDPHS, LNM_BC,
-     &                   BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1,
+     &                   TBCRATIO, DTDPHS,
+     &                   BCFLAG_TEMP, TTBCTIME1,
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
@@ -2087,6 +2087,8 @@ C   kmd48.33bc - variable information needed from the global.F file
       use mod_logging, only: t_log_scope, init_log_scope,
      &                       DEBUG, ECHO, INFO, WARNING, ERROR,
      &                       allMessage, screenMessage
+      USE mod_baroclinic, ONLY : hotstartLNMBoundaryConditions,
+     &   initializeDiagnosticLNMBoundaryConditions
       IMPLICIT NONE
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
@@ -2098,7 +2100,6 @@ C  kmd48.33bc - new variables
 
       CHARACTER(80) :: CDUM80
 
-      INTEGER :: IINDX
       INTEGER :: NumofNodes, K
       REAL(8),ALLOCATABLE :: TMP(:,:)
 
@@ -2119,50 +2120,7 @@ C.. RJW bug fix in format 498 (kendra found this)
 C  kmd48.33bc - restart boundary condtions for baroclinic simulations
        IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
-            IF (BCFLAG_LNM.EQ.1) THEN
-              OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-              RBCTIME1=BCSTATIM*86400.d0
-              RBCTIME2=RBCTIME1+RBCTIMEINC
-              READ(35,'(A)') CDUM80
-              DO NumofBCNodes=1,NETA
-                 READ(35,*) NOD,LNM_BC1(NumofBCNodes)
-              END DO
-              READ(35,'(A)') CDUM80
-              DO NumofBCNodes=1,NETA
-                 READ(35,*) NOD,LNM_BC2(NumofBCNodes)
-              END DO
-              DO IT=1,ITHS
-                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
-                 IF(TIMEIT.GT.RBCTIME2) THEN
-                    RBCTIME1=RBCTIME2
-                    RBCTIME2=RBCTIME1+RBCTIMEINC
-                    READ(35,'(A)') CDUM80
-                    DO NumofBCNodes=1,NETA
-                       LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
-                       READ(35,*) NOD,LNM_BC2(NumofBCNodes)
-                    END DO
-                 END IF
-              END DO
-              IF(TimeLoc.GT.RBCTIME2) THEN
-                 RBCTIME1=RBCTIME2
-                 RBCTIME2=RBCTIME2+RBCTIMEINC
-                 READ(35,'(A)') CDUM80
-                 DO NumofBCNodes=1,NETA
-                   LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
-                   READ(35,*) NOD,LNM_BC2(NumofBCNodes)
-                 END DO
-              END IF
-              RBCRATIO=(TIMEIT-RBCTIME1)/RBCTIMEINC
-            ELSE IF (BCFLAG_LNM.EQ.2) THEN
-              ! to be added later but currently information
-              ! is taken in two ways from the HYCOM results
-            ELSE IF (BCFLAG_LNM.EQ.3) THEN
-              DO NumofBCNodes=1,NETA
-                 IINDX=NBD(NumofBCNodes)
-                 LNM_BC1(NumofBCNodes)=ETA2(IINDX)
-                 LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
-              END DO
-            END IF
+            CALL hotstartLNMBoundaryConditions(ITHS, TimeLoc)
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
             IF (NOPE.GT.0) THEN
@@ -2363,20 +2321,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
             END IF ! end if for heat flux file
          END IF ! end if for temperature boundary and heat flux
       ELSE IF ((RES_BC_FLAG.LT.0).AND.(CBAROCLINIC).AND.(NOPE.GT.0)) THEN
-         IF (BCFLAG_LNM.EQ.1) THEN
-            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-            READ(35,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC(NumofBCNodes)
-            END DO
-         ELSE IF (BCFLAG_LNM.EQ.2) THEN
-            ! add later
-         ELSE IF (BCFLAG_LNM.EQ.3) THEN
-            DO NumofBCNodes=1,NETA
-               IINDX=NBD(NumofBCNodes)
-               LNM_BC(NumofBCNodes)=ETA2(IINDX)
-             END DO
-         END IF
+         CALL initializeDiagnosticLNMBoundaryConditions()
       END IF
 
 C kmd - River information for boundary conditions

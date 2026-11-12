@@ -723,21 +723,22 @@ c******************************************************************************
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE WRITE_OUTPUT, ONLY : initOutput3D
       USE GLOBAL_3DVS
-      USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG, BCFLAG_LNM,
-     &                   RBCTIME1, BCSTATIM, RBCTIME2,
-     &                   RBCTIMEINC, SBCTIME1,
+      USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG,
+     &                   SBCTIME1,
      &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
      &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
      &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2,
-     &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
+     &                   RIVBCTIMINC,
      &                   RIVBCTIME1, RIVBCTIME2,
      &                   RIVBCSTATIM, NP_G
       USE mod_logging, ONLY : t_log_scope, init_log_scope, allMessage, DEBUG
       USE MESH, ONLY : NP, AGRID
-      USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
+      USE BOUNDARIES, ONLY : NETA, NOPE,
      &  totalbcrivernodes, bndbcriver
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
+      USE mod_baroclinic, ONLY : initializeLNMBoundaryConditions,
+     &   initializeDiagnosticLNMBoundaryConditions
       IMPLICIT NONE
 
       INTEGER :: IRType
@@ -751,7 +752,6 @@ ckmd  additional variable for baroclinic boundary conditions
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNodes
       INTEGER :: NOD, J, NumofNodes, K
-      INTEGER :: IINDX
       REAL(8), ALLOCATABLE :: TMP(:,:)
 C
       LOG_SCOPE_TRACED("coldstart_3D", CSTART_TRACING)
@@ -834,28 +834,7 @@ C...  and baroclinic.
 
       IF ((CBAROCLINIC).AND.(IDEN.GE.1)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
-           IF (BCFLAG_LNM.EQ.1) THEN
-             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-             RBCTIME1=BCSTATIM*86400.d0
-             RBCTIME2=RBCTIME1+RBCTIMEINC
-             READ(35,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC1(NumofBCNodes)
-             END DO
-             READ(35,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC2(NumofBCNodes)
-             END DO
-           ELSE IF (BCFLAG_LNM.EQ.2) THEN
-             ! to be added later but currently information
-             ! is taken in two ways from the HYCOM results
-           ELSE IF (BCFLAG_LNM.EQ.3) THEN
-             DO NumofBCNodes=1,NETA
-                IINDX=NBD(NumofBCNodes)
-                LNM_BC1(NumofBCNodes)=ETA2(IINDX)
-                LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
-             END DO
-           END IF
+           CALL initializeLNMBoundaryConditions()
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
            IF (NOPE.GT.0) THEN
@@ -939,20 +918,7 @@ C...  and baroclinic.
          END IF ! end if for temperature boundary and heat flux
       ELSE IF ((CBAROCLINIC).AND.(IDEN.LE.-1)) THEN
          IF ((RES_BC_FLAG.LT.0).AND.(NOPE.GT.0)) THEN
-          IF (BCFLAG_LNM.EQ.1) THEN
-            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-            READ(35,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC(NumofBCNodes)
-            END DO
-          ELSE IF (BCFLAG_LNM.EQ.2) THEN
-            ! add later
-          ELSE IF (BCFLAG_LNM.EQ.3) THEN
-            DO NumofBCNodes=1,NETA
-               IINDX=NBD(NumofBCNodes)
-               LNM_BC(NumofBCNodes)=ETA2(IINDX)
-            END DO
-          END IF
+          CALL initializeDiagnosticLNMBoundaryConditions()
          END IF
       END IF
 

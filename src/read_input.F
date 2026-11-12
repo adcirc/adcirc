@@ -5046,8 +5046,8 @@ c******************************************************************************
       USE SIZES
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 C    kmd48.33bc - added the variables from Global
-      USE GLOBAL, ONLY: RES_BC_FLAG, BCSTATIM, RBCTIME1,
-     &                  RBCTIME2, SBCTIME1, SBCTIME2, TBCTIME1,
+      USE GLOBAL, ONLY: RES_BC_FLAG, BCSTATIM,
+     &                  SBCTIME1, SBCTIME2, TBCTIME1,
      &                  TBCTIME2, RBCTIMEINC, SBCTIMEINC,
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM,
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
@@ -5062,6 +5062,7 @@ C    kmd48.33bc - added the variables from Global
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY : Z0b_var
+      USE mod_baroclinic, ONLY : allocateLNMBoundaryConditions
 
       IMPLICIT NONE !jgf45.09 added
 C...  Declaration and definition of local variables used in this subroutine
@@ -5534,6 +5535,7 @@ C                 salinity and temperature forcings.
          WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
  429     FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
      &    'BCFLAG_TEMP = ',I3)
+         CALL allocateLNMBoundaryConditions(MNETA)
          !
          !jgf51.52.35: Make sure the RES_BC_FLAG value matches the IDEN value.
          if (RES_BC_FLAG.ne.IDEN) then
