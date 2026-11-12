@@ -64,12 +64,11 @@ contains
 !> snapshots of normal flux (and elevation for LBCODE=32).
 !-----------------------------------------------------------------------
    subroutine initializeNormalFlowBoundary()
-      use sizes, only: INPUTDIR
       use global, only: FTIMINC, QTIME1, QTIME2, STATIM, &
                         QNIN1, QNIN2, ENIN1, ENIN2
       implicit none
 
-      open (NORMAL_FLOW_UNIT, file=trim(INPUTDIR)//'/'//'fort.20')
+      call openNormalFlowFile()
       read (NORMAL_FLOW_UNIT, *) FTIMINC
 
       QNIN1 = 0d0
@@ -98,7 +97,6 @@ contains
 !> @param[in] RampExtFlux2  External flux ramp at timestep ITHS
 !-----------------------------------------------------------------------
    subroutine hotstartNormalFlowBoundary(TimeLoc, ITHS, RampExtFlux1, RampExtFlux2)
-      use sizes, only: INPUTDIR
       use global, only: NFFR, FTIMINC, QTIME1, QTIME2, STATIM, DTDPHS, &
                         QNIN1, QNIN2, ENIN1, ENIN2, QN1, QN2, EN1, EN2, &
                         FPER, FAMIG, FFACE, FFF, QNAM, QNPH
@@ -114,7 +112,7 @@ contains
       integer :: I, J, IT, NCYC
 
       if ((NFFR == 0) .or. (NFFR == -1)) then
-         open (NORMAL_FLOW_UNIT, file=trim(INPUTDIR)//'/'//'fort.20')
+         call openNormalFlowFile()
          read (NORMAL_FLOW_UNIT, *) FTIMINC
          if (NFFR == 0) then
             QTIME1 = STATIM*86400.d0
@@ -168,6 +166,23 @@ contains
       end if
 
    end subroutine hotstartNormalFlowBoundary
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Open the fort.20 normal flow file for reading
+!>
+!> Terminates the run with an error message if the file is missing or
+!> cannot be opened.
+!-----------------------------------------------------------------------
+   subroutine openNormalFlowFile()
+      use sizes, only: INPUTDIR
+      use mod_io, only: openFileForRead
+      implicit none
+      integer :: errorIO
+
+      call openFileForRead(NORMAL_FLOW_UNIT, trim(INPUTDIR)//'/'//'fort.20', errorIO)
+
+   end subroutine openNormalFlowFile
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------

@@ -877,8 +877,8 @@ $(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ) $(O_DIR)baroclinic.o
 $(O_DIR)cstart.o      : cstart.F $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o
 $(O_DIR)hstart.o      : hstart.F $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o
 $(O_DIR)transport_3d.o : transport_3d.F
-$(O_DIR)baroclinic.o  : baroclinic.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(MSG_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o
-$(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(ADC_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o
+$(O_DIR)baroclinic.o  : baroclinic.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(MSG_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o
+$(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(ADC_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o
 $(O_DIR)transport_2d.o : transport_2d.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(MESH_MOBJ) $(NA_MOBJ)
 $(O_DIR)timestep.o    : timestep.F90 $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o $(O_DIR)transport_2d.o $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(O_DIR)momentum3d.o $(O_DIR)wetdry.o $(WRIT_MOBJ) $(WIND_MOBJ) $(SPG_MOBJ) $(SG_MOBJ) $(TIDE_MOBJ) $(NA_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(COUP_MOBJ)
 ifeq ($(NETCDF),enable)
