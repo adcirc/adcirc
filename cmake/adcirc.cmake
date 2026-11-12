@@ -58,7 +58,7 @@ set(ADCIRC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/flux_boundaries.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/transport_2d.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/transport_3d.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
