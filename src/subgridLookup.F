@@ -90,6 +90,9 @@
       ! Array to hold vertex corrected advection for
       ! zeta at k
       REAL(8), DIMENSION(:), ALLOCATABLE :: cadvVertETA1
+      ! Grid-averaged Manning's n, used above the top of the table
+      REAL(8), DIMENSION(:), ALLOCATABLE :: manningAvg
+      LOGICAL :: haveManningAvg = .false.
       ! Minimum depth in depth array used to preprocess lookup table 
       REAL(8) :: minDepth
       ! Maximum depth in depth array used to preprocess lookup table 
@@ -170,7 +173,7 @@
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       ! use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
       use global, only: nodes_lg
-      use mod_logging, only: allMessage, ERROR
+      use mod_logging, only: allMessage, ERROR, WARNING
       
       implicit none
 
@@ -184,6 +187,7 @@
       ! Arrays for holding global variables
       REAL(8), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubVertList
+      REAL(8), DIMENSION(:), ALLOCATABLE :: globalVertList
       ! variables needed to read in main NETCDF lookup table
       INTEGER :: NC_ERR, IS, NC_ID, NC_VAR 
       INTEGER :: I
@@ -331,6 +335,26 @@
          subgridVertList(I) = globalSubVertList(currNode)
       ENDDO
       IF(ALLOCATED(globalSubVertList))DEALLOCATE(globalSubVertList)
+!!!!!!!!!!!!!!!!! grid-averaged Manning's n (optional) !!!!!!!!!!!!!!!!
+      IF(NF90_INQ_VARID(NC_ID,"manningAvg",NC_VAR).EQ.NF90_NOERR)THEN
+         IF(ALLOCATED(manningAvg))DEALLOCATE(manningAvg)
+         ALLOCATE(manningAvg(NP))
+         ALLOCATE(globalVertList(numVerts))
+         CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertList))
+         DO I = 1,NP
+#ifdef CMPI
+            currNode = abs(nodes_lg(I))
+#else
+            currNode = I
+#endif
+            manningAvg(I) = globalVertList(currNode)
+         ENDDO
+         DEALLOCATE(globalVertList)
+         haveManningAvg = .true.
+      ELSE
+         CALL allMessage(WARNING,"subgrid table has no manningAvg; "//
+     &      "friction above the table top uses the top-row value")
+      ENDIF
 
 !JLW: close netcdf lookup table file
       NC_ERR = NF90_CLOSE(NC_ID)
@@ -361,6 +385,7 @@
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
      &   , NNeigh, NeiTab
       use global, only : H0
+      use adc_constants, only : g
 
       implicit none
       integer :: ie, i, j
@@ -404,10 +429,20 @@
                wetDepthVertETA2(i) = wetDepthVertTab(i,numPhi)
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
                IF(subgrid_level1)THEN
-                  cmfVertETA2(i) = cmfVertTab(i,numPhi)
+                  IF(haveManningAvg)THEN
+                     cmfVertETA2(i) = g*manningAvg(i)**2.d0
+     &                  /((gridDepthVertETA2(i))**(1.d0/3.d0))
+                  ELSE
+                     cmfVertETA2(i) = cmfVertTab(i,numPhi)
+                  ENDIF
                   cadvVertETA2(i) = cadvVertTab(i,numPhi)
                ELSE
-                  cfVertETA2(i) = cfVertTab(i,numPhi)
+                  IF(haveManningAvg)THEN
+                     cfVertETA2(i) = g*manningAvg(i)**2.d0
+     &                  /((gridDepthVertETA2(i))**(1.d0/3.d0))
+                  ELSE
+                     cfVertETA2(i) = cfVertTab(i,numPhi)
+                  ENDIF
                ENDIF
             ELSEIF(wetFracVertTab(i,numPhi-numGreater).NE.
 !JLW: as long as the depth we are indexing is not equal to the minimum
