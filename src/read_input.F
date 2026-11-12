@@ -152,6 +152,7 @@ Casey 251212: Adding time control.
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
      &   invertedBarometerOnElevationBoundary
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -2571,6 +2572,9 @@ C...
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I4,'  ',I2,':',I2,':',f7.4,/)
          WREFTIM = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC)
+         IF (ieee_is_nan(WREFTIM)) CALL terminate(
+     &      exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid NWS=3 wind reference time in the fort.15.')
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2634,6 +2638,9 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
          WindRefTime = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0)
+         IF (ieee_is_nan(WindRefTime)) CALL terminate(
+     &      exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid wind reference time in the fort.15.')
          CALL setNws08f15Parameters(WindRefTime, BLAdj, g)
       ENDIF
 C     jgf46.16 Merged:

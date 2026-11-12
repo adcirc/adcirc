@@ -1475,16 +1475,22 @@ C     character of a string.
 C***********************************************************************
 C                                                                      *
 C   Convert time from year,month,day,hour,min,sec into seconds since   *
-C   epoch                                                              *
+C   the Unix epoch. Two- and three-digit years are taken as 2000+IYR   *
+C   to support legacy input files. Returns NaN (and logs an error) for *
+C   a date that does not exist; callers must check with ieee_is_nan    *
+C   because this module cannot call terminate.                         *
 C                                                                      *
 C***********************************************************************
       REAL(8) FUNCTION TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) RESULT(TIMESEC)
+      use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
       use mod_datetime, only: t_datetime
+      use mod_logging, only: allMessage, ERROR
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: IYR,IMO,IDAY,IHR,IMIN
       REAL(8), INTENT(IN) :: SEC
-      INTEGER :: iyr_4dig, isec, itimemsec, msec
+      INTEGER :: iyr_4dig
       type(t_datetime) :: date
+      character(len=256) :: message
 
       if(iyr < 1000)then
         iyr_4dig = iyr + 2000
@@ -1492,11 +1498,18 @@ C***********************************************************************
         iyr_4dig = iyr
       endif
 
-      isec = int(floor(sec))
-      msec = int(floor(sec-dble(isec))*1000.0d0)
-      date = t_datetime(iyr_4dig,imo,iday,ihr,imin,isec,msec)
-      itimemsec = date%timestamp()
-      timesec = dble(itimemsec) / 1000.0d0
+      ! The seconds are added as a real so fractional seconds are kept
+      ! exactly; the 64-bit millisecond timestamp must not be stored in a
+      ! default integer (it overflows ~25 days after the epoch).
+      date = t_datetime(iyr_4dig,imo,iday,ihr,imin,0,0)
+      if (.not.date%valid()) then
+         write(message,'(a,i0,4(a,i0),a)') 'Invalid date in TIMECONV: ',
+     &      iyr_4dig,'-',imo,'-',iday,' ',ihr,':',imin,'.'
+         call allMessage(ERROR,message)
+         timesec = ieee_value(timesec, ieee_quiet_nan)
+         return
+      endif
+      timesec = dble(date%timestamp()) / 1000.0d0 + sec
 
 C-----------------------------------------------------------------------
       END FUNCTION TIMECONV

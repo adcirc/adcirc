@@ -887,6 +887,7 @@ contains
       use mod_io, only: openFileForRead
       use VORTEX, only: uvtrans
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
       implicit none
       integer, allocatable :: iYear(:), iMth(:), iDay(:), iHr(:)
       integer, allocatable :: iLat(:), iLon(:)
@@ -970,6 +971,8 @@ contains
             ! Determine the time of this hindcast in seconds since the beginning
             ! of the year.
             CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
+            if (ieee_is_nan(CastTime(i))) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                                         message='Invalid date in the fort.22 track file.')
 
             ! Determine the CastTime in seconds since the beginning of the simulation.
             CastTime(i) = CastTime(i) - WindRefTime
@@ -993,6 +996,8 @@ contains
             ! of the year.
             if (iFcstInc(i) == 0) then
                CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
+               if (ieee_is_nan(CastTime(i))) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                                            message='Invalid date in the fort.22 track file.')
                CastTime(i) = CastTime(i) - WindRefTime
             else
                FcstInc(i) = FcstInc(i)*3600.d0 ! convert hours to seconds
@@ -1023,6 +1028,8 @@ contains
 
             if (iFcstInc(i) == 0) then
                CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
+               if (ieee_is_nan(CastTime(i))) call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                                            message='Invalid date in the fort.22 track file.')
                CastTime(i) = CastTime(i) - WindRefTime
             else
                FcstInc(i) = FcstInc(i)*3600.d0 ! convert hours to seconds

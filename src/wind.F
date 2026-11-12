@@ -3276,6 +3276,8 @@ C***********************************************************************
       SUBROUTINE NWS3GET()
       USE SIZES
       USE GLOBAL, ONLY: timeconv
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
@@ -3303,6 +3305,9 @@ C
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
       IWHR = IWTIME - IWYR*1000000 - IWMO*10000 - IWDAY*100
       WTIMED = TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0)
+      IF (ieee_is_nan(WTIMED)) CALL terminate(
+     &   exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Invalid date in the NWS=3 fort.22 file.')
 
       DO I=1,NWLAT
          READ(22,*) (WVXFN(I,J),J=1,NWLON)
