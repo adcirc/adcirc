@@ -87,13 +87,12 @@ contains
    !> BCFLAG_LNM = 3: holds the boundary at the initial elevation
    !-----------------------------------------------------------------------
    subroutine initializeLNMBoundaryConditions()
-      use sizes, only: INPUTDIR
       use global, only: BCFLAG_LNM, BCSTATIM, RBCTIMEINC, ETA2
       use boundaries, only: NETA, NBD
       implicit none
 
       if (BCFLAG_LNM == 1) then
-         open (LNM_UNIT, file=trim(INPUTDIR)//'/'//'fort.35')
+         call openLNMFile()
          RBCTIME1 = BCSTATIM*86400.d0
          RBCTIME2 = RBCTIME1 + RBCTIMEINC
          call readLNMSnapshot(LNM_BC1)
@@ -141,13 +140,12 @@ contains
    !> The diagnostic LNM is constant in time and is set directly in LNM_BC.
    !-----------------------------------------------------------------------
    subroutine initializeDiagnosticLNMBoundaryConditions()
-      use sizes, only: INPUTDIR
       use global, only: BCFLAG_LNM, ETA2
       use boundaries, only: NETA, NBD
       implicit none
 
       if (BCFLAG_LNM == 1) then
-         open (LNM_UNIT, file=trim(INPUTDIR)//'/'//'fort.35')
+         call openLNMFile()
          call readLNMSnapshot(LNM_BC)
       else if (BCFLAG_LNM == 3) then
          LNM_BC(1:NETA) = ETA2(NBD(1:NETA))
@@ -155,6 +153,23 @@ contains
       ! BCFLAG_LNM = 2 (HYCOM) is not yet implemented
 
    end subroutine initializeDiagnosticLNMBoundaryConditions
+   !-----------------------------------------------------------------------
+
+   !-----------------------------------------------------------------------
+   !> @brief Open the fort.35 level of no motion file for reading
+   !>
+   !> Terminates the run with an error message if the file is missing or
+   !> cannot be opened.
+   !-----------------------------------------------------------------------
+   subroutine openLNMFile()
+      use sizes, only: INPUTDIR
+      use mod_io, only: openFileForRead
+      implicit none
+      integer :: errorIO
+
+      call openFileForRead(LNM_UNIT, trim(INPUTDIR)//'/'//'fort.35', errorIO)
+
+   end subroutine openLNMFile
    !-----------------------------------------------------------------------
 
    !-----------------------------------------------------------------------
