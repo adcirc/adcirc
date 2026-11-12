@@ -33,7 +33,9 @@
 !> protected; only these procedures write them:
 !>   - subgrid_read_namelist, subgrid_validate, subgrid_initialize
 !>   - subgrid_update (each time step), subgrid_cold_start, subgrid_hot_start
-!>   - subgrid_set_min_depth (drying), subgrid_finalize
+!>   - subgrid_set_min_depth (drying), subgrid_refresh_vertex (weir
+!>     averaging), subgrid_exchange_records (weirs under MPI),
+!>     subgrid_finalize
 !===============================================================================
 #include "logging_macros.h"
 module mod_subgrid
@@ -87,8 +89,9 @@ module mod_subgrid
    ! subgrid_set_min_depth is depth-only by design: it sets eta and
    ! H_G = H_W = hmin and leaves phi, the friction coefficient and C_adv at
    ! their values for the pre-clamp elevation, so the stored record at a
-   ! clamped subgrid vertex is not the table lookup at its eta. The next
-   ! subgrid_update replaces it with the lookup.
+   ! clamped subgrid vertex is not the table lookup at its eta.
+   ! subgrid_refresh_vertex replaces it with the lookup, at the next
+   ! subgrid_update or after weir averaging.
 
    !> Wet area fraction at zeta^k (np)
    real(8), allocatable, public, protected :: wetFracVertETA1(:)
@@ -121,6 +124,8 @@ module mod_subgrid
    public :: subgrid_validate
    public :: subgrid_initialize
    public :: subgrid_update
+   public :: subgrid_refresh_vertex
+   public :: subgrid_exchange_records
    public :: subgrid_cold_start
    public :: subgrid_hot_start
    public :: subgrid_set_min_depth
@@ -286,7 +291,7 @@ contains
          if (allocated(cadvVertETA1)) deallocate (cadvVertETA1)
          allocate (cadvVertETA1(n))
          ! cadv is 1 (no correction) at vertices outside the subgrid area;
-         ! subgrid_update keeps it at 1 there
+         ! subgrid_refresh_vertex keeps it at 1 there
          cadvVertETA2(:) = 1.d0
          cadvVertETA1(:) = 1.d0
       end if
@@ -755,34 +760,92 @@ contains
    !> \param[in] eta2 elevation at every local vertex, m (np)
    !=====================================================================
    subroutine subgrid_update(eta2)
-      use mesh, only: np, dp
+      use mesh, only: np
       use mod_logging, only: t_log_scope, init_log_scope
       implicit none
       real(8), intent(in) :: eta2(:)
       integer :: i
-      type(subgrid_vertex_t) :: v
 
       LOG_SCOPE_TRACED("subgrid_update", SUBGRID_TRACING)
 
       call shift_time_levels()
       do i = 1, np
-         if (isSubgridVert(i)) then
-            v = subgrid_lookup_vertex(i, eta2(i))
-            wetFracVertETA2(i) = v%phi
-            gridDepthVertETA2(i) = v%hg
-            wetDepthVertETA2(i) = v%hw
-            fricVertETA2(i) = v%fric
-            if (subgrid_level1) cadvVertETA2(i) = v%cadv
-         else
-            ! not in the subgrid area: grid total depth
-            gridDepthVertETA2(i) = eta2(i) + dp(i)
-            wetDepthVertETA2(i) = eta2(i) + dp(i)
-            wetFracVertETA2(i) = 1.d0
-            ! no advection correction (the kernels multiply by cadv)
-            if (subgrid_level1) cadvVertETA2(i) = 1.d0
-         end if
+         call subgrid_refresh_vertex(i, eta2(i))
       end do
    end subroutine subgrid_update
+
+   !=====================================================================
+   !> \brief Look up vertex i at elevation eta and store the result as its
+   !>        zeta^(k+1) values, without shifting the time levels.
+   !>
+   !> subgrid_update calls it for every vertex, and wetting/drying calls it
+   !> for the two vertices of a weir pair after averaging their elevations.
+   !> It replaces the record that subgrid_set_min_depth leaves at a clamped
+   !> vertex with the lookup at eta.
+   !>
+   !> Precondition: level0, and subgrid_initialize has been called.
+   !> \param[in] i   local vertex number
+   !> \param[in] eta elevation at vertex i, m
+   !=====================================================================
+   subroutine subgrid_refresh_vertex(i, eta)
+      ! no log scope: called per vertex
+      use mesh, only: dp
+      implicit none
+      integer, intent(in) :: i
+      real(8), intent(in) :: eta
+      type(subgrid_vertex_t) :: v
+
+      if (isSubgridVert(i)) then
+         v = subgrid_lookup_vertex(i, eta)
+         wetFracVertETA2(i) = v%phi
+         gridDepthVertETA2(i) = v%hg
+         wetDepthVertETA2(i) = v%hw
+         fricVertETA2(i) = v%fric
+         if (subgrid_level1) cadvVertETA2(i) = v%cadv
+      else
+         ! not in the subgrid area: grid total depth
+         gridDepthVertETA2(i) = eta + dp(i)
+         wetDepthVertETA2(i) = eta + dp(i)
+         wetFracVertETA2(i) = 1.d0
+         ! no advection correction (the kernels multiply by cadv)
+         if (subgrid_level1) cadvVertETA2(i) = 1.d0
+      end if
+   end subroutine subgrid_refresh_vertex
+
+   !=====================================================================
+   !> \brief Give every ghost vertex the zeta^(k+1) values of its owner
+   !>        (MPI; no-op in serial).
+   !>
+   !> Wetting/drying averages the elevations of the two vertices of an
+   !> IBTYPE=64 weir pair and refreshes their values on each subdomain
+   !> that holds both vertices. When the pair is split between subdomains,
+   !> only some subdomains do this. The ETA2 exchange that follows gives
+   !> each ghost its owner's elevation, and this exchange gives it the
+   !> owner's values. The ghost copies the record instead of repeating the
+   !> lookup because the record at a clamped vertex (see
+   !> subgrid_set_min_depth) differs from the lookup at its elevation.
+   !>
+   !> Precondition: level0, and subgrid_initialize has been called.
+   !=====================================================================
+   subroutine subgrid_exchange_records()
+#ifdef CMPI
+      use messenger, only: updater
+      use global, only: dumy1, dumy2
+#endif
+      use mod_logging, only: t_log_scope, init_log_scope
+      implicit none
+
+      LOG_SCOPE_TRACED("subgrid_exchange_records", SUBGRID_TRACING)
+
+#ifdef CMPI
+      call updater(gridDepthVertETA2, wetDepthVertETA2, wetFracVertETA2, 3)
+      if (subgrid_level1) then
+         call updater(fricVertETA2, cadvVertETA2, dumy1, 2)
+      else
+         call updater(fricVertETA2, dumy1, dumy2, 1)
+      end if
+#endif
+   end subroutine subgrid_exchange_records
 
    !=====================================================================
    !> \brief Copy the zeta^(k+1) values that have a zeta^k copy (wet area
@@ -865,8 +928,8 @@ contains
    !> subgrid area). The clamp is depth-only by design: phi, the friction
    !> coefficient and C_adv keep their values at the pre-clamp elevation,
    !> so the stored record at a clamped subgrid vertex is not the table
-   !> lookup at its eta. The next subgrid_update replaces it with the
-   !> lookup.
+   !> lookup at its eta. subgrid_refresh_vertex replaces it with the
+   !> lookup, at the next subgrid_update or after weir averaging.
    !>
    !> Precondition: level0, and subgrid_initialize has been called.
    !> \param[in]  i    local vertex number

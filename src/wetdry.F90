@@ -153,6 +153,7 @@ contains
 #ifdef CMPI
       use global, only: ilump, idumy, dumy1, dumy2
       use messenger, only: updatei, updater, wetDrySum
+      use mod_subgrid, only: subgrid_exchange_records
 #endif
       use mesh, only: ne, np, nm, dp, mju, totalArea, nm, x, y, areas, &
                       LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain
@@ -168,7 +169,7 @@ contains
       use mod_subdomain, only: subdomainOn, enforceBN, enforceWDcb, enforceWDob
       use mod_subgrid, only: subgrid_level0, gridDepthVertETA2, &
                              wetDepthVertETA2, subgrid_friction, subgrid_set_min_depth, &
-                             subgrid_has_friction
+                             subgrid_has_friction, subgrid_refresh_vertex
       implicit none
       integer, intent(in) :: it ! time step number
       complex(8) :: duds
@@ -286,6 +287,11 @@ contains
                            ETA2AVG = (ETA2(I)*TotArea1 + ETA2(NNBB2)*TotArea2)/(TotArea1 + TotArea2)
                            ETA2(I) = ETA2AVG
                            ETA2(NNBB2) = ETA2AVG
+                           if (subgrid_level0) then
+                              ! subgrid values at the averaged elevation
+                              call subgrid_refresh_vertex(I, ETA2(I))
+                              call subgrid_refresh_vertex(NNBB2, ETA2(NNBB2))
+                           end if
                            NNODECODE(I) = 1
                            NODECODE(I) = 1
                            NCCHANGE = NCCHANGE + 1 !NCCHANGE=0 set near beginning of GWCE
@@ -706,6 +712,15 @@ contains
       call UPDATEI(NNODECODE, NIBCNT, 2)
 !-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well
       call UPDATER(FRIC, TK, ETA2, 3)
+!        IBTYPE=64 weir averaging (above) changes ETA2 and the subgrid
+!        values of a vertex only on the subdomains that hold both
+!        vertices of the pair (split weir pair). UPDATER gives each
+!        ghost its owner's ETA2; subgrid_exchange_records gives it the
+!        owner's subgrid values, which differ from the lookup at ETA2 at
+!        a vertex clamped to the minimum depth (subgrid_set_min_depth).
+      if (subgrid_level0 .and. (NFLUXIB64_GBL > 0)) then
+         call subgrid_exchange_records()
+      end if
       tmp1 = TKM(1, :)
       tmp2 = TKM(2, :)
       tmp3 = TKM(3, :)
