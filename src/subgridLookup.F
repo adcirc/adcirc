@@ -87,6 +87,9 @@
       ! Array to hold vertex corrected advection for
       ! zeta at k+1
       REAL(8), DIMENSION(:), ALLOCATABLE :: cadvVertETA2
+      ! Array to hold vertex corrected advection for
+      ! zeta at k
+      REAL(8), DIMENSION(:), ALLOCATABLE :: cadvVertETA1
       ! Minimum depth in depth array used to preprocess lookup table 
       REAL(8) :: minDepth
       ! Maximum depth in depth array used to preprocess lookup table 
@@ -130,8 +133,11 @@
          ALLOCATE(cmfVertETA2(NP))
          IF(ALLOCATED(cadvVertETA2))DEALLOCATE(cadvVertETA2)
          ALLOCATE(cadvVertETA2(NP))
+         IF(ALLOCATED(cadvVertETA1))DEALLOCATE(cadvVertETA1)
+         ALLOCATE(cadvVertETA1(NP))
          cmfVertETA2(:) = 0.d0
          cadvVertETA2(:) = 1.d0
+         cadvVertETA1(:) = 1.d0
 !JLW: will need to add vertex based advection
       ELSE
          IF(ALLOCATED(cfVertETA2))DEALLOCATE(cfVertETA2)
@@ -365,6 +371,7 @@
       HABSMIN = 0.8d0*H0
       wetFracVertETA1 = wetFracVertETA2
       gridDepthVertETA1 = gridDepthVertETA2
+      IF(subgrid_level1) cadvVertETA1 = cadvVertETA2
 !JLW: now loop through the vertices and lookup vertex averages
       DO I = 1,NP
          IF(subgridVertList(I).EQ.1)THEN
