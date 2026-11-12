@@ -427,6 +427,7 @@ C...... DW
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
       REAL(8) :: CUN1, CUN2, CUN3, CVN1, CVN2, CVN3, CUAvg, CVAvg, DHGDT
+      INTEGER :: IFNLFAX
 
       LOG_SCOPE_TRACED("gwce_new", GWCE_TRACING)
 
@@ -457,7 +458,7 @@ C...  wetting or drying occurred in the previous time step.
 C...
 C..... DW, Dev 2019
 C.....  if CGWCE_HDP = .true. use H instead of DP in the surface gradient term
-      NCIFBLCK: IF(NCChange.GT.0 .or. CGWCE_HDP ) THEN !if any subdomain grid has changed
+      NCIFBLCK: IF(NCChange.GT.0 .or. CGWCE_HDP .or. subgrid_level0) THEN !if any subdomain grid has changed
          NCChange=0
 C.....Set up the LHS matrix (for the iterative matrix solver)
          IF ( ILump.eq.0 ) THEN ! default, fully consistent case
@@ -574,9 +575,9 @@ C
                IF(subgrid_level0)THEN
 !JLW: adding option to turn off dphidt term
                   MSFacLOnDiag = MSFacLOnDiag*PHIAVG2 + OnDiag
-     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
+     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/DT/12.d0
                   MSFacLOffDiag = MSFacLOffDiag*PHIAVG2 + OffDiag
-     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
+     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/DT/12.d0
                ENDIF
 
                ! Use the pre-computed CSR positions
@@ -630,6 +631,16 @@ C              Assemble the LHS matrix
                NMI1=NM(IE,1)
                NMI2=NM(IE,2)
                NMI3=NM(IE,3)
+               IF(subgrid_level0)THEN
+                  PHI1N1 = wetFracVertETA1(NMI1)
+                  PHI1N2 = wetFracVertETA1(NMI2)
+                  PHI1N3 = wetFracVertETA1(NMI3)
+                  PHI2N1 = wetFracVertETA2(NMI1)
+                  PHI2N2 = wetFracVertETA2(NMI2)
+                  PHI2N3 = wetFracVertETA2(NMI3)
+                  PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
+                  PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
+               ENDIF
                AreaIE2=Areas(IE)
                AreaIE =AreaIE2*0.5d0
                NC1=NodeCode(NMI1)
@@ -654,6 +665,10 @@ C.... DW, absorbing layer
      &             (A00*2.D0*Tau0SigmaAvg*DT + SigmaAvg)*sponge_dis_mthd
                END IF
                MsFacLOnDiag =OnDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
+               IF(subgrid_level0)THEN
+                  MsFacLOnDiag = MsFacLOnDiag*PHIAVG2 + OnDiag
+     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/DT/12.d0
+               ENDIF
 C.............DW
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
@@ -1287,12 +1302,24 @@ C...     ********     the spherical coordinates
             EVMXGrad=(EVMN1*FDX1+EVMN2*FDX2+EVMN3*FDX3)/AreaIE2
             EVMYGrad=(EVMN1*FDY1+EVMN2*FDY2+EVMN3*FDY3)/AreaIE2
             EVMAvgODT=((EVMN1+EVMN2+EVMN3)/3.d0)/DT
+!           Subgrid continuity: div(Q) = -phi*dzeta/dt
+            IF(subgrid_level0)THEN
+            MX=(EVMXGrad*(QX1N1*FDX1+QX1N2*FDX2+QX1N3*FDX3)
+     &         +EVMYGrad*(QY1N1*FDX1+QY1N2*FDX2+QY1N3*FDX3)
+     &         -EVMAvgODT*(PHI2N1*ESN1*FDX1+PHI2N2*ESN2*FDX2
+     &                    +PHI2N3*ESN3*FDX3))/AreaIE2
+            MY=(EVMXGrad*(QX1N1*FDY1+QX1N2*FDY2+QX1N3*FDY3)
+     &         +EVMYGrad*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3)
+     &         -EVMAvgODT*(PHI2N1*ESN1*FDY1+PHI2N2*ESN2*FDY2
+     &                    +PHI2N3*ESN3*FDY3))/AreaIE2
+            ELSE
             MX=(EVMXGrad*(QX1N1*FDX1+QX1N2*FDX2+QX1N3*FDX3)
      &         +EVMYGrad*(QY1N1*FDX1+QY1N2*FDX2+QY1N3*FDX3)
      &         -EVMAvgODT*(ESN1*FDX1+ESN2*FDX2+ESN3*FDX3))/AreaIE2
             MY=(EVMXGrad*(QX1N1*FDY1+QX1N2*FDY2+QX1N3*FDY3)
      &         +EVMYGrad*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3)
      &         -EVMAvgODT*(ESN1*FDY1+ESN2*FDY2+ESN3*FDY3))/AreaIE2
+            ENDIF
          ENDIF
 
 C...     Compute the remainder of the 2 Part lateral stress terms
@@ -1469,16 +1496,22 @@ C
          IF(subgrid_level0)THEN
 !JLW: adding dphidt option
             MSFacR = PHIAVG2*MSFacR - 
-     &         dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
+     &         dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/DT/12.d0
 !JLW: removing the following subgrid addition because incorrect
 !            GOAreaIE4 = GOAreaIE4*PHIAVG2
          ENDIF
          Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
          A00pB00=A00+B00
+!        Under level0 DPAvg is already H_G: no separate finite-amplitude term
+         IF(subgrid_level0)THEN
+            IFNLFAX = 0
+         ELSE
+            IFNLFAX = IFNLFA
+         ENDIF
 
 C...     Compute the JX, JY terms less the advection terms
          JXAvg = CorifAvg*QY1Avg
-     &          -IFNLFA*GOAreaIE4*(1 - IFNL_HDP)*(
+     &          -IFNLFAX*GOAreaIE4*(1 - IFNL_HDP)*(
      &               E1N1SQ*FDX1 +E1N2SQ*FDX2 + E1N3SQ*FDX3)
      &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDX1
      &          +(PR1N2-TiPN2-Off1N2)*FDX2+(PR1N3-TiPN3-Off1N3)*FDX3)
@@ -1490,7 +1523,7 @@ C--- end DW
 
 
          JYAvg =-CorifAvg*QX1Avg
-     &          -IFNLFA*GOAreaIE4*(1 - IFNL_HDP)*(
+     &          -IFNLFAX*GOAreaIE4*(1 - IFNL_HDP)*(
      &                E1N1SQ*FDY1+E1N2SQ*FDY2+E1N3SQ*FDY3)
      &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDY1
      &          +(PR1N2-TiPN2-Off1N2)*FDY2+(PR1N3-TiPN3-Off1N3)*FDY3)
@@ -1571,6 +1604,26 @@ C...     Complete the JX, JY terms depending on the advection formulation
             ENDIF
          ENDIF
          IF(CGWCE_Advec_C2) THEN        !conservative v2 advection
+           IF(subgrid_level1)THEN
+              CUN1 = CADV1*U1N1
+              CUN2 = CADV2*U1N2
+              CUN3 = CADV3*U1N3
+              CVN1 = CADV1*V1N1
+              CVN2 = CADV2*V1N2
+              CVN3 = CADV3*V1N3
+              CUAvg = (CUN1+CUN2+CUN3)/3.d0
+              CVAvg = (CVN1+CVN2+CVN3)/3.d0
+              JXAvg = JXAvg - IFNLCT*(
+     &              QX1Avg*(CUN1*FDX1+CUN2*FDX2+CUN3*FDX3)
+     &             +QY1Avg*(CUN1*FDY1+CUN2*FDY2+CUN3*FDY3)
+     &             +CUAvg*(QX1N1*FDX1+QX1N2*FDX2+QX1N3*FDX3)
+     &             +CUAvg*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3))/AreaIE2
+              JYAvg = JYAvg - IFNLCT*(
+     &              QX1Avg*(CVN1*FDX1+CVN2*FDX2+CVN3*FDX3)
+     &             +QY1Avg*(CVN1*FDY1+CVN2*FDY2+CVN3*FDY3)
+     &             +CVAvg*(QX1N1*FDX1+QX1N2*FDX2+QX1N3*FDX3)
+     &             +CVAvg*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3))/AreaIE2
+           ELSE
            JXAvg = JXAvg - IFNLCT*(
      &              QX1Avg*(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)
      &             +QY1Avg*(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3)
@@ -1581,6 +1634,7 @@ C...     Complete the JX, JY terms depending on the advection formulation
      &             +QY1Avg*(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)
      &             +V1Avg*(QX1N1*FDX1+QX1N2*FDX2+QX1N3*FDX3)
      &             +V1Avg*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3))/AreaIE2
+           ENDIF
          ENDIF
 
 C...... BEG: DW, DEC 2019         

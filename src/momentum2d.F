@@ -1383,6 +1383,8 @@ C
       REAL(8) :: Ma2, Cfac 
 !JLW: adding a couple of variables needed
       REAL(8) :: HGAvg2, CADV1, CADV2, CADV3
+      REAL(8) :: CU1Avg, CV1Avg, DCU1DX2A, DCV1DY2A
+      LOGICAL :: C2Level1
 
       LOG_SCOPE_TRACED("mom_eqs_new_conserv", TIMESTEP_TRACING)
 
@@ -1393,6 +1395,7 @@ C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
 
+      C2Level1 = CME_New_C2.AND.subgrid_level1
       ELE_LOOP: DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
@@ -1574,6 +1577,25 @@ C...  Compute the advective term gradients for the element version 2
             V1Avg =(V1N1+V1N2+V1N3)/3.d0
             QX1Avg=(QX1N1+QX1N2+QX1N3)/3.d0
             QY1Avg=(QY1N1+QY1N2+QY1N3)/3.d0
+!           Subgrid level1: div(C U Q) = (C U) div(Q) + (Q.grad)(C U)
+            IF(C2Level1)THEN
+               CU1Avg=(CADV1*U1N1+CADV2*U1N2+CADV3*U1N3)/3.d0
+               CV1Avg=(CADV1*V1N1+CADV2*V1N2+CADV3*V1N3)/3.d0
+               DCU1DX2A=CADV1*U1N1*FDX1+CADV2*U1N2*FDX2+CADV3*U1N3*FDX3
+               DCV1DY2A=CADV1*V1N1*FDY1+CADV2*V1N2*FDY2+CADV3*V1N3*FDY3
+               U1DQX1DXA=CU1Avg*DQX1DX2A/2.d0
+               QX1DU1DXA=QX1Avg*DCU1DX2A/2.d0
+               V1DQX1DYA=CV1Avg*DQX1DY2A/2.d0
+               QX1DV1DYA=QX1Avg*DCV1DY2A/2.d0
+               U1DQY1DXA=CU1Avg*DQY1DX2A/2.d0
+               QY1DU1DXA=QY1Avg*DCU1DX2A/2.d0
+               V1DQY1DYA=CV1Avg*DQY1DY2A/2.d0
+               QY1DV1DYA=QY1Avg*DCV1DY2A/2.d0
+               DU1QX1DXA=U1DQX1DXA+QX1DU1DXA
+               DV1QX1DYA=V1DQX1DYA+QX1DV1DYA
+               DU1QY1DXA=U1DQY1DXA+QY1DU1DXA
+               DV1QY1DYA=V1DQY1DYA+QY1DV1DYA
+            ELSE
             U1DQX1DXA=U1Avg *DQX1DX2A/2.d0
             QX1DU1DXA=QX1Avg*DU1DX2A/2.d0
             V1DQX1DYA=V1Avg *DQX1DY2A/2.d0
@@ -1586,6 +1608,7 @@ C...  Compute the advective term gradients for the element version 2
             DV1QX1DYA=V1DQX1DYA+QX1DV1DYA
             DU1QY1DXA=U1DQY1DXA+QY1DU1DXA
             DV1QY1DYA=V1DQY1DYA+QY1DV1DYA
+            ENDIF
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (flux formulation)
