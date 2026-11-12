@@ -49,6 +49,12 @@ module mod_flux_boundaries
 
    integer, parameter :: NORMAL_FLOW_UNIT = 20
 
+   ! Where ElevDisc for river radiation (LBCODE=52) nodes is captured from
+   ! on the current timestep
+   integer, parameter :: ELEVDISC_NONE = 0
+   integer, parameter :: ELEVDISC_FROM_ETA2 = 1
+   integer, parameter :: ELEVDISC_FROM_ETADISC = 2
+
 contains
 
 !-----------------------------------------------------------------------
@@ -230,269 +236,292 @@ contains
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!> @brief Compute specified normal flow boundary conditions
+!> @brief Apply all flux boundary conditions
 !>
-!> Computes normal flux (QN2) and elevation (EN2) boundary conditions
-!> for specified flux boundaries. Supports periodic forcing with tidal
-!> constituents and time-varying flux input from fort.20.
+!> Computes the per-timestep forcing state (fort.20 snapshot advance,
+!> periodic constituent arguments, river radiation elevation capture), then
+!> visits each flow boundary segment once and applies the treatment for its
+!> boundary type. Subdomain boundary data is applied last.
 !>
 !> @param[in] IT      Current timestep number
 !> @param[in] TimeLoc Current simulation time (seconds)
 !> @param[in] TimeH   Harmonic analysis reference time (seconds)
 !-----------------------------------------------------------------------
-   subroutine computeSpecifiedNormalFlowBC(IT, TimeLoc, TimeH)
+   subroutine applyBoundaryConditions(IT, TimeLoc, TimeH)
       use global, only: NFFR, FPER, FAMIG, FFACE, FFF, RampExtFlux, &
-                        QNAM, QNPH, ENAM, ENPH, QN2, EN2, &
-                        QTIME1, FTIMINC, QNIN1, QNIN2, ENIN1, ENIN2, &
-                        FluxSettlingIT, EtaDisc, ElevDisc, Eta2
-      use mesh, only: NP, ICS
-      use boundaries, only: NVEL, LBCODEI, NBV
+                        QTIME1, FTIMINC, FluxSettlingIT, EtaDisc, Eta2, &
+                        NIBNODECODE
+      use mesh, only: NP
+      use boundaries, only: NBOU, NVELL, IBTYPE, NFLUXF, NFLUXIB
+      use subdomain, only: subdomainOn
       implicit none
 
       integer, intent(in) :: IT
       real(8), intent(in) :: TimeLoc, TimeH
-      integer :: I, J, NCYC, NNBB
-      real(8) :: ARGJ, RFF, QTRATIO
 
-      if (NFFR > 0) then
-         do J = 1, NFFR
-            if (abs(FPER(J)) <= eps) then
-               NCYC = 0
-            else
-               NCYC = int(TimeH/FPER(J))
-            end if
-            ARGJ = FAMIG(J)*(TimeH - dble(NCYC)*FPER(J)) + FFACE(J)
-            RFF = FFF(J)*RampExtFlux
-            do I = 1, NVEL
+      real(8) :: ARGJ(max(NFFR, 0)), RFF(max(NFFR, 0))
+      real(8) :: QTRATIO
+      integer :: elevDiscSource
+      integer :: I, J, K, NCYC
+
+      ! Per-timestep state for specified normal flow boundaries
+      QTRATIO = 0.d0
+      elevDiscSource = ELEVDISC_NONE
+      if (NFLUXF == 1) then
+         if (NFFR > 0) then
+            do J = 1, NFFR
+               if (abs(FPER(J)) <= eps) then
+                  NCYC = 0
+               else
+                  NCYC = int(TimeH/FPER(J))
+               end if
+               ARGJ(J) = FAMIG(J)*(TimeH - dble(NCYC)*FPER(J)) + FFACE(J)
+               RFF(J) = FFF(J)*RampExtFlux
+            end do
+         elseif ((NFFR == 0) .or. (NFFR == -1)) then
+            call advanceNormalFlowSnapshots(TimeLoc)
+            QTRATIO = (TimeLoc - QTIME1)/FTIMINC
+         end if
+
+         ! Collect elevation information for river radiation b.c.
+         if (IT == FluxSettlingIT) then
+            EtaDisc_Fill = .false.
+            EtaDisc(1:NP) = Eta2(1:NP)
+            elevDiscSource = ELEVDISC_FROM_ETA2
+         else if (EtaDisc_Fill .and. IT > FluxSettlingIT) then
+            EtaDisc_Fill = .false.
+            elevDiscSource = ELEVDISC_FROM_ETADISC
+         end if
+      end if
+
+      if (NFLUXIB == 1) NIBNODECODE(:) = 0
+
+      I = 0
+      do K = 1, NBOU
+         select case (IBTYPE(K))
+         case (2, 12, 22, 32, 52)
+            if (NFLUXF == 1) call specifiedNormalFlowSegment(I, NVELL(K), ARGJ, RFF, QTRATIO, elevDiscSource)
+         case (30, 40, 41)
+            call velocityDischargeSegment(I, NVELL(K))
+         case (3, 13, 23)
+            call externalBarrierSegment(I, NVELL(K), TimeLoc)
+         case (4, 24)
+            call internalBarrierSegment(K, I, NVELL(K), TimeLoc, pipes=.false.)
+         case (5, 25)
+            call internalBarrierSegment(K, I, NVELL(K), TimeLoc, pipes=.true.)
+         case (64)
+            call vewBarrierSegment(K, I, NVELL(K), TimeLoc)
+         end select
+         I = I + segmentNodeCount(IBTYPE(K), NVELL(K))
+      end do
+
+      if (subdomainOn) call applySubdomainBCData(IT)
+
+   end subroutine applyBoundaryConditions
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Number of flow boundary node entries used by a boundary segment
+!>
+!> Internal barrier segments list each node pair twice (front side, then
+!> back side), so they occupy 2*NVELL entries in the flow boundary arrays.
+!-----------------------------------------------------------------------
+   pure integer function segmentNodeCount(boundary_type, nvell_k) result(n)
+      implicit none
+      integer, intent(in) :: boundary_type, nvell_k
+
+      select case (boundary_type)
+      case (4, 24, 5, 25, 64)
+         n = 2*nvell_k
+      case default
+         n = nvell_k
+      end select
+
+   end function segmentNodeCount
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Specified normal flow on one boundary segment
+!>
+!> Sets the normal flux (QN2) and, for LBCODE=32, elevation (EN2) from
+!> either the periodic constituents (NFFR > 0) or the fort.20 snapshots
+!> (NFFR = 0, -1). For LBCODE=52 river radiation nodes, captures the
+!> discharge elevation (ElevDisc) once flux settling has ended.
+!>
+!> @param[in] I0             Flow boundary index before the segment
+!> @param[in] N              Number of nodes in the segment
+!> @param[in] ARGJ           Periodic constituent arguments
+!> @param[in] RFF            Ramped periodic constituent nodal factors
+!> @param[in] QTRATIO        fort.20 interpolation weight
+!> @param[in] elevDiscSource Source for ElevDisc this timestep, if any
+!-----------------------------------------------------------------------
+   subroutine specifiedNormalFlowSegment(I0, N, ARGJ, RFF, QTRATIO, elevDiscSource)
+      use global, only: NFFR, RampExtFlux, QNAM, QNPH, ENAM, ENPH, QN2, EN2, &
+                        QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, ElevDisc, Eta2
+      use mesh, only: ICS
+      use boundaries, only: LBCODEI, NBV
+      implicit none
+
+      integer, intent(in) :: I0, N
+      real(8), intent(in) :: ARGJ(:), RFF(:)
+      real(8), intent(in) :: QTRATIO
+      integer, intent(in) :: elevDiscSource
+      integer :: I, J
+
+      do I = I0 + 1, I0 + N
+         if (NFFR > 0) then
+            do J = 1, NFFR
                select case (LBCODEI(I))
                case (2, 12, 22, 52)
                   QN2(I) = QN2(I) + rotate_normal_flux(ICS, I, &
-                                                       QNAM(J, I)*RFF*cos(ARGJ - QNPH(J, I)))
+                                                       QNAM(J, I)*RFF(J)*cos(ARGJ(J) - QNPH(J, I)))
                case (32)
                   QN2(I) = QN2(I) + rotate_normal_flux(ICS, I, &
-                                                       QNAM(J, I)*RFF*cos(ARGJ - QNPH(J, I)))
-                  EN2(I) = EN2(I) + ENAM(J, I)*RFF*cos(ARGJ - ENPH(J, I))
+                                                       QNAM(J, I)*RFF(J)*cos(ARGJ(J) - QNPH(J, I)))
+                  EN2(I) = EN2(I) + ENAM(J, I)*RFF(J)*cos(ARGJ(J) - ENPH(J, I))
                end select
             end do
-         end do
-      elseif ((NFFR == 0) .or. (NFFR == -1)) then
-         call advanceNormalFlowSnapshots(TimeLoc)
+         elseif ((NFFR == 0) .or. (NFFR == -1)) then
+            QN2(I) = RampExtFlux*(QNIN1(I) + QTRATIO*(QNIN2(I) - QNIN1(I)))
+            EN2(I) = RampExtFlux*(ENIN1(I) + QTRATIO*(ENIN2(I) - ENIN1(I)))
+         end if
 
-         QTRATIO = (TimeLoc - QTIME1)/FTIMINC
-         QN2 = RampExtFlux*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))
-         EN2 = RampExtFlux*(ENIN1 + QTRATIO*(ENIN2 - ENIN1))
-      end if
-
-      ! Collect elevation information for river radiation b.c.
-      if (IT == FluxSettlingIT) then
-         EtaDisc_Fill = .false.
-         do I = 1, NP
-            EtaDisc(I) = Eta2(I)
-         end do
-         do I = 1, NVEL
-            if (LBCODEI(I) == 52) then
-               NNBB = NBV(I)
-               ElevDisc(I) = Eta2(NNBB)
-            end if
-         end do
-      else if (EtaDisc_Fill .and. IT > FluxSettlingIT) then
-         EtaDisc_Fill = .false.
-         do I = 1, NVEL
-            if (LBCODEI(I) == 52) then
-               NNBB = NBV(I)
-               ElevDisc(I) = EtaDisc(NNBB)
-            end if
-         end do
-      end if
-
-   end subroutine computeSpecifiedNormalFlowBC
-   !-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!> @brief Compute radiation boundary condition discharge
-!>
-!> Computes discharge (QN1) at radiation boundary nodes (LBCODE=30)
-!> based on previous timestep velocities and current depth.
-!-----------------------------------------------------------------------
-   subroutine computeRadiationDischargeBC()
-      use global, only: UU1, VV1, H2, QN1
-      use boundaries, only: NVEL, LBCODEI, NBV, CSII, SIII
-      implicit none
-
-      integer :: J, NNBB
-      real(8) :: UN1
-
-      do J = 1, NVEL
-         if (LBCODEI(J) == 30) then
-            NNBB = NBV(J)
-            UN1 = UU1(NNBB)*CSII(J) + VV1(NNBB)*SIII(J)
-            QN1(J) = H2(NNBB)*UN1
+         if (LBCODEI(I) == 52) then
+            select case (elevDiscSource)
+            case (ELEVDISC_FROM_ETA2)
+               ElevDisc(I) = Eta2(NBV(I))
+            case (ELEVDISC_FROM_ETADISC)
+               ElevDisc(I) = EtaDisc(NBV(I))
+            end select
          end if
       end do
 
-   end subroutine computeRadiationDischargeBC
+   end subroutine specifiedNormalFlowSegment
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!> @brief Compute discharge for zero normal velocity gradient BC
+!> @brief Velocity-based discharge on one boundary segment
 !>
-!> Computes discharge (QN1) at zero normal velocity gradient boundary
-!> nodes (LBCODE=40,41) based on current velocities and depth.
+!> Computes the outward discharge (QN1) from the previous timestep
+!> velocities and current depth for radiation (LBCODE=30) and zero normal
+!> velocity gradient (LBCODE=40,41) boundaries.
+!>
+!> @param[in] I0 Flow boundary index before the segment
+!> @param[in] N  Number of nodes in the segment
 !-----------------------------------------------------------------------
-   subroutine computeZeroNormalVelocityBCDischarge()
+   subroutine velocityDischargeSegment(I0, N)
       use global, only: UU1, VV1, H2, QN1
-      use boundaries, only: NVEL, LBCODEI, NBV, CSII, SIII
+      use boundaries, only: NBV, CSII, SIII
       implicit none
 
-      integer :: J, NNBB
+      integer, intent(in) :: I0, N
+      integer :: I, NNBB
       real(8) :: UN1
 
-      do J = 1, NVEL
-         if ((LBCODEI(J) == 40) .or. (LBCODEI(J) == 41)) then
-            NNBB = NBV(J)
-            UN1 = UU1(NNBB)*CSII(J) + VV1(NNBB)*SIII(J)
-            QN1(J) = H2(NNBB)*UN1
-         end if
+      do I = I0 + 1, I0 + N
+         NNBB = NBV(I)
+         UN1 = UU1(NNBB)*CSII(I) + VV1(NNBB)*SIII(I)
+         QN1(I) = H2(NNBB)*UN1
       end do
 
-   end subroutine computeZeroNormalVelocityBCDischarge
+   end subroutine velocityDischargeSegment
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!> @brief Compute external barrier boundary flux
+!> @brief External barrier flux on one boundary segment
 !>
 !> Computes supercritical outward normal flow (QN2) over external barrier
 !> boundary nodes (LBCODE=3,13,23) using weir formulas.
 !>
+!> @param[in] I0      Flow boundary index before the segment
+!> @param[in] N       Number of nodes in the segment
 !> @param[in] TimeLoc Current simulation time (seconds)
 !-----------------------------------------------------------------------
-   subroutine computeExternalBarrierBCDischarge(TimeLoc)
+   subroutine externalBarrierSegment(I0, N, TimeLoc)
       use global, only: QN2
-      use boundaries, only: NVEL, LBCODEI
       use weir_flux, only: COMPUTE_EXTERNAL_BOUNDARY_FLUX
       implicit none
 
+      integer, intent(in) :: I0, N
       real(8), intent(in) :: TimeLoc
       integer :: I
 
-      do I = 1, NVEL
-         select case (LBCODEI(I))
-         case (3, 13, 23)
-            call COMPUTE_EXTERNAL_BOUNDARY_FLUX(I, TimeLoc, QN2(I))
-         end select
+      do I = I0 + 1, I0 + N
+         call COMPUTE_EXTERNAL_BOUNDARY_FLUX(I, TimeLoc, QN2(I))
       end do
 
-   end subroutine computeExternalBarrierBCDischarge
+   end subroutine externalBarrierSegment
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!> @brief Set submergence flags for vertical element wall boundaries
+!> @brief Internal barrier flux on one boundary segment
 !>
-!> Sets the ISSUBMERGED flag for vertical element wall (VEW) boundaries
-!> (LBCODE=64) based on current water levels.
+!> Computes inward/outward normal flow (QN2) over both sides of an
+!> internal barrier (LBCODE=4,24,5,25) using weir formulas, adding the
+!> cross-barrier pipe flux for LBCODE=5,25.
 !>
+!> @param[in] K       Boundary segment number
+!> @param[in] I0      Flow boundary index before the segment
+!> @param[in] N       Number of node pairs in the segment
 !> @param[in] TimeLoc Current simulation time (seconds)
+!> @param[in] pipes   Whether the barrier has cross-barrier pipes
 !-----------------------------------------------------------------------
-   subroutine setVewBCSubmergedFlag(TimeLoc)
-      use boundaries, only: NBOU, LBCODEI, NVELL
-      use WEIR_FLUX, only: SET_SUBMERGED64_AT
-      implicit none
-
-      real(8), intent(in) :: TimeLoc
-      integer :: I, J, K
-
-      I = 0
-      do K = 1, NBOU
-         select case (LBCODEI(I + 1))
-         case (4, 24, 5, 25)
-            I = I + NVELL(K)*2
-         case (64)
-            do J = 1, NVELL(K)
-               I = I + 1
-               call SET_SUBMERGED64_AT(I, J, K, TimeLoc)
-            end do
-            I = I + NVELL(K)
-         case DEFAULT
-            I = I + NVELL(K)
-         end select
-      end do
-
-   end subroutine setVewBCSubmergedFlag
-   !-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!> @brief Compute internal barrier boundary flux
-!>
-!> Computes inward/outward normal flow (QN2) over internal barrier
-!> boundary nodes (LBCODE=4,24,5,25,64) using weir formulas. Handles
-!> both permeable and impermeable barrier types.
-!>
-!> @param[in] TimeLoc Current simulation time (seconds)
-!-----------------------------------------------------------------------
-   subroutine computeInternalBarrierBCDischarge(TimeLoc)
-      use global, only: QN2, NIBNODECODE
-      use boundaries, only: NBOU, LBCODEI, NVELL
-      use WEIR_FLUX, only: COMPUTE_INTERNAL_BOUNDARY_FLUX, &
-                           COMPUTE_INTERNAL_BOUNDARY64_FLUX
-      implicit none
-
-      real(8), intent(in) :: TimeLoc
-      integer :: I, J, K
-      logical :: ISFRONT
-
-      NIBNODECODE(:) = 0
-      I = 0
-      do K = 1, NBOU
-         select case (LBCODEI(I + 1))
-         case (4, 24, 5, 25)
-            do J = 1, NVELL(K)*2
-               I = I + 1
-               call COMPUTE_INTERNAL_BOUNDARY_FLUX(I, J, K, &
-                                                   TimeLoc, QN2(I))
-            end do
-         case (64)
-            do J = 1, NVELL(K)*2
-               I = I + 1
-               if (J <= NVELL(K)) then
-                  ISFRONT = .true.
-               else
-                  ISFRONT = .false.
-               end if
-               call COMPUTE_INTERNAL_BOUNDARY64_FLUX(I, J, K, &
-                                                     TimeLoc, QN2(I))
-            end do
-         case DEFAULT
-            I = I + NVELL(K)
-         end select
-      end do
-
-   end subroutine computeInternalBarrierBCDischarge
-   !-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!> @brief Compute cross-barrier pipe flux
-!>
-!> Computes inward/outward normal flow (QN2) through cross-barrier pipes
-!> for internal barrier boundary nodes (LBCODE=5,25).
-!-----------------------------------------------------------------------
-   subroutine computeInternalBarrierPipeFlux()
+   subroutine internalBarrierSegment(K, I0, N, TimeLoc, pipes)
       use global, only: QN2
-      use boundaries, only: NVEL, LBCODEI
-      use WEIR_FLUX, only: COMPUTE_CROSS_BARRIER_PIPE_FLUX
+      use WEIR_FLUX, only: COMPUTE_INTERNAL_BOUNDARY_FLUX, &
+                           COMPUTE_CROSS_BARRIER_PIPE_FLUX
       implicit none
 
-      integer :: I
+      integer, intent(in) :: K, I0, N
+      real(8), intent(in) :: TimeLoc
+      logical, intent(in) :: pipes
+      integer :: I, J
       real(8) :: PIPE_FLUX
 
-      do I = 1, NVEL
-         if ((LBCODEI(I) == 5) .or. (LBCODEI(I) == 25)) then
+      do J = 1, 2*N
+         I = I0 + J
+         call COMPUTE_INTERNAL_BOUNDARY_FLUX(I, J, K, TimeLoc, QN2(I))
+         if (pipes) then
             PIPE_FLUX = 0d0
             call COMPUTE_CROSS_BARRIER_PIPE_FLUX(I, PIPE_FLUX)
             QN2(I) = QN2(I) + PIPE_FLUX
          end if
       end do
 
-   end subroutine computeInternalBarrierPipeFlux
+   end subroutine internalBarrierSegment
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Vertical element wall flux on one boundary segment
+!>
+!> Sets the submergence flags (ISSUBMERGED64) from the front side of a
+!> vertical element wall barrier (LBCODE=64), which also sets the paired
+!> back side flags, then computes the normal flow (QN2) on both sides.
+!>
+!> @param[in] K       Boundary segment number
+!> @param[in] I0      Flow boundary index before the segment
+!> @param[in] N       Number of node pairs in the segment
+!> @param[in] TimeLoc Current simulation time (seconds)
+!-----------------------------------------------------------------------
+   subroutine vewBarrierSegment(K, I0, N, TimeLoc)
+      use global, only: QN2
+      use WEIR_FLUX, only: SET_SUBMERGED64_AT, COMPUTE_INTERNAL_BOUNDARY64_FLUX
+      implicit none
+
+      integer, intent(in) :: K, I0, N
+      real(8), intent(in) :: TimeLoc
+      integer :: I, J
+
+      do J = 1, N
+         call SET_SUBMERGED64_AT(I0 + J, J, K, TimeLoc)
+      end do
+
+      do J = 1, 2*N
+         I = I0 + J
+         call COMPUTE_INTERNAL_BOUNDARY64_FLUX(I, J, K, TimeLoc, QN2(I))
+      end do
+
+   end subroutine vewBarrierSegment
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -517,37 +546,6 @@ contains
    end subroutine applySubdomainBCData
    !-----------------------------------------------------------------------
 
-!-----------------------------------------------------------------------
-!> @brief Apply all boundary conditions
-!>
-!> Master routine that applies all boundary conditions including normal
-!> flow, radiation, barrier, VEW, and subdomain boundaries.
-!>
-!> @param[in] IT      Current timestep number
-!> @param[in] TimeLoc Current simulation time (seconds)
-!> @param[in] TimeH   Harmonic analysis reference time (seconds)
-!-----------------------------------------------------------------------
-   subroutine applyBoundaryConditions(IT, TimeLoc, TimeH)
-      use boundaries, only: NFLUXIB, NFLUXF, NFLUXIBP, NFLUXGBC, &
-                            NFLUXB, NFLUXIB64, NFLUXRBC
-      use subdomain, only: subdomainOn
-      implicit none
-
-      integer, intent(in) :: IT
-      real(8), intent(in) :: TimeLoc, TimeH
-
-      if (NFLUXF == 1) call computeSpecifiedNormalFlowBC(IT, TimeLoc, TimeH)
-      if (NFLUXRBC == 1) call computeRadiationDischargeBC()
-      if (NFLUXGBC == 1) call computeZeroNormalVelocityBCDischarge()
-      if (NFLUXB == 1) call computeExternalBarrierBCDischarge(TimeLoc)
-      if (NFLUXIB64 == 1) call setVewBCSubmergedFlag(TimeLoc)
-      if (NFLUXIB == 1) call computeInternalBarrierBCDischarge(TimeLoc)
-      if (NFLUXIBP == 1) call computeInternalBarrierPipeFlux()
-
-      if (subdomainOn) call applySubdomainBCData(IT)
-
-   end subroutine applyBoundaryConditions
-   !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !> @brief Convert a boundary normal flux to the rotated coordinate system
 !>
