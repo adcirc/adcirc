@@ -797,6 +797,7 @@ $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(LIBADC) $(PARALLEL_ADCIRC) padcswan))
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)terminate.o $(O_DIR)internaltide.o $(O_DIR)subgrid.o
 $(O_DIR)terminate.o   :  terminate.F90 $(O_DIR)messenger.o $(O_DIR)global.o
+$(O_DIR)subgrid.o     :  $(O_DIR)messenger.o
 $(O_DIR)netcdf_error.o : netcdf_error.F90 $(O_DIR)terminate.o
 else
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgrid.o
