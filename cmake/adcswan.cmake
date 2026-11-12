@@ -114,7 +114,7 @@ set(ADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
@@ -158,7 +158,7 @@ set(ADCSWAN_SOURCES
 if(NETCDF_WORKING)
   set(ADCSWAN1_SOURCES
       ${ADCSWAN1_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
@@ -208,13 +208,6 @@ if(ADDITIONAL_FLAGS_ADCIRC)
   target_compile_options(adcswan PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
 endif()
 
-# Handle datetime for SWAN
-if(ENABLE_DATETIME)
-  target_compile_definitions(templib_swan2serial PRIVATE DATETIME)
-  target_include_directories(templib_swan2serial PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
-  target_link_libraries(templib_swan2serial PRIVATE datetime)
-endif()
-
 target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
 target_compile_definitions(adcswan PRIVATE CSWAN)
 
@@ -228,6 +221,9 @@ target_include_directories(adcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFile
 target_link_libraries(templib_swan2serial PRIVATE templib_swan1serial templib_adcswan1)
 target_link_libraries(templib_adcswan1 PRIVATE templib_swan1serial)
 target_link_libraries(adcswan PRIVATE templib_adcswan1 templib_swan2serial templib_swan1serial)
+
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(adcswan PROPERTIES LINKER_LANGUAGE Fortran)
 
 install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

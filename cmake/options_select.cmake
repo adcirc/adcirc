@@ -68,14 +68,6 @@ endif()
 option(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
 option(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
 option(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
-option(ENABLE_DATETIME "Use DATETIME static libraries." OFF)
-
-# GRIB2 requires DATETIME
-if(ENABLE_GRIB2 AND NOT ENABLE_DATETIME)
-  set(ENABLE_DATETIME
-      ON
-      CACHE BOOL "Use DATETIME static libraries (required by GRIB2)" FORCE)
-endif()
 # ######################################################################################################################
 
 # ######################################################################################################################

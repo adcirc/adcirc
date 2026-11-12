@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Include the targets file
+include("${CMAKE_CURRENT_LIST_DIR}/fdateTargets.cmake")
+
+# Set up variables for backward compatibility
+get_target_property(fdate_LIBRARY fdate::fdate LOCATION)
+get_target_property(fdate_INCLUDE_DIRS fdate::fdate INTERFACE_INCLUDE_DIRECTORIES)
+
+check_required_components(fdate)

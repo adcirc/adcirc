@@ -262,7 +262,6 @@ jobs:
             -DNETCDF_DIR=$NETCDFHOME
             -DENABLE_OUTPUT_XDMF=ON
             -DXDMFHOME=$XDMFHOME
-            -DENABLE_DATETIME=ON
             -DENABLE_GRIB2=ON
       - save_cache:
           key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}

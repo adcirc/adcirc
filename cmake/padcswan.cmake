@@ -116,7 +116,7 @@ set(PADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
@@ -163,7 +163,7 @@ set(PADCSWAN_SOURCES
 if(NETCDF_WORKING)
   set(PADCSWAN1_SOURCES
       ${PADCSWAN1_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
@@ -237,6 +237,9 @@ target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFil
 target_link_libraries(templib_swan2parallel PRIVATE templib_swan1parallel templib_padcswan1)
 target_link_libraries(templib_padcswan1 PRIVATE templib_swan1parallel)
 target_link_libraries(padcswan PRIVATE templib_swan2parallel templib_padcswan1 templib_swan1parallel)
+
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(padcswan PROPERTIES LINKER_LANGUAGE Fortran)
 
 install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

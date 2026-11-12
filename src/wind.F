@@ -36,19 +36,15 @@ C
       USE GLOBAL, ONLY : sphericalDistance, RNDAY,
      &    cice_timinc, cice_time1, cice_time2,
      &    Found_InterpInset_Namelist,UseInterpInset
-#ifdef DATETIME
      &   ,basedatetime
-#endif
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction,omega
 #ifdef CMPI
       use messenger, only : msg_Rscalar_Reduce
 #endif
-#ifdef DATETIME
-      use datetime_module, only: datetime, timedelta, strptime
-#endif
-#if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
+      use mod_datetime, only: t_datetime, t_timedelta
+#if defined(GRIB2API) || defined(ADCNETCDF)
       integer, parameter :: allowable_nws(21)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,19,20,29,30/)
 #elif defined(ADCNETCDF)
@@ -260,7 +256,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       real(8) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
       integer :: dynamicWaterLevelCorrectionCurrentLine ! used in error messages
       logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
-#ifdef DATETIME
+
       integer :: ub, ubc ! size of weightsp and indp interpolant weights
       real(8),allocatable :: weightsp(:,:,:)
       real(8),allocatable :: inset_weight(:,:,:) 
@@ -274,10 +270,10 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
 
       CHARACTER(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
       CHARACTER(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
-      type(datetime) :: CurDT, refdate, stepdate
+      type(t_datetime) :: CurDT, refdate, stepdate
       logical :: grb2flag
       integer :: NT, NTC
-#endif
+
 
       logical:: read_NWS14_NetCdf_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
  
@@ -868,7 +864,7 @@ C----------------------------------------------------------------------
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08get
 #ifdef ADCNETCDF
-      USE OWIWIND_NETCDF, ONLY: NWS13GET
+      USE mod_nws13, ONLY: NWS13GET
 #endif
       implicit none
       integer, intent(in) :: nws
@@ -1322,7 +1318,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             END DO
             IF (ABS(NWS).eq.12) then
                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
-#ifdef DATETIME
+
 #if defined(GRIB2API) || defined(ADCNETCDF)
             ELSE
                IF ((NCICE.eq.14.or.NCICE.eq.13).and.
@@ -1335,7 +1331,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CALL NWS14GET(WVNX2,WVNY2,PRN2) 
                ENDIF
 #endif
-#endif
+
             ENDIF
             if (draglawtype.EQ.draglaw_powell) then
                call findStormCenter(eyeLat, eyeLon, foundEye)
@@ -1777,17 +1773,18 @@ C----------------------------------------------------------------------
       use mod_nws08, only: nws08init, nws08get
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+      USE mod_nws13, ONLY: NWS13INIT,NWS13GET
 #endif
-#ifdef DATETIME
-      use datetime_module, only: datetime
-#endif
+
+      use mod_datetime, only: t_datetime
+
       implicit none
       integer, intent(in) :: nws
       character(1024) :: scratchMessage
       real(8) :: windx ! wind vel (m/s) in x-dir
       real(8) :: windy ! wind vel (m/s) in y-dir
       real(8) :: wtratio ! used to time interpolated between met datasets
+      real(8) :: wtime2out
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
@@ -1993,7 +1990,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       ENDIF
       !
       ! 
-#ifdef DATETIME
+
 #if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
          WTIME1 = STATIM*86400.D0
@@ -2032,8 +2029,6 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
         
         ENDIF
 #endif
-#endif
-   
 
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13, ARC modified 190108
@@ -2042,11 +2037,16 @@ Casey 180318: Added for NWS=13, ARC modified 190108
          WTIME2=WTIME1+WTIMINC
          WTIME2I=WTIME2
          WTIME1I=WTIME1
-        CALL NWS13INIT(0.D0,W)
+        CALL NWS13INIT(W)
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
      &      WTIME2,EyeLon,EyeLat,FoundEye,W)
-        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+        ! The timestep loop interpolates between WTIME1I and WTIME2I, so
+        ! the second field must be read at WTIME2I, not at the next snap
+        ! time returned in WTIME2 (they differ when the wind file starts
+        ! after the cold start or its snaps are not WTIMINC apart).
+        CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
+     &      WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+        WTIME2 = WTIME2OUT
       ENDIF
 #endif
 
@@ -2097,7 +2097,7 @@ C----------------------------------------------------------------------
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08init, nws08get
 #ifdef ADCNETCDF
-      USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+      USE mod_nws13, ONLY: NWS13INIT,NWS13GET
 #endif
       implicit none
       integer, intent(in) :: nws
@@ -2119,6 +2119,7 @@ C----------------------------------------------------------------------
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       real(8) :: vortexPRDIFF
+      real(8) :: wtime2out
       integer :: it
       integer :: i ! node loop counter
       integer :: j
@@ -2854,11 +2855,16 @@ Casey 180318: Added for NWS=13, ARC modified 190108
          WTIME2 = WTIME1 + WTIMINC
          WTIME2I = WTIME2
          WTIME1I = WTIME1
-        CALL NWS13INIT(TIMELOC,W)
+        CALL NWS13INIT(W)
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
      &      WTIME2,EyeLon,EyeLat,FoundEye,W)
-        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+        ! The timestep loop interpolates between WTIME1I and WTIME2I, so
+        ! the second field must be read at WTIME2I, not at the next snap
+        ! time returned in WTIME2 (they differ when the wind file starts
+        ! after the cold start or its snaps are not WTIMINC apart).
+        CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
+     &      WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+        WTIME2 = WTIME2OUT
         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
         DO I=1,NP
           WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -2931,7 +2937,7 @@ C     from NAM data
          ENDDO
       ENDIF
       !
-#ifdef DATETIME
+
 #if defined(GRIB2API) || defined(ADCNETCDF)
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
@@ -3026,13 +3032,13 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           END DO
       ENDIF
 #endif
-#endif
+
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13
       IF(ABS(NWS).EQ.13)THEN
         WTIME1 = TIMELOC
         WTIME2 = TIMELOC
-        CALL NWS13INIT(TIMELOC,W)
+        CALL NWS13INIT(W)
         CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,
      &         WTIME2,EyeLon,EyeLat,FoundEye,W)
 !       IF(TRIM(DragLawString).EQ."Powell".OR.
@@ -3278,6 +3284,8 @@ C***********************************************************************
       SUBROUTINE NWS3GET()
       USE SIZES
       USE GLOBAL, ONLY: timeconv
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
@@ -3305,6 +3313,9 @@ C
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
       IWHR = IWTIME - IWYR*1000000 - IWMO*10000 - IWDAY*100
       WTIMED = TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0)
+      IF (ieee_is_nan(WTIMED)) CALL terminate(
+     &   exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Invalid date in the NWS=3 fort.22 file.')
 
       DO I=1,NWLAT
          READ(22,*) (WVXFN(I,J),J=1,NWLON)
@@ -7957,7 +7968,6 @@ C----------------------------------------------------------------------
       end subroutine readDynamicWaterLevelCorrectionDataSet
 C----------------------------------------------------------------------
 
-#ifdef DATETIME
 C----------------------------------------------------------------------
       SUBROUTINE NWS14INIT(NWS)
 C----------------------------------------------------------------------
@@ -7967,11 +7977,20 @@ C....
 C.... CPB 10/2023: reorganized this subroutine to make it more readable
 C.... as well as to improve input for TACC
 C----------------------------------------------------------------------
+      use mod_datetime, only: operator(+)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       INTEGER,INTENT(IN) :: NWS
-      
+
+      ! The forcing files are indexed by date, so a reference date is required
+      IF (.NOT.basedatetime%valid()) THEN
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='NWS=14 requires a valid base_date in the '
+     &      //'fort.15 netCDF metadata.')
+      ENDIF
+
       ! Initialise the datetime
-      CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
+      CurDT = basedatetime + t_timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
 
       ! check if we are using grib2 or netcdf input files:
@@ -8052,11 +8071,11 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
       use netcdf_error, only: check_err
-      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #endif
 #ifdef CMPI
       USE MESSENGER, ONLY: MSG_BARRIER
 #endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE SIZES, ONLY : MYPROC
       USE GLOBAL, ONLY : NCICE
       implicit none
@@ -8395,6 +8414,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       use mesh, only: NP
+      use mod_datetime, only: operator(+)
       implicit none
 
       real(8),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
@@ -8464,7 +8484,7 @@ C----------------------------------------------------------------------
      &                          Namelist if you want to use inset files')
        ENDIF     
 !      ! Add WTIMINC on CurDT for next WTIME  
-      CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
+      CurDT = CurDT + t_timedelta(minutes=nint(WTIMINC/60d0))
       ! Next time index for the netcdf reading
       NT = NT + 1
       
@@ -8537,7 +8557,7 @@ C----------------------------------------------------------------------
       LOG_SCOPE_TRACED("READNWS14_grib2", WIND_TRACING)
       IF (MYPROC.EQ.0) THEN
          ! Getting the date in str_date format
-         str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+         str_date = ':start_FT='//trim(CurDT%strftime("%Y%m%d%H"))//'0000:'
          iret = -1; iter = 0
          do while (iret.le.0.and.iter < 10) 
             if (iter > 0) then
@@ -8963,8 +8983,8 @@ C-------------------------------------------------------------------------------
      &                  InsetLatDim,InsetLat,lon_ins,InsetLonDim,InsetLon,nxp,nyp)
             
 #ifdef ADCNETCDF
-      use netcdf
-      use netcdf_error, only: check_err
+        use netcdf
+        use netcdf_error, only: check_err
 #endif
 #ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
@@ -8972,8 +8992,7 @@ C-------------------------------------------------------------------------------
 #endif
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
 
-     
-      IMPLICIT NONE 
+        IMPLICIT NONE
 
       CHARACTER(len=*), INTENT(IN) :: ncfile  ! NetCDF file name
       REAL, ALLOCATABLE, DIMENSION(:,:), INTENT(OUT) :: lat_ins,lon_ins
@@ -8986,9 +9005,8 @@ C-------------------------------------------------------------------------------
 
          LOG_SCOPE_TRACED("READ_INSET_LATLON", WIND_TRACING)
 #ifdef ADCNETCDF
-        
-      
-        CALL Check_err(NF90_OPEN(ncfile,nf90_nowrite,NCIDf))
+
+         CALL Check_err(NF90_OPEN(ncfile,nf90_nowrite,NCIDf))
         
          call Check_err(NF90_INQ_DIMID(ncidf,InsetLatDim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
@@ -9017,11 +9035,11 @@ C-------------------------------------------------------------------------------
                lon_ins(:,i) = lon_ins(:,1)
             enddo
          endif
-          
-    
+
         CALL Check_err(NF90_CLOSE(NCIDf))
-
-
+#else
+        NXP = 0
+        NYP = 0
 #endif
       RETURN
 C----------------------------------------------------------------------
@@ -9075,7 +9093,7 @@ C----------------------------------------------------------------------
       character(len=200) :: str_date
       LOG_SCOPE_TRACED("READNWS14LatLon_grib2", WIND_TRACING)
       ! Getting the date in str_date format
-      str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+      str_date = ':start_FT='//trim(CurDT%strftime("%Y%m%d%H"))//'0000:'
       ! read in on core 0
       IF (MYPROC.EQ.0) THEN
          iret = -1; iter = 0
@@ -9217,7 +9235,9 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC
-      USE NETCDF_ERROR, ONLY: CHECK_ERR
+      use mod_datetime, only: operator(==), operator(+)
+      use mod_date_parsing, only: parse_datetime_lenient
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer :: iret, iter
       INTEGER,INTENT(INOUT) :: NC_ID
@@ -9257,6 +9277,11 @@ C----------------------------------------------------------------------
             do NT_OUT = 1,TL
                if (trim(str_date).eq.TimeStr(NT_OUT)) exit
             enddo
+            if (NT_OUT > TL) then
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='The start time '//trim(str_date)//
+     &            ' was not found in '//trim(fileN)//'.')
+            endif
             call logMessage(ECHO,'Starting from '//TimeStr(NT_OUT))
             DEALLOCATE( TIMESTR )
          ELSEIF (Tvar.eq.'refdate') THEN
@@ -9267,17 +9292,28 @@ C----------------------------------------------------------------------
             CALL logMessage(ECHO,"fort.22 provides a reference "
      &          //"date. Starting time index will be calculated.")
             ALLOCATE( NCTIMES(TL) )
-            refdate = strptime(trim(Tformat),
-     &                         "%Y-%m-%dT%H:%M:%S")
+            refdate = parse_datetime_lenient(Tformat)
+            IF (.NOT.refdate%valid()) THEN
+               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='Invalid reference date "'//trim(Tformat)
+     &            //'" for '//trim(fileN)//' in the fort.22.')
+            ENDIF
             CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
             DO NT_OUT = 1,TL
+               ! nint: times stored as reals may be a hair below the
+               ! whole second
                stepdate = refdate +
-     &                    timedelta(seconds=INT(NCTIMES(NT_OUT)))
-               IF (stepdate.EQ.curDT) THEN
+     &                    t_timedelta(seconds=NINT(NCTIMES(NT_OUT)))
+               IF (stepdate == curDT) THEN
                   EXIT
                ENDIF
             ENDDO
+            IF (NT_OUT > TL) THEN
+               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='The start time '//trim(curDT%to_iso_string())
+     &            //' was not found in '//trim(fileN)//'.')
+            ENDIF
             DEALLOCATE( NCTIMES )
          else
             ! If neither of those two things are true we just assume
@@ -9334,7 +9370,6 @@ C----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C.....END WJP (NWS = 14) ..............................................
-#endif
 
 C--------------------------------------------------------------------- 
       SUBROUTINE CLOSE_MET_FILES()
@@ -9348,7 +9383,6 @@ C---------------------------------------------------------------------
 
         IMPLICIT NONE
 
-#ifdef DATETIME        
 #ifdef ADCNETCDF
         IF ( NWS == 14 ) THEN
           IF ( (.not. grb2flag) .AND. read_NWS14_NetCdf_using_core_0 )  THEN   
@@ -9364,7 +9398,6 @@ C---------------------------------------------------------------------
           END IF 
         END IF
 #endif
-#endif        
 
         RETURN ;
       END SUBROUTINE CLOSE_MET_FILES        

@@ -41,9 +41,7 @@ C
       MODULE GLOBAL
       USE ADC_CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
-#ifdef DATETIME
-      use datetime_module, only: datetime
-#endif
+      use mod_datetime, only: t_datetime
 #ifdef CMPI
       use mpi_f08, only: MPI_Comm, MPI_Datatype
 #endif
@@ -624,9 +622,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(80) :: source      ! method of production of the original data
       CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data
       CHARACTER(80) :: base_date
-#ifdef DATETIME
-      type(datetime) :: basedatetime
-#endif
+      type(t_datetime) :: basedatetime
       CHARACTER(80) :: comments    ! miscellaneous information about the data
       CHARACTER(80) :: host
       CHARACTER(80) :: convention
@@ -1479,34 +1475,41 @@ C     character of a string.
 C***********************************************************************
 C                                                                      *
 C   Convert time from year,month,day,hour,min,sec into seconds since   *
-C   the beginning of the year.                                         *
+C   the Unix epoch. Two- and three-digit years are taken as 2000+IYR   *
+C   to support legacy input files. Returns NaN (and logs an error) for *
+C   a date that does not exist; callers must check with ieee_is_nan    *
+C   because this module cannot call terminate.                         *
 C                                                                      *
 C***********************************************************************
       REAL(8) FUNCTION TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) RESULT(TIMESEC)
+      use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
+      use mod_datetime, only: t_datetime
       use mod_logging, only: allMessage, ERROR
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: IYR,IMO,IDAY,IHR,IMIN
       REAL(8), INTENT(IN) :: SEC
-      INTEGER :: ILEAP
+      INTEGER :: iyr_4dig
+      type(t_datetime) :: date
+      character(len=256) :: message
 
-      TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
-      IF(IMO.GE.2)  TIMESEC = TIMESEC + 31*86400
-      ILEAP = (IYR/4)*4
-      IF((ILEAP.EQ.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 29*86400
-      IF((ILEAP.NE.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 28*86400
-      IF(IMO.GE.4)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.5)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.6)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.7)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.8)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.9)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.10) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
-      IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GT.12) THEN
-         call allMessage(ERROR,'Error in function timeconv: month > 12.')
-         TIMESEC = TIMESEC + 30*86400
-      ENDIF
+      if(iyr < 1000)then
+        iyr_4dig = iyr + 2000
+      else
+        iyr_4dig = iyr
+      endif
+
+      ! The seconds are added as a real so fractional seconds are kept
+      ! exactly; the 64-bit millisecond timestamp must not be stored in a
+      ! default integer (it overflows ~25 days after the epoch).
+      date = t_datetime(iyr_4dig,imo,iday,ihr,imin,0,0)
+      if (.not.date%valid()) then
+         write(message,'(a,i0,4(a,i0),a)') 'Invalid date in TIMECONV: ',
+     &      iyr_4dig,'-',imo,'-',iday,' ',ihr,':',imin,'.'
+         call allMessage(ERROR,message)
+         timesec = ieee_value(timesec, ieee_quiet_nan)
+         return
+      endif
+      timesec = dble(date%timestamp()) / 1000.0d0 + sec
 
 C-----------------------------------------------------------------------
       END FUNCTION TIMECONV

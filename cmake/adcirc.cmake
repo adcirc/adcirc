@@ -69,13 +69,13 @@ set(ADCIRC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
 if(NETCDF_WORKING)
   set(ADCIRC_SOURCES
       ${ADCIRC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
@@ -93,6 +93,9 @@ target_link_libraries(adcirc PRIVATE adcirc::compiler_flags adcirc::option_flags
 if(ADDITIONAL_FLAGS_ADCIRC)
   target_compile_options(adcirc PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
 endif()
+
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(adcirc PROPERTIES LINKER_LANGUAGE Fortran)
 
 install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

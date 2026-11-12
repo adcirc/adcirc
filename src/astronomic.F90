@@ -75,7 +75,7 @@ module mod_astronomic
              MP_DEG, F_DEG, OMEGA_DEG, L0_DEG, DeltaPsiL, DeltaVarepsL, &
              varepsilon0_ecliptic, ECLIP2EQ, km2AU, eccentricity_earth_orbit, &
              GMST_DEG, EarthRadiusM, MassRatioSunEarth, MassRatioMoonEarth, &
-             EarthRadiusAU, EarthRadiusKM, JulianDay
+             EarthRadiusAU, EarthRadiusKM
 
 contains
 
@@ -108,45 +108,6 @@ contains
       self%eccen = eccentricity_earth_orbit(T)
 
    end subroutine compute_astronomic_values
-
-   ! Julian day, p. 61
-   real(8) function JULIANDAY(DD, MM, YYYY, CALENDAR_TYPE) result(JD)
-      implicit none
-
-      real(8), intent(IN) :: DD
-      integer, intent(in) :: MM, YYYY
-      character(LEN=*), intent(in), optional :: CALENDAR_TYPE
-
-      integer :: A, B
-      real(8) :: D, M, Y
-      character(LEN=9) :: CTYPE
-      D = dble(DD)
-      M = dble(MM)
-      Y = dble(YYYY)
-
-      CTYPE = 'Gregorian'
-      if (present(CALENDAR_TYPE)) then
-         select case (trim(CALENDAR_TYPE))
-         case ('Julian', 'JULIAN', 'julian')
-            CTYPE = 'Julian'
-         end select
-      end if
-
-      if (M <= 2) then
-         Y = Y - 1
-         M = M + 12
-      end if
-
-      A = floor(Y/100.d0)
-      B = 2 - A + floor(dble(A)/4.d0)
-      select case (trim(CTYPE))
-      case ('Julian')
-         B = 0
-      end select
-
-      JD = dble(floor(365.25d0*(Y + 4716d0))) + dble(floor(30.6001d0*(M + 1d0))) + dble(D) + dble(B) - 1524.50d0
-
-   end function JULIANDAY
 
    ! - Compute Julian centuries from the Epoch J2000.0 (JDE
    !    2451545)

@@ -29,7 +29,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
@@ -74,8 +74,8 @@ set(LIBADC_SOURCES
 if(NETCDF_WORKING)
   set(LIBADC_SOURCES
       ${LIBADC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
 
@@ -85,7 +85,9 @@ endif()
 
 if(BUILD_LIBADCIRC_STATIC AND MPI_FOUND)
 
-  add_library(libadcirc_static STATIC ${LIBADC_SOURCES})
+  # Embed the fdate objects so the installed static library is self-contained (fdate itself is not installed). Consumers
+  # still need to link the C++ standard library.
+  add_library(libadcirc_static STATIC ${LIBADC_SOURCES} $<TARGET_OBJECTS:fdate_objectlib>)
   install(TARGETS libadcirc_static ARCHIVE DESTINATION lib)
   set_target_properties(libadcirc_static PROPERTIES OUTPUT_NAME "adcirc")
 
@@ -130,6 +132,9 @@ if(BUILD_LIBADCIRC_SHARED AND MPI_FOUND)
 
   set_target_properties(libadcirc_shared PROPERTIES OUTPUT_NAME "adcirc")
 
+  # fdate contains C++ objects; keep the Fortran compiler as the linker driver
+  set_target_properties(libadcirc_shared PROPERTIES LINKER_LANGUAGE Fortran)
+
   set_property(TARGET libadcirc_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
 
   if(APPLE)
@@ -151,14 +156,16 @@ if(BUILD_LIBADCIRC_SHARED AND MPI_FOUND)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libadcircConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
 
   if(${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
-    install(
-      CODE "EXECUTE_PROCESS (COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/libadcirc_shared\" \"${CMAKE_INSTALL_PREFIX}/include/adcirc\")"
-    )
+    set(LIBADC_MODULE_INSTALL_DIR "include/adcirc")
   else()
-    install(
-      CODE "EXECUTE_PROCESS (COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/libadcirc_shared\" \"${CMAKE_INSTALL_PREFIX}/include\")"
-    )
+    set(LIBADC_MODULE_INSTALL_DIR "include")
   endif()
+  # Resolve the prefix at install time so "cmake --install --prefix" and DESTDIR are honored
+  install(
+    CODE "EXECUTE_PROCESS (COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/libadcirc_shared\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBADC_MODULE_INSTALL_DIR}\")"
+  )
+  # GLOBAL uses mod_datetime at module scope, so consumers of the installed modules need it too
+  install(FILES ${CMAKE_BINARY_DIR}/mod/mod_datetime.mod DESTINATION ${LIBADC_MODULE_INSTALL_DIR})
 
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${LIBADC_SOURCES})

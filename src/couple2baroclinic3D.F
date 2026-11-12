@@ -30,10 +30,8 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : NB, NM, MLD, SigTS,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
       USE ADC_CONSTANTS, ONLY: SigT0
-#ifdef DATETIME
-      use datetime_module, only: datetime, timedelta, strptime
-#endif
-      use nodalattributes, only: LoadIT_Fric, NOLIBF, HBREAK 
+      use mod_datetime, only: t_datetime, t_timedelta, operator(-), operator(+)
+      use nodalattributes, only: LoadIT_Fric, NOLIBF, HBREAK
       implicit none
 
 !     WJP notes on variables and interpolation.
@@ -61,10 +59,9 @@ C-----------------------------------------------------------------------
       real(8),allocatable,dimension(:,:) :: BC3D_NM, BC3D_NB, BC3D_BX,
      &          BC3D_SigTS, BC3D_BY, BC3D_MLD, BC3D_CD, BC3D_DX, BC3D_DY
       logical,allocatable,dimension(:,:) :: NSkip
-      real(8),parameter :: LatUL = 89d9, DFV = 1d0 
-#ifdef DATETIME
-      type(datetime),private :: CurDT
-#endif
+      real(8),parameter :: LatUL = 89d9, DFV = 1d0
+      type(t_datetime), private :: CurDT
+
 !     Variables for temporal integration
       real(8) :: DTIME1, DTIME2 
       real(8),allocatable,dimension(:,:) :: VIDBCPDXOH_F, VIDBCPDYOH_F,
@@ -185,28 +182,20 @@ C-----------------------------------------------------------------------
       real(8) :: Lon_s, Lat_s, Lat_e, Lon_e, xx, yy, wt(4), 
      &            Lonn_s, Lonn_e, x1, y1, xl, yl, xu, yu !, x2, y2, x3, y3 !, ww(indmax)
       real(8),allocatable :: Lonc(:), Lon(:), Latc(:), Lat(:), Lats(:)
-#ifdef DATETIME       
-      type(timedelta) :: DT
-      type(datetime)  :: TNDT, TNDT1
-      character(len=16) :: TSS
-#endif        
+      type(t_timedelta) :: DT
+      type(t_datetime)  :: TNDT, TNDT1
+
       if (BC3D_IT > 1) then
          ! Check times if not first iteration
-#ifdef DATETIME
          call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
          ! Get current and next date times and update BC3D_DT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
-         TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-         call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
-     &      start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
-         TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+         TNDT = BC3D_Time(NC_ID, Temp_ID, BC3D_IT)
+         TNDT1 = BC3D_Time(NC_ID, Temp_ID, BC3D_IT+densityTimeIterator)
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
             write(16,*) 'BC3D_DT is changed to ',BC3D_DT
          endif
-#endif
          return
       endif
       ! First call
@@ -220,31 +209,31 @@ C-----------------------------------------------------------------------
       call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
       BC3D_DT = 0d0
       if (iden.gt.0) then
-#ifdef DATETIME
+      ! The start time comes from the base_date metadata
+      if (.not.CurDT%valid()) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='NetCDF BC3D forcing requires a valid base_date '
+     &      //'in the fort.15 netCDF metadata.')
+      endif
       ! Let's get the start time index
       do BC3D_IT = 1,NT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
-         TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+         TNDT = BC3D_Time(NC_ID, Temp_ID, BC3D_IT)
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
       IF (DT%total_seconds().LT.0) THEN
          BC3D_IT = BC3D_IT - 1
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = CurDT
       ENDIF
+      if (BC3D_IT + densityTimeIterator > NT) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The BC3D netCDF file does not cover the '
+     &      //'simulation start time '//trim(CurDT%to_iso_string()))
+      endif
       !write(16,*) 'bc3d_it = ',bc3d_it
-      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
-     &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
-      TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+      TNDT1 = BC3D_Time(NC_ID, Temp_ID, BC3D_IT+densityTimeIterator)
       DT = TNDT1 - TNDT 
       BC3D_DT = DT%total_seconds()
-#else
-      ! Just set at 3 hrs
-      BC3D_DT = 3600d0*3d0
-#endif
       endif
       ! CPB 2/2022: in case where baroclinic forces are calculated on
       ! ADCIRC grid (IDEN = 8) we don't need to check the nx, ny, etc
@@ -473,6 +462,33 @@ C-----------------------------------------------------------------------
           if (abs(IDEN).ne.7) deallocate(Lonc,Latc)
           if (abs(IDEN).eq.6) deallocate(Lats)
       endif
+      contains
+
+      !> Read and validate the date string at time index IT of the BC3D file
+      type(t_datetime) function BC3D_Time(NC_ID, Temp_ID, IT)
+     &   result(T)
+      use mod_date_parsing, only: parse_datetime_lenient
+      implicit none
+      integer, intent(in) :: NC_ID, Temp_ID, IT
+      character(len=64) :: TSS
+      character(len=16) :: itstr
+
+      if (SL > len(TSS)) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The BC3D netCDF time strings are too long.')
+      endif
+      TSS = ' '
+      call check_err(nf90_get_var(nc_id, Temp_ID,
+     &               TSS(1:SL),start=[1, IT],count=[SL, 1]))
+      T = parse_datetime_lenient(TSS)
+      if (.not.T%valid()) then
+         write(itstr,'(i0)') IT
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid time "'//trim(TSS)//'" at index '
+     &      //trim(itstr)//' of the BC3D netCDF file.')
+      endif
+      end function BC3D_Time
+
       END SUBROUTINE Get_LonLatDepthTime
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
@@ -625,26 +641,18 @@ C     S U B R O U T I N E  I N I T I A L _ B C 3 D _ N E T C D F
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Initial_BC3D_NetCDF(TimeLoc)
-#ifdef DATETIME
       use global, only: basedatetime
-#endif
       implicit none
       REAL(8),intent(in) :: TimeLoc
 C
       LOG_SCOPE_TRACED("Initial_BC3D_NetCDF", COUPLE2BAROCLINIC3D_TRACING)
-#ifndef DATETIME
-      call allMessage(WARNING, 
-     &    "DateTime library is not enabled. It is recommended "//
-     &    "for use with netCDF BC3D forcing")
-#endif
 
       ! Read first value in time 
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
       DTIME1  = floor(TimeLoc/60d0)*60d0
-#ifdef DATETIME
-      CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
-#endif           
+      CurDT   = basedatetime + t_timedelta(minutes=floor(DTIME1/60d0))
+
       call Read_BC3D_Netcdf()
       DTIME2 = DTIME1 + BC3D_DT
       ! Put the first value on ADCIRC grid
@@ -654,9 +662,7 @@ C
       ENDIF
       call logMessage(ECHO,'Read and processed 1st BC3D '
      &                         //'timesnap'
-#ifdef DATETIME
-     &                         //': '//CurDT%isoformat(' ')
-#endif               
+     &                         //': '//CurDT%to_iso_string()
      &                         ) 
       ! WJP Get the start time and the next data time
       ! Put the first values in first position
@@ -686,9 +692,8 @@ C
       endif
       ! Read next value in time
       BC3D_IT = BC3D_IT + densityTimeIterator
-#ifdef DATETIME
-      CurDT = CurDT + timedelta(minutes=nint(BC3D_DT/60d0))
-#endif
+      CurDT = CurDT + t_timedelta(minutes=nint(BC3D_DT/60d0))
+
       CALL Read_BC3D_Netcdf()
       ! BC3D_DT may have been updated in Read_BC3D..
 !      DTIME2 = DTIME1 + BC3D_DT
@@ -698,9 +703,7 @@ C
       ENDIF
       call logMessage(ECHO,'Read and processed 2nd BC3D '
      &                         //'timesnap'
-#ifdef DATETIME
-     &                         //': '//CurDT%isoformat(' ')
-#endif
+     &                         //': '//CurDT%to_iso_string()
      &                         )
 C
 C-----------------------------------------------------------------------
@@ -755,9 +758,8 @@ C
             IF (flag > 0) THEN
 #ifdef ADCNETCDF
                BC3D_IT = BC3D_IT + densityTimeIterator
-#ifdef DATETIME
-               CurDT = CurDT + timedelta(minutes=nint(BC3D_DT/60d0))
-#endif
+               CurDT = CurDT + t_timedelta(minutes=nint(BC3D_DT/60d0))
+
                ! Read from netcdf 
                CALL Read_BC3D_NetCDF()
                

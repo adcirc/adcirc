@@ -31,7 +31,7 @@ set(ASWIP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
@@ -40,7 +40,7 @@ set(ASWIP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
 
 if(NETCDF_WORKING)
-  set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+  set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
 
@@ -53,5 +53,8 @@ target_link_libraries(aswip PRIVATE adcirc::compiler_flags adcirc::option_flags 
 if(ADDITIONAL_FLAGS_ASWIP)
   target_compile_options(aswip PRIVATE ${ADDITIONAL_FLAGS_ASWIP})
 endif()
+
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(aswip PROPERTIES LINKER_LANGUAGE Fortran)
 
 install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

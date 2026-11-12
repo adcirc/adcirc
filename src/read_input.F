@@ -86,7 +86,8 @@ C-----------------------------------------------------------------------
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
+     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus,
+     &   basedatetime, NUOPC4WAV, NUOPC4MET
 #if defined CSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -94,10 +95,6 @@ C-----------------------------------------------------------------------
 Casey 251212: Adding time control.
      &   , RunStartDateTime
 #endif
-#ifdef DATETIME
-     &   ,basedatetime
-#endif
-     &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
      &                     rad2deg,omega,WaveStressGrad_Cap
@@ -155,6 +152,7 @@ Casey 251212: Adding time control.
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
      &   invertedBarometerOnElevationBoundary
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -178,15 +176,10 @@ C ... END DW
 Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
 #endif
-#ifdef DATETIME
-      use datetime_module, only: strptime
-#endif
+      use mod_date_parsing, only: parse_datetime_lenient
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
-     &                          NWS13File,
-     &                          NWS13GroupForPowell,
-     &                          NWS13WindMultiplier
+      USE mod_nws13, ONLY: nws13_set_namelist_parameters
 #endif
 !JLW: add subgrid
       use iso_fortran_env, only: output_unit
@@ -217,6 +210,11 @@ C
       character(len=100) :: densityForcingType ! sigmaT, salinity, etc
 
       character(len=20) :: vortexModelString
+
+      ! nws 13 namelist parameters
+      character(len=200) :: NWS13File, NWS13ColdStartString
+      real(8) :: NWS13WindMultiplier
+      integer :: NWS13GroupForPowell
 
       ! I/O variables for tide potential namelist
       logical :: UseFullTIPFormula = .false.
@@ -530,27 +528,27 @@ Casey 251212: Adding time control.
 Casey 180318: Added NWS=13
       namelistSpecifier = 'owiWindNetcdf'
       NWS13ColdStartString = "99999999.999999"
-      NWS13File = "fort.22.nc"
-      NWS13GroupForPowell = "0"
-      NWS13WindMultiplier = "1.0"
+      NWS13File = 'fort.22.nc'
+      NWS13WindMultiplier = 1.0D0
+      NWS13GroupForPowell = 0
       read(unit=15,nml=owiWindNetcdf,iostat=ios,iomsg=ios_nml_error_msg)
       if(ios.ne.0)then
         CALL logMessage(INFO,"The owiWindNetcdf namelist was not found.")
         call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
-      else  
+      else
         CALL logMessage(INFO,"The owiWindNetcdf namelist was found.")
         call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
         write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
      &   " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
-     &   " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
-     &   " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
+     &   " NWS13WindMultiplier=",NWS13WindMultiplier,
+     &   " NWS13GroupForPowell=",NWS13GroupForPowell
         call logMessage(ECHO,trim(scratchMessage))
-      endif  
+      endif
+      call nws13_set_namelist_parameters(NWS13File, NWS13ColdStartString,
+     &                                   NWS13WindMultiplier, NWS13GroupForPowell)
       rewind(15)
 #endif
 
-
-#ifdef DATETIME
       namelistSpecifier = 'WindGrib2NetCdf' 
       read( unit = 15, nml=WindGrib2NetCdf,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
@@ -559,7 +557,6 @@ Casey 180318: Added NWS=13
      &   read_NWS14_NetCdf_using_core_0 
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-#endif
 
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
@@ -2575,6 +2572,9 @@ C...
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I4,'  ',I2,':',I2,':',f7.4,/)
          WREFTIM = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC)
+         IF (ieee_is_nan(WREFTIM)) CALL terminate(
+     &      exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid NWS=3 wind reference time in the fort.15.')
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2638,6 +2638,9 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
          WindRefTime = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0)
+         IF (ieee_is_nan(WindRefTime)) CALL terminate(
+     &      exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid wind reference time in the fort.15.')
          CALL setNws08f15Parameters(WindRefTime, BLAdj, g)
       ENDIF
 C     jgf46.16 Merged:
@@ -4807,31 +4810,36 @@ C
          CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
-#ifdef DATETIME
-         ! Convert base_date to datetime WJP
-         basedatetime = strptime(adjustl(trim(base_date)),
-     &                           "%Y-%m-%d %H:%M:%S")
-         ! Check this a valid time
-         if (.not.basedatetime%isvalid()) then
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Invalid base datetime: '
-     &           //basedatetime%isoformat(' ')
-     &           //'. Must be formatted as yyyy-MM-dd HH:mm:ss')
+
+         ! base_date has always been free-form metadata, so a value that is
+         ! not a date is only fatal later if a feature actually needs it
+         ! (netCDF BC3D forcing, NWS=14, or the full tidal potential).
+         basedatetime = parse_datetime_lenient(base_date)
+         if (.not.basedatetime%valid() .and. len_trim(base_date) > 0) then
+            call allMessage(WARNING,'The base_date metadata "'
+     &           //trim(adjustl(base_date))//'" is not a recognized '
+     &           //'date (expected e.g. yyyy-MM-dd HH:mm:ss). Features '
+     &           //'that require a reference date will stop the run.')
          endif
-#endif
       ENDIF
 
-      ! Check if we have been provided a base date for the tide potential calculations
-      if(UseFullTIPFormula.and.trim(TipStartDate)=="none")then
-         if(useNetCDF)then
-            TipStartDate = trim(base_date)
-            WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
-     &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
-            call allMessage(WARNING,scratchMessage)
-         else
-            scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
-     &                       "or the tide potential namelist."
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
-         endif
+      ! Check if we have been provided a base date for the tide potential
+      ! calculations. TIPStartDate defaults to blank; "none" and "basedate"
+      ! are also accepted as requests to use the base_date metadata.
+      if(UseFullTIPFormula)then
+         select case(toLowercase(trim(adjustl(TipStartDate))))
+         case("", "none", "basedate")
+            if(useNetCDF)then
+               TipStartDate = trim(adjustl(base_date))
+               WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
+     &                                      " Using the base_date netCDF metadata value instead: ", TipStartDate
+               call allMessage(WARNING,scratchMessage)
+            else
+               scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
+     &                          "or the tide potential namelist."
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+            endif
+         end select
       endif
 
 !...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP
