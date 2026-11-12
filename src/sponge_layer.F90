@@ -87,17 +87,15 @@ module SPONGELAYER
    logical :: sponge_initialized = .false.
 
    public :: ALLOC_MAINSPG, ALLOC_MAINSPG_LUMPED, &
-             SPONGE_OPSPLIT0, Adjust_Sponge_Sigma, &
+             updateAbsorbingLayerBoundary, applyAbsorbingSpongeLayer, &
              FLAGSPONGEELEM, ComputeSpongeMsElmMat, &
-             SpongeLayerRelatedPrep, GETABSLAYEREXT, &
-             SPONGE_SHIFT_SOLN, LAYERSOLTEST1, &
+             SpongeLayerRelatedPrep, LAYERSOLTEST1, &
              NO_MET_IN_SPONGE, NO_BPG_IN_SPONGE, &
              NumNodesAbsLayer, sponge_dis_mthd, &
              uu1_AbsLayer, vv1_AbsLayer, uu2_AbsLayer, &
              vv2_AbsLayer, eta0_AbsLayer, &
              eta1_AbsLayer, eta2_AbsLayer, &
-             LoadAbsLayerSigma, &
-             sponge_sigma_adjusted, sponge_initialized
+             LoadAbsLayerSigma
 
 contains
 
@@ -882,5 +880,78 @@ contains
       vv2_AbsLayer = 0.d0
 
    end subroutine LAYERSOLTEST1
+
+   !-----------------------------------------------------------------------
+   !> @brief Update absorbing sponge layer boundary values for the timestep
+   !>
+   !> On first entry, applies the one-time sponge sigma adjustment and steps
+   !> back in time to initialize the previous time level states needed for
+   !> the time integration scheme. On later entries, computes the external
+   !> boundary values for the current time. Does nothing unless the
+   !> absorbing layer nodal attribute is loaded.
+   !>
+   !> @param[in] TimeLoc Current simulation time (seconds)
+   !> @param[in] TimeH   Harmonic analysis reference time (seconds)
+   !-----------------------------------------------------------------------
+   subroutine updateAbsorbingLayerBoundary(TimeLoc, TimeH)
+      use global, only: NRamp, RampElev, DRampElev, DTDP
+      use NodalAttributes, only: GeoidOffset
+      implicit none
+
+      real(8), intent(in) :: TimeLoc, TimeH
+      real(8) :: RampTMP
+      integer :: istep
+
+      if (.not. LoadAbsLayerSigma) return
+
+      if (.not. sponge_sigma_adjusted) then
+         call Adjust_Sponge_Sigma(abs(DTDP))
+         sponge_sigma_adjusted = .true.
+      end if
+
+      if (sponge_initialized) then
+         ! Normal timestep: get external boundary values
+         call GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset)
+      else
+         ! First entry: step back in time to initialize previous states
+         RampTMP = RampElev
+         do istep = 2, 1, -1
+            if (NRamp > 0) then
+               RampTMP = tanh((2.d0*(TimeLoc - dble(istep)*DTDP)/86400.d0) &
+                              /DRampElev)
+            end if
+            RampTMP = max(0.d0, RampTMP)
+
+            ! Get external values at previous time
+            call GETABSLAYEREXT(TimeLoc - dble(istep)*DTDP, &
+                                TimeH - dble(istep)*DTDP, RampTMP, GeoidOffset)
+            call SPONGE_SHIFT_SOLN()
+         end do
+         ! Get current external values
+         call GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset)
+         sponge_initialized = .true.
+      end if
+
+   end subroutine updateAbsorbingLayerBoundary
+   !-----------------------------------------------------------------------
+
+   !-----------------------------------------------------------------------
+   !> @brief Apply absorbing sponge layer operations
+   !>
+   !> Applies absorbing sponge layer boundary treatment after the momentum
+   !> solve. Uses operator splitting for the sponge relaxation terms and
+   !> shifts the sponge solution arrays for the next timestep.
+   !-----------------------------------------------------------------------
+   subroutine applyAbsorbingSpongeLayer()
+      use global, only: C2DDI, DTDP
+      implicit none
+
+      if (C2DDI .and. LoadAbsLayerSigma .and. sponge_dis_mthd == 0) &
+         call SPONGE_OPSPLIT0(DTDP/2)
+
+      if (LoadAbsLayerSigma) call SPONGE_SHIFT_SOLN()
+
+   end subroutine applyAbsorbingSpongeLayer
+   !-----------------------------------------------------------------------
 
 end module SPONGELAYER
