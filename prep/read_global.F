@@ -600,6 +600,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
       foundVEW1DChannelControlNamelist = .false.
+      foundWeirControlNamelist = .false.
 #ifdef ADCNETCDF
       FOUND_OWINC_NML = .FALSE.
 #endif
@@ -786,6 +787,14 @@ c..
       else
          call logMessage(INFO,
      &         'The VEW1DChannelControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+      read(unit=15,nml=weirControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundWeirControlNamelist = .true.
+         call logMessage(INFO,'The weirControl namelist was found.')
+      else
+         call logMessage(INFO,'The weirControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 

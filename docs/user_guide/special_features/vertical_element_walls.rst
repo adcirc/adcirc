@@ -123,12 +123,14 @@ Switch between coupled and weir mode
 Total energy head in the weir formula
    The VEW weir formula uses the total energy head, the water depth over the crest plus the velocity head v\ :sub:`n`\ :sup:`2`/2g of the node's velocity normal to the wall, on both sides of the pair.
 
-The weir flux itself can be computed semi-implicitly with :ref:`WEIR_SEMI_IMPLICIT <WEIR_SEMI_IMPLICIT>`, with both water levels at the new time level, which removes the oscillations of the explicit weir flux at large time steps. It applies to IBTYPE 4 and 24 barriers as well as to VEW pairs in weir mode. For gates, the recommended setting is:
+The weir flux itself can be computed semi-implicitly with :ref:`WEIR_SEMI_IMPLICIT <WEIR_SEMI_IMPLICIT>` (namelist :ref:`weirControl <weirControl>`), with both water levels at the new time level, which removes the oscillations of the explicit weir flux at large time steps. It applies to IBTYPE 4 and 24 barriers as well as to VEW pairs in weir mode. For gates, the recommended setting is:
 
 .. code-block:: fortran
 
    &VEW1DChannelControl
       VEW_CREST_HYDRAULICS = .true.
+   /
+   &weirControl
       WEIR_SEMI_IMPLICIT = .true.
    /
 

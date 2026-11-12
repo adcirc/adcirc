@@ -3016,7 +3016,7 @@ TVV_SEARCH_RADIUS
 .. _VEW1DChannelControl:
 
 VEW1DChannelControl
-   Fortran namelist for :doc:`vertical element walls <../../user_guide/special_features/vertical_element_walls>` (IBTYPE = 64) and internal barrier weirs: wet perimeter of VEW channels (activateVEW1DChannelWetPerimeter), submergence thresholds of VEW pairs, crest hydraulics at submerged VEWs, and the weir flux options. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
+   Fortran namelist for :doc:`vertical element walls <../../user_guide/special_features/vertical_element_walls>` (IBTYPE = 64): wet perimeter of VEW channels (activateVEW1DChannelWetPerimeter), submergence thresholds of VEW pairs and crest hydraulics at submerged VEWs. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file. The weir options :ref:`WEIR_ENERGY_HEAD <WEIR_ENERGY_HEAD>` and :ref:`WEIR_SEMI_IMPLICIT <WEIR_SEMI_IMPLICIT>` belong in :ref:`weirControl <weirControl>`; they are still accepted here for older input files, and weirControl takes precedence when both give them.
 
 .. _BARMIN64_SUBM:
 
@@ -3073,15 +3073,20 @@ VEW_ADVECT_FR_ATTACH
 VEW_ADVECT_FR_FULL
    Optional real value, default 0.1: crest Froude number above which coupled VEW pairs get the full recovered velocity; between :ref:`VEW_ADVECT_FR_ATTACH <VEW_ADVECT_FR_ATTACH>` and VEW_ADVECT_FR_FULL it is tapered linearly (with :ref:`VEW_CREST_HYDRAULICS <VEW_CREST_HYDRAULICS>`).
 
+.. _weirControl:
+
+weirControl
+   Fortran namelist for the weir options of internal barrier boundaries (IBTYPE 4, 24 and 64): :ref:`WEIR_ENERGY_HEAD <WEIR_ENERGY_HEAD>` and :ref:`WEIR_SEMI_IMPLICIT <WEIR_SEMI_IMPLICIT>`. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
+
 .. _WEIR_ENERGY_HEAD:
 
 WEIR_ENERGY_HEAD
-   Optional logical value, default .false.: use the total energy head, the depth over the crest plus the velocity head of the node's velocity normal to the barrier, in the weir formula of internal barrier boundaries (IBTYPE 4 and 24).
+   Optional logical value (:ref:`weirControl <weirControl>`), default .false.: use the total energy head, the depth over the crest plus the velocity head of the node's velocity normal to the barrier, in the weir formula of internal barrier boundaries (IBTYPE 4 and 24).
 
 .. _WEIR_SEMI_IMPLICIT:
 
 WEIR_SEMI_IMPLICIT
-   Optional logical value, default .false.: compute the weir flux of internal barrier pairs (IBTYPE 4 and 24, and IBTYPE 64 pairs in weir mode) with both water levels at the new time level, solved per pair together with the lumped GWCE, instead of with the levels of the previous time step. Removes the oscillations of the explicit weir flux at large time steps. Requires the lumped GWCE without the predictor-corrector. Parallel runs are supported unless the mesh has IBTYPE = 64 boundaries, for which it is serial only for now.
+   Optional logical value (:ref:`weirControl <weirControl>`), default .false.: compute the weir flux of internal barrier pairs (IBTYPE 4 and 24, and IBTYPE 64 pairs in weir mode) with both water levels at the new time level, solved per pair together with the lumped GWCE, instead of with the levels of the previous time step. Removes the oscillations of the explicit weir flux at large time steps. Requires the lumped GWCE without the predictor-corrector. Parallel runs are supported unless the mesh has IBTYPE = 64 boundaries, for which it is serial only for now.
 
 .. _TVW:
 

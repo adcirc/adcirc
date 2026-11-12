@@ -53,6 +53,7 @@ module WEIR
    real(8) :: BARMIN64_NOSUBM = -1.d0 !...Minimum water depth above weir to consider submerged at vertical element walls when the weir is not submerged (negative: 1.2*H0, set in WEIR_SETUP)
    real(8) :: BARMIN64_CORNER = -1.d0 !...Wall-top depth below which a submerged VEW pair whose wall-top node has fewer than 3 wet neighbours (or a steep edge slope) is un-submerged (negative: 1.2*H0, set in WEIR_SETUP; was hard-coded 4*H0)
    real(8) :: BARMIN64_SLIM = 0.5d0 !...Minimum water depth above weir to consider submerged at vertical element walls no matter the slope
+   !...Weir options, namelist weirControl (also accepted in VEW1DChannelControl, read before it):
    logical :: WEIR_ENERGY_HEAD = .false. !...Same for the internal barrier weirs (IBTYPE 4/24): total energy head in the weir formula
    !...WEIR_SEMI_IMPLICIT (lumped GWCE only): internal barrier pairs (IBTYPE 4/24, and IBTYPE 64 pairs in
    !   weir mode) with both nodes wet get their weir flux with both water levels at the new time level

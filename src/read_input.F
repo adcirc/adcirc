@@ -260,7 +260,11 @@ C.... SB
      &  BARSLIM64_ELEM, BARSLIM64_EDGE, VEW_CREST_HYDRAULICS,
      &  VEW_FROUDE_CRIT, VEW_FROUDE_RECOUPLE,
      &  VEW_ADVECT_FR_ATTACH, VEW_ADVECT_FR_FULL,
+C       weir options, accepted here for older input files (weirControl
+C       below is their place and is read after this namelist)
      &  WEIR_ENERGY_HEAD, WEIR_SEMI_IMPLICIT
+C     Weir options of internal barrier boundaries (IBTYPE 4/24/64)
+      NAMELIST /weirControl/ WEIR_ENERGY_HEAD, WEIR_SEMI_IMPLICIT
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW,
@@ -819,6 +823,13 @@ C     Channel wet perimeter for bottom friction 11/06/2023 sb
       write(scratchMessage,'(a,f8.4,a,f8.4)') "VEW_ADVECT_FR_ATTACH=",
      &   VEW_ADVECT_FR_ATTACH, " VEW_ADVECT_FR_FULL=", VEW_ADVECT_FR_FULL
       call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+C     Weir options; values given here take precedence over the same
+C     entries in VEW1DChannelControl
+      namelistSpecifier = 'weirControl'
+      READ(UNIT=15,NML=weirControl,IOSTAT=ios,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l1)') "WEIR_SEMI_IMPLICIT=",
      &   WEIR_SEMI_IMPLICIT
       call logMessage(ECHO,trim(scratchMessage))
