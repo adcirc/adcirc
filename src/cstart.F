@@ -1137,6 +1137,11 @@ C----------------------------------------------------------------------
 
 !JLW: adding subgrid lookup table read in
       IF(subgrid_level0.EQV..true.)THEN
+         IF(.NOT.LoadManningsN)THEN
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='subgrid requires the mannings_n_at_sea_floor '
+     &                //'nodal attribute')
+         ENDIF
 #ifdef ADCNETCDF
          ! Set all nodes to wet by default.
          nnodecode(:)=1

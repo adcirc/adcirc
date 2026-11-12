@@ -239,13 +239,19 @@ contains
       use wind, only: PRBCKGRND_MH2O
       use mesh, only: DP
       use boundaries, only: NVEL
+      use subgrid, only: subgrid_level0, gridDepthVertETA2
       implicit none
 
       integer, intent(in) :: IT
 
       ! On first timestep of a cold start, initialize H1 and H2
+      ! (the grid-averaged depth H_G under subgrid level0)
       if (IT == 1) then
-         H2(:) = DP(:) + dble(IFNLFA)*ETA2(:)
+         if (subgrid_level0) then
+            H2(:) = gridDepthVertETA2(:)
+         else
+            H2(:) = DP(:) + dble(IFNLFA)*ETA2(:)
+         end if
          H1(:) = H2(:)
       end if
 
@@ -911,15 +917,21 @@ contains
 !> @brief Update total water depth
 !>
 !> Updates the total water depth (H2) from bathymetry and water surface
-!> elevation. Called after wetting/drying since effective bathymetry
+!> elevation, or sets it to the grid-averaged depth H_G under subgrid
+!> level0. Called after wetting/drying since effective bathymetry
 !> could change with subgrid barriers.
 !-----------------------------------------------------------------------
    subroutine updateFlowDepth()
       use global, only: H2, ETA2, IFNLFA
       use mesh, only: DP
+      use subgrid, only: subgrid_level0, gridDepthVertETA2
       implicit none
 
-      H2 = DP + dble(IFNLFA)*ETA2
+      if (subgrid_level0) then
+         H2 = gridDepthVertETA2
+      else
+         H2 = DP + dble(IFNLFA)*ETA2
+      end if
 
    end subroutine updateFlowDepth
    !-----------------------------------------------------------------------

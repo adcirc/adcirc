@@ -1841,7 +1841,11 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             
 C...........DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-               CALL windLimiter(H2(I),fwind)
+               IF(subgrid_level0)THEN
+                  CALL windLimiter(gridDepthVertETA2(I),fwind)
+               ELSE
+                  CALL windLimiter(H2(I),fwind)
+               ENDIF
                WSX = fwind*WSX
                WSY = fwind*WSY
             ENDIF
