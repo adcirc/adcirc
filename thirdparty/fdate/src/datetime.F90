@@ -74,7 +74,9 @@ module mod_datetime
    !> as milliseconds since the Unix epoch (January 1, 1970, 00:00:00 UTC).
    type :: t_datetime
       private
-      integer(kind=c_int64_t) :: timestamp_ms !< Milliseconds since epoch
+      !> Milliseconds since epoch. Defaults to the invalid sentinel (-huge, matching
+      !> DateTime::INVALID_TIMESTAMP) so an unassigned DateTime is detectably invalid.
+      integer(kind=c_int64_t) :: timestamp_ms = -huge(0_c_int64_t)
    contains
       !> @brief Get the year component
       procedure :: year => datetime_year
@@ -1050,13 +1052,13 @@ contains
 
       ! Input validation
       if (len_trim(str) <= 0 .or. size(formats) <= 0) then
-         dt = t_datetime()
+         dt = null_datetime() ! parse failure is invalid, not the epoch
          return
       end if
 
       ! Prevent excessive format counts and string lengths for security
       if (size(formats) > 1000 .or. len_trim(str) > 10000) then
-         dt = t_datetime()
+         dt = null_datetime() ! parse failure is invalid, not the epoch
          return
       end if
 
@@ -1124,13 +1126,13 @@ contains
 
       ! Input validation
       if (len_trim(str) <= 0) then
-         dt = t_datetime()
+         dt = null_datetime() ! parse failure is invalid, not the epoch
          return
       end if
 
       ! Prevent excessive string length for security
       if (len_trim(str) > DATETIME_MAX_STRING_LENGTH) then
-         dt = t_datetime()
+         dt = null_datetime() ! parse failure is invalid, not the epoch
          return
       end if
 
@@ -1145,7 +1147,7 @@ contains
 
          ! Prevent excessive format counts for security
          if (num_formats > DATETIME_MAX_FORMAT_COUNT) then
-            dt = t_datetime()
+            dt = null_datetime() ! parse failure is invalid, not the epoch
             return
          end if
 
@@ -1326,10 +1328,11 @@ contains
       character(len=DATETIME_STRING_BUFFER_SIZE) :: str
 
       ! Convert Fortran string to C-compatible character array
-      character(kind=c_char, len=1) :: c_format(len_trim(date_format) + 1), c_str(65)
+      character(kind=c_char, len=1) :: c_format(len_trim(date_format) + 1), c_str(DATETIME_STRING_BUFFER_SIZE + 1)
       integer :: i
       logical :: show_milliseconds_l
 
+      c_str = c_null_char
       do i = 1, len_trim(date_format)
          c_format(i) = date_format(i:i)
       end do

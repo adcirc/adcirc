@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "DateTime.hpp"
@@ -353,6 +354,12 @@ auto f_datetime_create(const int year, const int month, const int day,
   } else {
     const auto u_month = static_cast<unsigned>(month);
     const auto u_day = static_cast<unsigned>(day);
+    // Reject days that do not exist in the given month (e.g. February 30)
+    if (!date::year_month_day{date::year{year}, date::month{u_month},
+                              date::day{u_day}}
+             .ok()) {
+      return DateTime::INVALID_TIMESTAMP;
+    }
     const auto u_hour = static_cast<unsigned>(hour);
     const auto u_minute = static_cast<unsigned>(minute);
     const auto u_second = static_cast<unsigned>(second);
@@ -493,6 +500,9 @@ auto f_datetime_get_millisecond(const int64_t dt_ms) -> int64_t {
  * @return int64_t Julian Day Number (integer days since JD epoch)
  */
 auto f_datetime_get_julian_day_number(const int64_t dt_ms) -> int64_t {
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    return DateTime::INVALID_TIMESTAMP;
+  }
   const DateTime date(dt_ms);
   return date.julianDayNumber();
 }
@@ -504,6 +514,9 @@ auto f_datetime_get_julian_day_number(const int64_t dt_ms) -> int64_t {
  * @return double Julian Day with fractional part (days.fraction since JD epoch)
  */
 auto f_datetime_get_julian_day(const int64_t dt_ms) -> double {
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   const DateTime date(dt_ms);
   return date.julianDay();
 }
@@ -515,6 +528,9 @@ auto f_datetime_get_julian_day(const int64_t dt_ms) -> double {
  * @return double Julian Century (time unit used in astronomy)
  */
 auto f_datetime_get_julian_century(const int64_t dt_ms) -> double {
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   const DateTime date(dt_ms);
   return date.julianCentury();
 }
@@ -528,6 +544,10 @@ auto f_datetime_get_julian_century(const int64_t dt_ms) -> double {
  */
 auto f_datetime_add_timedelta(const int64_t dt_ms, const int64_t ts_ms)
     -> int64_t {
+  // An invalid DateTime stays invalid instead of becoming a bogus valid date
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    return DateTime::INVALID_TIMESTAMP;
+  }
   const DateTime date(dt_ms);
   const TimeDelta time_delta(TimeDelta::to_components(ts_ms));
   return (date + time_delta).timestamp();
@@ -542,6 +562,10 @@ auto f_datetime_add_timedelta(const int64_t dt_ms, const int64_t ts_ms)
  */
 auto f_datetime_subtract_timedelta(const int64_t dt_ms, const int64_t ts_ms)
     -> int64_t {
+  // An invalid DateTime stays invalid instead of becoming a bogus valid date
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    return DateTime::INVALID_TIMESTAMP;
+  }
   const DateTime date(dt_ms);
   const TimeDelta time_delta(TimeDelta::to_components(ts_ms));
   return (date - time_delta).timestamp();
@@ -556,6 +580,12 @@ auto f_datetime_subtract_timedelta(const int64_t dt_ms, const int64_t ts_ms)
  */
 auto f_datetime_difference(const int64_t dt1_ms, const int64_t dt2_ms)
     -> int64_t {
+  // Differences involving an invalid DateTime would overflow int64; return the
+  // invalid sentinel instead so callers can detect it
+  if (dt1_ms == DateTime::INVALID_TIMESTAMP ||
+      dt2_ms == DateTime::INVALID_TIMESTAMP) {
+    return DateTime::INVALID_TIMESTAMP;
+  }
   const DateTime dt1(dt1_ms);
   const DateTime dt2(dt2_ms);
   return (dt1 - dt2).totalMilliseconds();
@@ -581,6 +611,11 @@ void f_datetime_strftime(const int64_t dt_ms, const char* format, char* buffer,
   const auto format_len_t = static_cast<size_t>(format_len);
   const auto buffer_size_t = static_cast<size_t>(buffer_size);
 
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    strncpy(buffer, "INVALID", buffer_size_t - 1);
+    buffer[buffer_size_t - 1] = '\0';
+    return;
+  }
   const DateTime date(dt_ms);
   const std::string format_cpp(format, format_len_t);
   const std::string str = date.strftime(format_cpp);
@@ -609,6 +644,11 @@ void f_datetime_strftime_milliseconds(const int64_t dt_ms, const char* format,
   const auto format_len_t = static_cast<size_t>(format_len);
   const auto buffer_size_t = static_cast<size_t>(buffer_size);
 
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    strncpy(buffer, "INVALID", buffer_size_t - 1);
+    buffer[buffer_size_t - 1] = '\0';
+    return;
+  }
   const DateTime date(dt_ms);
   const std::string format_cpp(format, format_len_t);
   const std::string str = date.strftime_w_milliseconds(format_cpp);
@@ -632,6 +672,11 @@ void f_datetime_to_iso_string(const int64_t dt_ms, char* buffer,
 
   const auto buffer_size_t = static_cast<size_t>(buffer_size);
 
+  if (dt_ms == DateTime::INVALID_TIMESTAMP) {
+    strncpy(buffer, "INVALID", buffer_size_t - 1);
+    buffer[buffer_size_t - 1] = '\0';
+    return;
+  }
   const DateTime date(dt_ms);
   const std::string str = date.to_iso_string();
   strncpy(buffer, str.c_str(), buffer_size_t - 1);

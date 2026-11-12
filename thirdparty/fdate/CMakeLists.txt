@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 project(fdate VERSION 0.0.1)
-include(CPack)
+
+# Packaging and uninstall support only make sense when fdate is built on its own; when it is
+# embedded with add_subdirectory they would leak into the parent project.
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(FDATE_IS_TOP_LEVEL ON)
+else()
+  set(FDATE_IS_TOP_LEVEL OFF)
+endif()
 include(CheckCXXCompilerFlag)
 
 check_cxx_compiler_flag("-std=c++17" COMPILER_SUPPORTS_CXX17)
@@ -35,21 +42,24 @@ if(FDATE_ENABLE_TESTING)
   add_subdirectory(tests)
 endif()
 
-# Configure CPack for packaging
-set(CPACK_PACKAGE_NAME "fdate")
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
-set(CPACK_PACKAGE_VENDOR "Zach Cobell")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+if(FDATE_IS_TOP_LEVEL)
+  # Configure CPack for packaging
+  set(CPACK_PACKAGE_NAME "fdate")
+  set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
+  set(CPACK_PACKAGE_VENDOR "Zach Cobell")
+  set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+  set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+  include(CPack)
 
-# Add uninstall target
-if(NOT TARGET uninstall)
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+  # Add uninstall target
+  if(NOT TARGET uninstall)
+    configure_file(
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
 
-  add_custom_target(
-    uninstall COMMAND ${CMAKE_COMMAND} -P
-                      ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+    add_custom_target(
+      uninstall COMMAND ${CMAKE_COMMAND} -P
+                        ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+  endif()
 endif()
