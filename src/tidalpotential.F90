@@ -136,6 +136,8 @@ contains
                                         in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                         in_IncludeNutation, in_k2value, in_h2value)
       use mod_logging, only: allMessage, WARNING
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_date_parsing, only: parse_datetime_lenient
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
@@ -149,15 +151,20 @@ contains
       logical, intent(IN) :: in_IncludeNutation
       real(8), intent(IN) :: in_k2value, in_h2value
       character(len=len_trim(in_MoonSunPositionComputeMethod)) :: moonSunPositionString
-      character(len=len(in_TIPStartDate)) :: tmp_start_date
 
       self%m_UseFullTIPFormula = in_UseFullTIPFormula
 
       if (.not. self%m_UseFullTIPFormula) return
 
       self%m_TIPOrder = in_TIPOrder
-      tmp_start_date = trim(adjustl(in_TIPStartDate))
-      self%m_TIPStartDate = t_datetime(tmp_start_date(1:19), ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M   "])
+      self%m_TIPStartDate = parse_datetime_lenient(in_TIPStartDate)
+      ! An unparseable start date would silently give a garbage Julian day
+      ! and therefore a wrong tidal potential
+      if (.not. self%m_TIPStartDate%valid()) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message='Invalid TIPStartDate "'//trim(adjustl(in_TIPStartDate))// &
+                        '" for the full tidal potential (expected e.g. yyyy-MM-dd HH:mm:ss).')
+      end if
       self%m_IncludeNutation = in_IncludeNutation
       self%m_k2value = in_k2value
       self%m_h2value = in_h2value

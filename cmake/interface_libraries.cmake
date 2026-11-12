@@ -76,11 +76,15 @@ function(adcirc_create_interface_libraries)
   add_library(adcirc_link_libraries INTERFACE)
   add_library(adcirc::link_libraries ALIAS adcirc_link_libraries)
 
-  target_sources(adcirc_link_libraries INTERFACE $<TARGET_OBJECTS:adcirc::version> $<TARGET_OBJECTS:adcirc::mkdir>)
+  target_sources(adcirc_link_libraries INTERFACE $<TARGET_OBJECTS:adcirc::version> $<TARGET_OBJECTS:adcirc::mkdir>
+                                                 $<TARGET_OBJECTS:adcirc::date_parsing>)
 
   target_include_directories(
-    adcirc_link_libraries INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/adcirc_version
-                                    ${CMAKE_CURRENT_SOURCE_DIR}/prep ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    adcirc_link_libraries
+    INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/adcirc_version
+              ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/adcirc_date_parsing
+              ${CMAKE_CURRENT_SOURCE_DIR}/prep
+              ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   if(NETCDF_WORKING)
     target_compile_definitions(adcirc_link_libraries INTERFACE ADCNETCDF)

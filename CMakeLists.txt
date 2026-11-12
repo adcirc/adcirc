@@ -161,6 +161,9 @@ include(version)
 # ...Build the mkdir library
 include(mkdir)
 
+# ...Build the lenient date parsing module
+include(date_parsing)
+
 # ...Create interface libraries for compiler flags and dependencies
 adcirc_create_interface_libraries()
 

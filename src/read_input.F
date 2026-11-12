@@ -176,7 +176,7 @@ C ... END DW
 Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
 #endif
-      use mod_datetime, only: t_datetime
+      use mod_date_parsing, only: parse_datetime_lenient
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE mod_nws13, ONLY: nws13_set_namelist_parameters
@@ -4811,31 +4811,35 @@ C
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
 
-         ! Sanitiz the date and then parse using the prescribed format
-         base_date = trim(adjustl(base_date)) 
-         base_date = base_date(1:19)
-         basedatetime = t_datetime(trim(adjustl(base_date)),["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M   "])
-
-         ! Check this a valid time
-         if (.not.basedatetime%valid()) then
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Invalid base datetime: '
-     &           //trim(base_date)
-     &           //'. Must be formatted as yyyy-MM-dd HH:mm:ss')
+         ! base_date has always been free-form metadata, so a value that is
+         ! not a date is only fatal later if a feature actually needs it
+         ! (netCDF BC3D forcing, NWS=14, or the full tidal potential).
+         basedatetime = parse_datetime_lenient(base_date)
+         if (.not.basedatetime%valid() .and. len_trim(base_date) > 0) then
+            call allMessage(WARNING,'The base_date metadata "'
+     &           //trim(adjustl(base_date))//'" is not a recognized '
+     &           //'date (expected e.g. yyyy-MM-dd HH:mm:ss). Features '
+     &           //'that require a reference date will stop the run.')
          endif
       ENDIF
 
-      ! Check if we have been provided a base date for the tide potential calculations
-      if(UseFullTIPFormula.and.trim(adjustl(TipStartDate))=="none")then
-         if(useNetCDF)then
-            TipStartDate = trim(adjustl(base_date))
-            WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
-     &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
-            call allMessage(WARNING,scratchMessage)
-         else
-            scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
-     &                       "or the tide potential namelist."
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
-         endif
+      ! Check if we have been provided a base date for the tide potential
+      ! calculations. TIPStartDate defaults to blank; "none" and "basedate"
+      ! are also accepted as requests to use the base_date metadata.
+      if(UseFullTIPFormula)then
+         select case(toLowercase(trim(adjustl(TipStartDate))))
+         case("", "none", "basedate")
+            if(useNetCDF)then
+               TipStartDate = trim(adjustl(base_date))
+               WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
+     &                                      " Using the base_date netCDF metadata value instead: ", TipStartDate
+               call allMessage(WARNING,scratchMessage)
+            else
+               scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
+     &                          "or the tide potential namelist."
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+            endif
+         end select
       endif
 
 !...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP

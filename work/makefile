@@ -398,7 +398,7 @@ BC3D_MSRC = couple2baroclinic3D.F
 GL2LOC_MSRC = gl2loc_mapping.F90
 TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90 
 ITTIDE_MSRC = internaltide.F90
-DATE_MSRC = datetime.F90 datetime_wrapper.cpp
+DATE_MSRC = datetime.F90 date_parsing.F90 datetime_wrapper.cpp
 
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
