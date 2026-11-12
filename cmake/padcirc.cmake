@@ -53,7 +53,6 @@ set(PADCIRC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
