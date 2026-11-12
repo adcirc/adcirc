@@ -191,6 +191,12 @@ call init_log_scope(ls__, fname, trace_flag .or. ALL_TRACING)
 #define SUBDOMAIN_TRACING .false.
 #endif
 
+#ifdef SUBGRID_TRACE
+#define SUBGRID_TRACING .true.
+#else
+#define SUBGRID_TRACING .false.
+#endif
+
 #ifdef SUBPREP_TRACE
 #define SUBPREP_TRACING .true.
 #else

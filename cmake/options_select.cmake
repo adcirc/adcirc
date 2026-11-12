@@ -180,6 +180,7 @@ option(DEBUG_VSMY_TRACE "Write tracing debug information for the 3D momentum equ
 option(DEBUG_TIMESTEP_TRACE "Write the tracing debug information for the timestepping module" OFF)
 option(DEBUG_SUBPREP_TRACE "Write the tracing debug information for the subdomain prep module" OFF)
 option(DEBUG_SUBDOMAIN_TRACE "Write the tracing debug information for the subdomain module" OFF)
+option(DEBUG_SUBGRID_TRACE "Write the tracing debug information for the subgrid module" OFF)
 option(DEBUG_READ_INPUT_TRACE "Write the tracing debug information for the read_input module" OFF)
 option(DEBUG_OWIWIND_TRACE "Write the tracing debug information for the OWI wind module" OFF)
 option(DEBUG_NODALATTR_TRACE "Write the tracing debug information for the nodal attributes module" OFF)
@@ -205,6 +206,7 @@ mark_as_advanced(
   DEBUG_TIMESTEP_TRACE
   DEBUG_SUBPREP_TRACE
   DEBUG_SUBDOMAIN_TRACE
+  DEBUG_SUBGRID_TRACE
   DEBUG_READ_INPUT_TRACE
   DEBUG_OWIWIND_TRACE
   DEBUG_NODALATTR_TRACE

@@ -535,6 +535,7 @@ contains
 #endif
       use MOD_SIZES, only: mnproc, myproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
+      use mod_subgrid, only: subgrid_finalize
 
       implicit none
 
@@ -551,6 +552,7 @@ contains
          call solveHarmonicAnalysis(ITIME)
          call writeHarmonicAnalysisOutput(ITIME)
       end if
+      call subgrid_finalize()
 
       if (present(NO_MPI_FINALIZE)) then
          call terminate(exit_code=ADCIRC_EXIT_SUCCESS, &

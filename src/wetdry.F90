@@ -95,7 +95,7 @@ module mod_wetdry
    private
 
    public :: initializeWettingAndDrying, computeWettingAndDrying, &
-             noffActive, velmin
+             noffActive, velmin, habsmin
 
    real(8) :: habsmin
    real(8) :: hoff
@@ -166,9 +166,9 @@ contains
                             LBCODEI
       use global_3dvs, only: islip, sigma, evtot, q, nfen, sal, temp
       use mod_subdomain, only: subdomainOn, enforceBN, enforceWDcb, enforceWDob
-      use subgrid, only: subgrid_level0, subgridVertList, gridDepthVertETA2, &
-                         subgrid_level1, cmfVertETA2, cfVertETA2, wetDepthVertETA2, &
-                         wetFracVertTab, gridDepthVertTab, numPhi
+      use mod_subgrid, only: subgrid_level0, gridDepthVertETA2, &
+                             wetDepthVertETA2, subgrid_friction, subgrid_set_min_depth, &
+                             subgrid_has_friction
       implicit none
       integer, intent(in) :: it ! time step number
       complex(8) :: duds
@@ -200,7 +200,6 @@ contains
       integer :: nnc
       integer :: nnbb2
       integer :: nwetele
-      integer :: numGreater
 
       if (nolifa /= 2) then
          return ! wetting and drying is not active
@@ -245,36 +244,8 @@ contains
             end if
             if (HTOT <= H0) then
                if (subgrid_level0) then
-                  !JLW: need to interpolate here to set eta2
                   if (HTOT < HABSMIN) then
-                     gridDepthVertETA2(i) = HABSMIN
-                     wetDepthVertETA2(i) = HABSMIN
-                     if (subgridVertList(i) == 1) then
-                        numGreater = 0
-                        do j = 1, numPhi
-                           if (gridDepthVertETA2(i) < &
-                               gridDepthVertTab(i, j)) then
-                              numGreater = numGreater + 1
-                           end if
-                        end do
-                        if (numGreater == numPhi) then
-                           eta2(i) = wetFracVertTab(i, 1)
-                        elseif (numGreater == 0) then
-                           eta2(i) = wetFracVertTab(i, numPhi) &
-                                     + (HABSMIN - gridDepthVertTab(i, numPhi))
-                        else
-                           !JLW: now back calculate eta2 based on this change
-                           eta2(i) = ((gridDepthVertETA2(i) &
-                                       - gridDepthVertTab(i, numPhi - numGreater)) &
-                                      /(gridDepthVertTab(i, numPhi - numGreater + 1) &
-                                        - gridDepthVertTab(i, numPhi - numGreater)) &
-                                      *(wetFracVertTab(i, numPhi - numGreater + 1) &
-                                        - wetFracVertTab(i, numPhi - numGreater)) &
-                                      + wetFracVertTab(i, numPhi - numGreater))
-                        end if
-                     else
-                        eta2(i) = HABSMIN - DP(I)
-                     end if
+                     call subgrid_set_min_depth(i, HABSMIN, eta2(i))
                   end if
                   NNODECODE(I) = 0
                   NODECODE(I) = 0
@@ -378,12 +349,8 @@ contains
                      !<<                     Convert Manning's N to Cd, if necessary.
                      if (LoadManningsN) then
                         if (subgrid_level0) then
-                           if (subgridVertList(NM123) == 1) then
-                              if (subgrid_level1) then
-                                 FRIC(NM123) = cmfVertETA2(NM123)
-                              else
-                                 FRIC(NM123) = cfVertETA2(NM123)
-                              end if
+                           if (subgrid_has_friction(NM123)) then
+                              FRIC(NM123) = subgrid_friction(NM123)
                            else
                               FRIC(NM123) = g*ManningsN(NM123)**2.d0 &
                                             /((DP(NM123) + dble(IFNLFA)*ETA2(NM123)) &
@@ -501,12 +468,8 @@ contains
                      !<<                     Convert Manning's N to Cd, if necessary.
                      if (LoadManningsN) then
                         if (subgrid_level0) then
-                           if (subgridVertList(NM123) == 1) then
-                              if (subgrid_level1) then
-                                 FRIC(NM123) = cmfVertETA2(NM123)
-                              else
-                                 FRIC(NM123) = cfVertETA2(NM123)
-                              end if
+                           if (subgrid_has_friction(NM123)) then
+                              FRIC(NM123) = subgrid_friction(NM123)
                            else
                               FRIC(NM123) = g*ManningsN(NM123)**2.d0 &
                                             /((DP(NM123) + dble(IFNLFA)*ETA2(NM123)) &
@@ -625,12 +588,8 @@ contains
                      !<<                     Convert Manning's N to Cd, if necessary.
                      if (LoadManningsN) then
                         if (subgrid_level0) then
-                           if (subgridVertList(NM123) == 1) then
-                              if (subgrid_level1) then
-                                 FRIC(NM123) = cmfVertETA2(NM123)
-                              else
-                                 FRIC(NM123) = cfVertETA2(NM123)
-                              end if
+                           if (subgrid_has_friction(NM123)) then
+                              FRIC(NM123) = subgrid_friction(NM123)
                            else
                               FRIC(NM123) = g*ManningsN(NM123)**2.d0 &
                                             /((DP(NM123) + dble(IFNLFA)*ETA2(NM123)) &
@@ -1433,7 +1392,7 @@ contains
       use MESH, only: DP, NM, NE, SFacEle, SFMYEle, SFMXEle, FDXE, FDYE, &
                       areas
       use global, only: eta2, noff, nodecode, alphal, IFSFM, slim
-      use subgrid, only: subgrid_level0, gridDepthVertETA2
+      use mod_subgrid, only: subgrid_level0, gridDepthVertETA2
       implicit none
       integer :: I, NM1, NM2, NM3, NC1, NC2, NC3, NCELE
       real(8) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
