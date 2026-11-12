@@ -54,7 +54,7 @@ C**************************************************************************
 C
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
-      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
+      USE MESH, ONLY : DP, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
@@ -78,9 +78,7 @@ C
       USE WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
-      USE mod_normal_flow_boundary, ONLY : rotate_normal_flux
-      USE mesh, only: SFCX, SFCY, YCSFAC, SFMX
-      USE boundaries, only: CSII, SIII
+      USE mod_flux_boundaries, ONLY : hotstartNormalFlowBoundary
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
@@ -121,21 +119,17 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       INTEGER NCyc, NA, InputFileFmtVn
       INTEGER sd_node_number,fd_node_number
       INTEGER :: NNBB, NNBB1, NNBB2
-      REAL(8) :: RFF1, RFF2
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
       REAL(8) ArgT, ArgTP, ArgSAlt
       REAL(8) CCSFEA
-      REAL(8) QTRatio
       REAL(8) SAltMul, S2SFEA
       REAL(8) TPMul
       REAL(8) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(8) TimeLoc
       REAL(8) ETRATIO
-      REAL(8) QNIN_TMP
       REAL(8) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
-      REAL(8) ARG1, ARG2, ARGJ1, ARGJ2  ! tides
 C     jgf46.08 Fine grained ramp functions
       REAL(8) RampExtFlux1   ! Ramp for external flux b.c.s @ITHS-1
       REAL(8) RampExtFlux2   ! Ramp for external flux b.c.s @ITHS
@@ -901,157 +895,19 @@ C      IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
          ENDIF
       ENDIF
 
-C......FIND PROPER PLACE IN THE APERIODIC NORMAL FLOW BOUNDARY CONDITION
-C......FILE IF IT IS REQUIRED
+C......RESTORE THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION, LOCATING THE
+C......PROPER PLACE IN THE APERIODIC NORMAL FLOW FILE IF IT IS REQUIRED
 
-      IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
-         WRITE(16,1978)
- 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
-         QTIME1=STATIM*86400.D0
-         QTIME2=QTIME1+FTIMINC
-         DO J=1,NVEL
-            QNIN1(J)=0.D0
-            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))THEN
-                READ(20,*) QNIN1(J)
-            ELSEIF(LBCODEI(J).EQ.32)THEN
-                READ(20,*) QNIN1(J), ENIN1(J)
-            ENDIF
-         END DO
-         DO J=1,NVEL
-            QNIN2(J)=0.D0
-            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))THEN
-                READ(20,*) QNIN2(J)
-            ELSEIF(LBCODEI(J).EQ.32)THEN
-                READ(20,*) QNIN2(J), ENIN2(J)
-            ENDIF
-         END DO
-
-         DO IT=1,ITHS-1
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
-            IF(TIMEIT.GT.QTIME2) THEN
-               QTIME1=QTIME2
-               QTIME2=QTIME2+FTIMINC
-               DO J=1,NVEL
-                  IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22))THEN
-                     QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
-                  ELSEIF(LBCODEI(J).EQ.32)THEN
-                     QNIN1(J)=QNIN2(J)
-                     ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN2(J), ENIN2(J)
-                  ENDIF
-               END DO
-            ENDIF
-         END DO
-
-         QTRATIO=(TIMEIT-QTIME1)/FTIMINC
-         QN1=RampExtFlux1*(QNIN1+QTRATIO*(QNIN2-QNIN1))
-         EN1=RampExtFlux1*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-
-         IF(TimeLoc.GT.QTIME2) THEN
-            QTIME1=QTIME2
-            QTIME2=QTIME1+FTIMINC
-            DO J=1,NVEL
-               IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22))THEN
-                  QNIN1(J)=QNIN2(J)
-                  READ(20,*) QNIN_TMP
-                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-               ELSEIF(LBCODEI(J).EQ.32)THEN
-                  QNIN1(J)=QNIN2(J)
-                  ENIN1(J)=ENIN2(J)
-                  READ(20,*) QNIN_TMP, ENIN2(J)
-                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-               ENDIF
-            END DO
+      IF (NFLUXF.EQ.1) THEN
+         IF ((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+            WRITE(16,1112)
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
+            WRITE(16,1978)
+ 1978       FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
          ENDIF
-
-         QTRATIO=(TimeLoc-QTIME1)/FTIMINC
-         QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
-         EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-      ENDIF
-
-! kmd - added in a option to start the river information at the hot start time
-      IF((NFLUXF.EQ.1).AND.(NFFR.EQ.-1)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
-         WRITE(16,1978)
-! 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
-         QTIME1=TIMELOC
-         QTIME2=QTIME1+FTIMINC
-         DO J=1,NVEL
-            QNIN1(J)=0.D0
-            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))THEN
-               READ(20,*) QNIN1(J)
-            ELSEIF(LBCODEI(J).EQ.32)THEN
-               READ(20,*) QNIN1(J), ENIN1(J)
-            ENDIF
-         END DO
-         DO J=1,NVEL
-            QNIN2(J)=0.D0
-            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))THEN
-                READ(20,*) QNIN2(J)
-            ELSEIF(LBCODEI(J).EQ.32)THEN
-                READ(20,*) QNIN2(J), ENIN2(J)
-            ENDIF
-         END DO
-         QTRATIO=(TIMELOC-QTIME1)/FTIMINC
-         QN1=RampExtFlux1*(QNIN1+QTRATIO*(QNIN2-QNIN1))
-         EN1=RampExtFlux1*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-
-         IF(TIMELOC.GT.QTIME2) THEN
-            QTIME1=QTIME2
-            QTIME2=QTIME1+FTIMINC
-            DO J=1,NVEL
-               IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &              .OR.(LBCODEI(J).EQ.22))THEN
-                  QNIN1(J)=QNIN2(J)
-                  READ(20,*) QNIN_TMP
-                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-               ELSEIF(LBCODEI(J).EQ.32)THEN
-                  QNIN1(J)=QNIN2(J)
-                  ENIN1(J)=ENIN2(J)
-                  READ(20,*) QNIN_TMP,ENIN2(J)
-                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-               ENDIF
-            END DO
-         ENDIF
-         QTRATIO=(TIMELOC-QTIME1)/FTIMINC
-         QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
-         EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-      ENDIF
-
-C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
-
-      IF((NFLUXF.EQ.1).AND.(NFFR.GT.0)) THEN
-         DO J=1,NFFR
-            IF(FPER(J).EQ.0.) THEN
-               NCYC=0.
-            ELSE
-               NCYC=INT(TimeLoc/FPER(J))
-            ENDIF
-            ARGJ1=FAMIG(J)*(TimeLoc-DTDPHS-NCYC*FPER(J))+FFACE(J) ! kmd48.33bc - changed from DTDP to DTDPHS
-            ARGJ2=FAMIG(J)*(TimeLoc-NCYC*FPER(J))+FFACE(J)
-            RFF1=FFF(J)*RampExtFlux1
-            RFF2=FFF(J)*RampExtFlux2
-            DO I=1,NVEL
-               ARG1=ARGJ1-QNPH(J,I)
-               ARG2=ARGJ2-QNPH(J,I)
-               QN1(I)=QN1(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF1*COS(ARG1))
-               QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF2*COS(ARG2))
-            END DO
-         END DO
+         CALL hotstartNormalFlowBoundary(TimeLoc, ITHS,
+     &                                   RampExtFlux1, RampExtFlux2)
       ENDIF
 
 C...

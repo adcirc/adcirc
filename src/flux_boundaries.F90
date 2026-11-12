@@ -32,11 +32,14 @@
 !-----------------------------------------------------------------------
 module mod_flux_boundaries
 
+   use mod_normal_flow_boundary, only: rotate_normal_flux
+
    implicit none
 
    private
 
-   public :: applyBoundaryConditions
+   public :: applyBoundaryConditions, initializeNormalFlowBoundary, &
+             hotstartNormalFlowBoundary
 
    ! Whether the river radiation b.c. elevations still need to be filled
    ! from EtaDisc after flux settling
@@ -44,7 +47,195 @@ module mod_flux_boundaries
 
    real(8), parameter :: eps = epsilon(1.0d0)
 
+   integer, parameter :: NORMAL_FLOW_UNIT = 20
+
 contains
+
+!-----------------------------------------------------------------------
+!> @brief Initialize aperiodic normal flow boundary conditions (cold start)
+!>
+!> Opens fort.20 and reads the snapshot interval and the first two
+!> snapshots of normal flux (and elevation for LBCODE=32).
+!-----------------------------------------------------------------------
+   subroutine initializeNormalFlowBoundary()
+      use sizes, only: INPUTDIR
+      use global, only: FTIMINC, QTIME1, QTIME2, STATIM, &
+                        QNIN1, QNIN2, ENIN1, ENIN2
+      implicit none
+
+      open (NORMAL_FLOW_UNIT, file=trim(INPUTDIR)//'/'//'fort.20')
+      read (NORMAL_FLOW_UNIT, *) FTIMINC
+
+      QNIN1 = 0d0
+      QNIN2 = 0d0
+      call readNormalFlowSnapshot(QNIN1, ENIN1, rotate=.true.)
+      call readNormalFlowSnapshot(QNIN2, ENIN2, rotate=.true.)
+      QTIME1 = STATIM*86400.d0
+      QTIME2 = QTIME1 + FTIMINC
+
+   end subroutine initializeNormalFlowBoundary
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Restore specified normal flow boundary conditions on hotstart
+!>
+!> Computes the normal flux (QN1, QN2) and elevation (EN1, EN2) boundary
+!> values at the previous and current hotstart time levels.
+!>
+!> - NFFR = 0:  advances through fort.20 from the start of the run
+!> - NFFR = -1: starts fort.20 at the hotstart time
+!> - NFFR > 0:  evaluates the periodic forcing
+!>
+!> @param[in] TimeLoc       Simulation time of the hotstart (seconds)
+!> @param[in] ITHS          Timestep number of the hotstart
+!> @param[in] RampExtFlux1  External flux ramp at timestep ITHS-1
+!> @param[in] RampExtFlux2  External flux ramp at timestep ITHS
+!-----------------------------------------------------------------------
+   subroutine hotstartNormalFlowBoundary(TimeLoc, ITHS, RampExtFlux1, RampExtFlux2)
+      use sizes, only: INPUTDIR
+      use global, only: NFFR, FTIMINC, QTIME1, QTIME2, STATIM, DTDPHS, &
+                        QNIN1, QNIN2, ENIN1, ENIN2, QN1, QN2, EN1, EN2, &
+                        FPER, FAMIG, FFACE, FFF, QNAM, QNPH
+      use mesh, only: ICS
+      use boundaries, only: NVEL
+      implicit none
+
+      real(8), intent(in) :: TimeLoc
+      integer, intent(in) :: ITHS
+      real(8), intent(in) :: RampExtFlux1, RampExtFlux2
+      real(8) :: TimePrevious, QTRATIO
+      real(8) :: ARGJ1, ARGJ2, ARG1, ARG2, RFF1, RFF2
+      integer :: I, J, IT, NCYC
+
+      if ((NFFR == 0) .or. (NFFR == -1)) then
+         open (NORMAL_FLOW_UNIT, file=trim(INPUTDIR)//'/'//'fort.20')
+         read (NORMAL_FLOW_UNIT, *) FTIMINC
+         if (NFFR == 0) then
+            QTIME1 = STATIM*86400.d0
+         else
+            QTIME1 = TimeLoc
+         end if
+         QTIME2 = QTIME1 + FTIMINC
+
+         QNIN1(1:NVEL) = 0d0
+         QNIN2(1:NVEL) = 0d0
+         call readNormalFlowSnapshot(QNIN1, ENIN1, rotate=.false.)
+         call readNormalFlowSnapshot(QNIN2, ENIN2, rotate=.false.)
+
+         if (NFFR == 0) then
+            do IT = 1, ITHS - 1
+               call advanceNormalFlowSnapshots(dble(IT)*DTDPHS + STATIM*86400.d0, rotate=.false.)
+            end do
+            TimePrevious = dble(ITHS - 1)*DTDPHS + STATIM*86400.d0
+         else
+            TimePrevious = TimeLoc
+         end if
+
+         QTRATIO = (TimePrevious - QTIME1)/FTIMINC
+         QN1 = RampExtFlux1*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))
+         EN1 = RampExtFlux1*(ENIN1 + QTRATIO*(ENIN2 - ENIN1))
+
+         call advanceNormalFlowSnapshots(TimeLoc, rotate=.true.)
+
+         QTRATIO = (TimeLoc - QTIME1)/FTIMINC
+         QN2 = RampExtFlux2*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))
+         EN2 = RampExtFlux2*(ENIN1 + QTRATIO*(ENIN2 - ENIN1))
+
+      else if (NFFR > 0) then
+         do J = 1, NFFR
+            if (abs(FPER(J)) <= eps) then
+               NCYC = 0
+            else
+               NCYC = int(TimeLoc/FPER(J))
+            end if
+            ARGJ1 = FAMIG(J)*(TimeLoc - DTDPHS - dble(NCYC)*FPER(J)) + FFACE(J)
+            ARGJ2 = FAMIG(J)*(TimeLoc - dble(NCYC)*FPER(J)) + FFACE(J)
+            RFF1 = FFF(J)*RampExtFlux1
+            RFF2 = FFF(J)*RampExtFlux2
+            do I = 1, NVEL
+               ARG1 = ARGJ1 - QNPH(J, I)
+               ARG2 = ARGJ2 - QNPH(J, I)
+               QN1(I) = QN1(I) + rotate_normal_flux(ICS, I, QNAM(J, I)*RFF1*cos(ARG1))
+               QN2(I) = QN2(I) + rotate_normal_flux(ICS, I, QNAM(J, I)*RFF2*cos(ARG2))
+            end do
+         end do
+      end if
+
+   end subroutine hotstartNormalFlowBoundary
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Read one fort.20 snapshot of normal flux (and elevation)
+!>
+!> Reads a normal flux for each LBCODE=2,12,22 node and a normal flux and
+!> elevation for each LBCODE=32 node. Entries for other nodes are left
+!> unchanged.
+!>
+!> @param[inout] QNIN   Normal flux at each flow boundary node
+!> @param[inout] ENIN   Elevation at each flow boundary node
+!> @param[in]    rotate Apply the rotated coordinate system transform
+!-----------------------------------------------------------------------
+   subroutine readNormalFlowSnapshot(QNIN, ENIN, rotate)
+      use mesh, only: ICS
+      use boundaries, only: NVEL, LBCODEI
+      implicit none
+
+      real(8), intent(inout) :: QNIN(:), ENIN(:)
+      logical, intent(in) :: rotate
+      real(8) :: QNIN_TMP
+      integer :: J
+
+      do J = 1, NVEL
+         select case (LBCODEI(J))
+         case (2, 12, 22)
+            read (NORMAL_FLOW_UNIT, *) QNIN_TMP
+         case (32)
+            read (NORMAL_FLOW_UNIT, *) QNIN_TMP, ENIN(J)
+         case default
+            cycle
+         end select
+         if (rotate) then
+            QNIN(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
+         else
+            QNIN(J) = QNIN_TMP
+         end if
+      end do
+
+   end subroutine readNormalFlowSnapshot
+   !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Shift to the next fort.20 snapshot if TimeLoc is past QTIME2
+!>
+!> @param[in] TimeLoc Simulation time (seconds)
+!> @param[in] rotate  Apply the rotated coordinate system transform
+!-----------------------------------------------------------------------
+   subroutine advanceNormalFlowSnapshots(TimeLoc, rotate)
+      use global, only: QTIME1, QTIME2, FTIMINC, QNIN1, QNIN2, ENIN1, ENIN2
+      use boundaries, only: NVEL, LBCODEI
+      implicit none
+
+      real(8), intent(in) :: TimeLoc
+      logical, intent(in) :: rotate
+      integer :: J
+
+      if (TimeLoc > QTIME2) then
+         QTIME1 = QTIME2
+         QTIME2 = QTIME2 + FTIMINC
+         do J = 1, NVEL
+            select case (LBCODEI(J))
+            case (2, 12, 22)
+               QNIN1(J) = QNIN2(J)
+            case (32)
+               QNIN1(J) = QNIN2(J)
+               ENIN1(J) = ENIN2(J)
+            end select
+         end do
+         call readNormalFlowSnapshot(QNIN2, ENIN2, rotate)
+      end if
+
+   end subroutine advanceNormalFlowSnapshots
+   !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
 !> @brief Compute specified normal flow boundary conditions
@@ -60,17 +251,16 @@ contains
    subroutine computeSpecifiedNormalFlowBC(IT, TimeLoc, TimeH)
       use global, only: NFFR, FPER, FAMIG, FFACE, FFF, RampExtFlux, &
                         QNAM, QNPH, ENAM, ENPH, QN2, EN2, &
-                        QTIME1, QTIME2, FTIMINC, QNIN1, QNIN2, ENIN1, ENIN2, &
+                        QTIME1, FTIMINC, QNIN1, QNIN2, ENIN1, ENIN2, &
                         FluxSettlingIT, EtaDisc, ElevDisc, Eta2
       use mesh, only: NP, ICS
       use boundaries, only: NVEL, LBCODEI, NBV
-      use mod_normal_flow_boundary, only: rotate_normal_flux
       implicit none
 
       integer, intent(in) :: IT
       real(8), intent(in) :: TimeLoc, TimeH
       integer :: I, J, NCYC, NNBB
-      real(8) :: ARGJ, RFF, QTRATIO, QNIN_TMP
+      real(8) :: ARGJ, RFF, QTRATIO
 
       if (NFFR > 0) then
          do J = 1, NFFR
@@ -94,23 +284,7 @@ contains
             end do
          end do
       elseif ((NFFR == 0) .or. (NFFR == -1)) then
-         if (TimeLoc > QTIME2) then
-            QTIME1 = QTIME2
-            QTIME2 = QTIME2 + FTIMINC
-            do J = 1, NVEL
-               if ((LBCODEI(J) == 2) .or. (LBCODEI(J) == 12) &
-                   .or. (LBCODEI(J) == 22)) then
-                  QNIN1(J) = QNIN2(J)
-                  read (20, *) QNIN_TMP
-                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-               elseif (LBCODEI(J) == 32) then
-                  QNIN1(J) = QNIN2(J)
-                  ENIN1(J) = ENIN2(J)
-                  read (20, *) QNIN_TMP, ENIN2(J)
-                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-               end if
-            end do
-         end if
+         call advanceNormalFlowSnapshots(TimeLoc, rotate=.true.)
 
          QTRATIO = (TimeLoc - QTIME1)/FTIMINC
          QN2 = RampExtFlux*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))

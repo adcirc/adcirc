@@ -35,8 +35,8 @@ C
       USE SIZES
       USE GLOBAL, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
      &    en2, nddt, btime1, statim, btime2, btiminc, btime_end, qn1,
-     &    qn0, nffr, ftiminc, qnin1, enin1, qnin2, enin2, qtime1, nws,
-     &    qtime2, noute, noutv, noutc, noutge, noutgv, noutgc, nrs, qn2,
+     &    qn0, nffr, nws,
+     &    noute, noutv, noutc, noutge, noutgv, noutgc, nrs, qn2,
      &    noute, noutm, noutgw, metonly, rstime1, rstime2, rstiminc,
      &    rsnx1, rsny1, rsnx2, rsny2, ncice, cice1, cice2, cice_time1,
      &    cice_time2, cice_timinc, ctip, tip2, nscoue, nstae_g,
@@ -53,15 +53,13 @@ C
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic
       use mod_io, only: openFileForRead
-      use boundaries, only: csii, siii, nbv
-      use mesh, only: sfcx, sfcy, ycsfac, sfmx
-      use mod_normal_flow_boundary, only: rotate_normal_flux
+      use mod_flux_boundaries, only: initializeNormalFlowBoundary
       use mod_logging, only: t_log_scope, init_log_scope,
      &    allMessage, DEBUG, screenUnit, nscreen
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
-      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
+      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, DP, NM, MJU, AID4,
      &    agrid 
-      USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI, NPEBC
+      USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NPEBC
       USE HARM
       USE WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
@@ -88,7 +86,6 @@ C
       INTEGER NC1, NC2, NC3, NCELE
 
       REAL(8) :: HTOT
-      REAL(8) :: QNIN_TMP
 !kmd - Evan's updates for rivers above MSL
 !      REAL(8),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
@@ -229,31 +226,7 @@ C
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1979)
          WRITE(16,1979)
  1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
-
-         QNIN1 = 0D0
-         QNIN2 = 0D0
-         DO J=1,NVEL
-            IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22)) THEN
-               READ(20,*) QNIN_TMP
-               QNIN1(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-            ELSEIF (LBCODEI(J).EQ.32) THEN
-               READ(20,*) QNIN_TMP,ENIN1(J)
-               QNIN1(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-            ENDIF
-         END DO
-         DO J=1,NVEL
-            IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22)) THEN
-               READ(20,*) QNIN_TMP
-               QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-            ELSEIF (LBCODEI(J).EQ.32) THEN
-               READ(20,*) QNIN_TMP,ENIN2(J)
-               QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-            ENDIF
-         END DO
-         QTIME1 = STATIM*86400.D0
-         QTIME2 = QTIME1 + FTIMINC
+         CALL initializeNormalFlowBoundary()
       ENDIF
 
 C...INPUT METEOROLOGICAL INFORMATION FROM UNIT 22 OR UNIT 200 SERIES

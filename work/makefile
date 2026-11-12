@@ -874,8 +874,8 @@ $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 #  adcirc & $(PARALLEL_ADCIRC)
 
 $(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ) $(O_DIR)baroclinic.o
-$(O_DIR)cstart.o      : cstart.F $(O_DIR)baroclinic.o
-$(O_DIR)hstart.o      : hstart.F $(O_DIR)baroclinic.o
+$(O_DIR)cstart.o      : cstart.F $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o
+$(O_DIR)hstart.o      : hstart.F $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o
 $(O_DIR)transport_3d.o : transport_3d.F
 $(O_DIR)baroclinic.o  : baroclinic.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(MSG_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o
 $(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(ADC_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(O_DIR)normal_flow_boundary.o
