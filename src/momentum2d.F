@@ -184,7 +184,7 @@ C*******************************************************************************
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
-     &  ilump, H1, H2
+     &  ilump, H1, H2, IFNLCAT
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -209,6 +209,10 @@ C----- END DW
      &                       enforceUVCB
       USE SPONGELAYER
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
+      USE subgrid, ONLY: subgrid_level0, subgrid_level1
+     &   , wetFracVertETA1, wetFracVertETA2
+     &   , gridDepthVertETA1, gridDepthVertETA2
+     &   , cadvVertETA1
       use mod_logging, only: t_log_scope, init_log_scope
 C... SB
       USE VEW1D, ONLY :
@@ -256,6 +260,10 @@ C... SB
       REAL(8) WSX, WSY, fwind
       REAL(8) ZNGLHS,ZNGRHS1,ZNGRHS2
       REAL(8) DispX, DispY, CorifA
+      REAL(8) :: CADV1, CADV2, CADV3
+      REAL(8) :: DCU1DXA, DCU1DYA, DCV1DXA, DCV1DYA
+      REAL(8) :: SGS1, SGS2, SGS3
+      REAL(8) :: HG1I, HG2I, HABSMIN
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -305,6 +313,8 @@ C     WJP: initialize baroclinic pressure gradients to zero
       DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
       DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
 
+      HABSMIN = 0.8d0*H0
+
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
@@ -326,12 +336,21 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-         H1N1=H1(NM1)
-         H1N2=H1(NM2)
-         H1N3=H1(NM3)
-         H2N1=H2(NM1)
-         H2N2=H2(NM2)
-         H2N3=H2(NM3)
+         IF(subgrid_level0)THEN
+            H1N1=MAX(gridDepthVertETA1(NM1),HABSMIN)
+            H1N2=MAX(gridDepthVertETA1(NM2),HABSMIN)
+            H1N3=MAX(gridDepthVertETA1(NM3),HABSMIN)
+            H2N1=MAX(gridDepthVertETA2(NM1),HABSMIN)
+            H2N2=MAX(gridDepthVertETA2(NM2),HABSMIN)
+            H2N3=MAX(gridDepthVertETA2(NM3),HABSMIN)
+         ELSE
+            H1N1=H1(NM1)
+            H1N2=H1(NM2)
+            H1N3=H1(NM3)
+            H2N1=H2(NM1)
+            H2N2=H2(NM2)
+            H2N3=H2(NM3)
+         ENDIF
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -492,10 +511,31 @@ C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
 
 C...  Compute the advective term gradients x area for the element
          
-         U1AvgDU1DXA=U1Avg*DU1DXA
-         V1AvgDU1DYA=V1Avg*DU1DYA
-         U1AvgDV1DXA=U1Avg*DV1DXA
-         V1AvgDV1DYA=V1Avg*DV1DYA
+         IF(subgrid_level0.AND.subgrid_level1)THEN
+            CADV1=cadvVertETA1(NM1)
+            CADV2=cadvVertETA1(NM2)
+            CADV3=cadvVertETA1(NM3)
+            DCU1DXA=(CADV1*U1N1*FDX1+CADV2*U1N2*FDX2
+     &              +CADV3*U1N3*FDX3)*0.5d0
+            DCU1DYA=(CADV1*U1N1*FDY1+CADV2*U1N2*FDY2
+     &              +CADV3*U1N3*FDY3)*0.5d0
+            DCV1DXA=(CADV1*V1N1*FDX1+CADV2*V1N2*FDX2
+     &              +CADV3*V1N3*FDX3)*0.5d0
+            DCV1DYA=(CADV1*V1N1*FDY1+CADV2*V1N2*FDY2
+     &              +CADV3*V1N3*FDY3)*0.5d0
+            U1AvgDU1DXA=U1Avg*DCU1DXA
+            V1AvgDU1DYA=V1Avg*DCU1DYA
+            U1AvgDV1DXA=U1Avg*DCV1DXA
+            V1AvgDV1DYA=V1Avg*DCV1DYA
+            SGS1=MAX(-1.d0,MIN(1.d0,(CADV1-1.d0)*(H2N1-H1N1)/H2N1))
+            SGS2=MAX(-1.d0,MIN(1.d0,(CADV2-1.d0)*(H2N2-H1N2)/H2N2))
+            SGS3=MAX(-1.d0,MIN(1.d0,(CADV3-1.d0)*(H2N3-H1N3)/H2N3))
+         ELSE
+            U1AvgDU1DXA=U1Avg*DU1DXA
+            V1AvgDU1DYA=V1Avg*DU1DYA
+            U1AvgDV1DXA=U1Avg*DV1DXA
+            V1AvgDV1DYA=V1Avg*DV1DYA
+         ENDIF
 
 C...  Compute the lateral viscous terms for the element (flux formulation)
 
@@ -675,6 +715,17 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
+C...  SUBGRID LEVEL 1 STORAGE TERM -(C-1)*U*DH_G/DT/H_G (S IS DT TIMES THE RATE)
+C...  APPLIED ONLY WHEN NOLICA AND NOLICAT ARE BOTH NONZERO
+         IF(subgrid_level0.AND.subgrid_level1)THEN
+            TEMP_LV_A1=TEMP_LV_A1+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS1*U1N1
+            TEMP_LV_A2=TEMP_LV_A2+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS2*U1N2
+            TEMP_LV_A3=TEMP_LV_A3+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS3*U1N3
+            TEMP_LV_B1=TEMP_LV_B1+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS1*V1N1
+            TEMP_LV_B2=TEMP_LV_B2+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS2*V1N2
+            TEMP_LV_B3=TEMP_LV_B3+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS3*V1N3
+         ENDIF
+
 C... SB 2022-09-14
 C        For condensed nodes
 C        Remove the normal component of the load vector at the condensed nodes
@@ -733,12 +784,25 @@ C      DispY=0.D0
             ENDIF
          ENDIF
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
-            WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+            IF(subgrid_level0)THEN
+               HG1I=MAX(gridDepthVertETA1(I),HABSMIN)
+               HG2I=MAX(gridDepthVertETA2(I),HABSMIN)
+               WSX=DTO2*IFWIND*(wetFracVertETA1(I)*WSX1(I)/HG1I
+     &                         +wetFracVertETA2(I)*WSX2(I)/HG2I)
+               WSY=DTO2*IFWIND*(wetFracVertETA1(I)*WSY1(I)/HG1I
+     &                         +wetFracVertETA2(I)*WSY2(I)/HG2I)
+            ELSE
+               WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
+               WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+            ENDIF
             
 !.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-               CALL windLimiter(H2(I),fwind)
+               IF(subgrid_level0)THEN
+                  CALL windLimiter(gridDepthVertETA2(I),fwind)
+               ELSE
+                  CALL windLimiter(H2(I),fwind)
+               ENDIF
                WSX = fwind*WSX
                WSY = fwind*WSY
             ENDIF
@@ -824,7 +888,11 @@ C...  AUV12=-AUV21)
 
 C      Specified essential normal flow and free tangential slip
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2(NBDI)
+            IF(subgrid_level0)THEN
+               VelNorm=-QN2(I)/MAX(gridDepthVertETA2(NBDI),HABSMIN)
+            ELSE
+               VelNorm=-QN2(I)/H2(NBDI)
+            ENDIF
             IF (abs(norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
      &          .lt.epsilon(H2(NBDI))) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
@@ -855,7 +923,11 @@ C      Specified essential normal flow and free tangential slip
 C     Specified essential normal flow and no tangential slip
 
          IF (LBCODEI(I).GE.10.AND.LBCODEI(I).LE.19) THEN
-            VelNorm=-QN2(I)/H2(NBDI)
+            IF(subgrid_level0)THEN
+               VelNorm=-QN2(I)/MAX(gridDepthVertETA2(NBDI),HABSMIN)
+            ELSE
+               VelNorm=-QN2(I)/H2(NBDI)
+            ENDIF
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
@@ -1187,8 +1259,13 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-         QX2(I) = UU2(I)*H2(I)
-         QY2(I) = VV2(I)*H2(I)
+         IF(subgrid_level0)THEN
+            QX2(I) = UU2(I)*gridDepthVertETA2(I)
+            QY2(I) = VV2(I)*gridDepthVertETA2(I)
+         ELSE
+            QX2(I) = UU2(I)*H2(I)
+            QY2(I) = VV2(I)*H2(I)
+         ENDIF
       ENDDO
 
       RETURN

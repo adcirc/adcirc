@@ -690,6 +690,10 @@ C.... DMW
       call logMessage(ECHO,trim(scratchMessage))
       subgrid_level0 = level0
       subgrid_level1 = level1
+      IF (subgrid_level1.AND..NOT.subgrid_level0) THEN
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="subgridControl: level1 requires level0.")
+      ENDIF
       rewind(15)
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
@@ -1555,6 +1559,10 @@ C...
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                     message="Your selection of NOLIFA (a UNIT 15 input parameter) is not an allowable value.")
          ENDIF
+      ENDIF
+      IF (subgrid_level0.AND.NOLIFA.NE.2) THEN
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="subgrid requires NOLIFA=2.")
       ENDIF
       WRITE(16,9846) NOLIFA
  9846 FORMAT(/,5X,'NOLIFA = ',I3)
@@ -2524,6 +2532,12 @@ ckmd   Changed the time step to allow for negative values in
 ckmd   order to turn on the predictor-corrector algorithm.
       READ(15,*) DTDP
       IF(DTDP.LT.0.d0) THEN
+         IF (subgrid_level0) THEN
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="Subgrid corrections (level0) are not "//
+     &         "implemented for the predictor-corrector "//
+     &         "algorithm (DTDP < 0). Use DTDP > 0.")
+         ENDIF
          CPRECOR    = .TRUE.
          CGWCE_New  = .FALSE. !jgf Turn off the default.
          CME_New_NC = .FALSE. !jgf Turn off the default.

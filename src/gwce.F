@@ -426,6 +426,7 @@ C...... DW
       REAL(8) :: PHIAVG1, PHIAVG2
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
+      REAL(8) :: CUN1, CUN2, CUN3, CVN1, CVN2, CVN3, CUAvg, CVAvg, DHGDT
 
       LOG_SCOPE_TRACED("gwce_new", GWCE_TRACING)
 
@@ -1501,6 +1502,34 @@ C--- end DW
 
 C...     Complete the JX, JY terms depending on the advection formulation
          IF(CGWCE_Advec_NC) THEN        !nonconservative advection
+           IF(subgrid_level0)THEN
+              IF(subgrid_level1)THEN
+                 CUN1 = CADV1*U1N1
+                 CUN2 = CADV2*U1N2
+                 CUN3 = CADV3*U1N3
+                 CVN1 = CADV1*V1N1
+                 CVN2 = CADV2*V1N2
+                 CVN3 = CADV3*V1N3
+              ELSE
+                 CUN1 = U1N1
+                 CUN2 = U1N2
+                 CUN3 = U1N3
+                 CVN1 = V1N1
+                 CVN2 = V1N2
+                 CVN3 = V1N3
+              ENDIF
+              CUAvg = (CUN1+CUN2+CUN3)/3.d0
+              CVAvg = (CVN1+CVN2+CVN3)/3.d0
+              DHGDT = (DPAvg-DPAvgS0)/DT
+              JXAvg = JXAvg - IFNLCT*(
+     &              QX1Avg*(CUN1*FDX1+CUN2*FDX2+CUN3*FDX3)
+     &             +QY1Avg*(CUN1*FDY1+CUN2*FDY2+CUN3*FDY3))/AreaIE2
+     &             +IFNLCAT*CUAvg*DHGDT
+              JYAvg = JYAvg - IFNLCT*(
+     &              QX1Avg*(CVN1*FDX1+CVN2*FDX2+CVN3*FDX3)
+     &             +QY1Avg*(CVN1*FDY1+CVN2*FDY2+CVN3*FDY3))/AreaIE2
+     &             +IFNLCAT*CVAvg*DHGDT
+           ELSE
            JXAvg = JXAvg - IFNLCT*(
      &              QX1Avg*(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)
      &             +QY1Avg*(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3))/AreaIE2
@@ -1509,6 +1538,7 @@ C...     Complete the JX, JY terms depending on the advection formulation
      &              QX1Avg*(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)
      &             +QY1Avg*(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3))/AreaIE2
      &             +IFNLCAT*V1Avg*ESAvg/DT
+           ENDIF
          ENDIF
          IF(CGWCE_Advec_C1) THEN        !conservative v1 advection
 !JLW: adding advection corrections
