@@ -3405,13 +3405,14 @@ contains
    !  for both levels.
    !-----------------------------------------------------------------------
    subroutine RESTART_VEW64_FLUXES(TIMELOC, RAMP_PREV, RAMP_CURR)
-      use GLOBAL, only: ETA1, QN1, QN2
+      use GLOBAL, only: ETA1, QN1, QN2, NODECODE, NNODECODE
       use BOUNDARIES, only: NBOU, NVELL, NVEL, ISSUBMERGED64
       implicit none
       real(8), intent(IN) :: TIMELOC !...time of the hot start
       real(8), intent(IN) :: RAMP_PREV !...internal flux ramp at level n-1
       real(8), intent(IN) :: RAMP_CURR !...internal flux ramp at level n
       real(8), allocatable :: G1(:), G2(:), ETA2SAVE(:)
+      integer, allocatable :: NODECODESAVE(:)
       real(8) :: RAMPSAVE, GX
       logical :: TVWSAVE
       integer :: I
@@ -3428,6 +3429,13 @@ contains
       TVWSAVE = INT_TVW
       INT_TVW = .false.
 
+      !...Wet/dry state of the hot start: HOTSTART reads it into NNODECODE,
+      !   and NODECODE is set from it only in the first time step. The flux
+      !   routines test NODECODE, which here still holds its initial value,
+      !   so that dry nodes would pass weir flow.
+      NODECODESAVE = NODECODE
+      NODECODE = NNODECODE
+
       !...Flux from the level n-1 water level
       ETA2SAVE = ETA2
       ETA2 = ETA1
@@ -3439,6 +3447,7 @@ contains
 
       RAMPINTFLUX = RAMPSAVE
       INT_TVW = TVWSAVE
+      NODECODE = NODECODESAVE
 
       do I = 1, NVEL
          if (LBCODEI(I) /= 64) cycle
