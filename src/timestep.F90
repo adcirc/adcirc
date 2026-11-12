@@ -84,21 +84,11 @@ contains
       use GWCE, only: solveGWCE
       use MOMENTUM2D, only: solve2DMomentumEq
       use MOMENTUM3D, only: solve3DVSMomentumEq
-      use WETDRY, only: computeWettingAndDrying
-      use WRITE_OUTPUT, only: writeOutput2D, writeHotStart, &
-                              writeWarnElev, collectInundationData, collectMinMaxData
       use WIND, only: CLOSE_MET_FILES, getMeteorologicalForcing
-      use mod_terminate, only: terminate
       use mod_logging, only: t_log_scope, init_log_scope
-
-#ifdef CMPI
-      use HSWRITER, only: writeHotstart_through_HSwriter !st3 100711 for hsfile
-#endif
-
       use SPONGELAYER, only: updateAbsorbingLayerBoundary, applyAbsorbingSpongeLayer
-      use subgrid, only: getVertLookup
       use mod_baroclinic, only: computeBaroclinicPressureGradient, updateBaroclinicBoundaryConditions
-      use mod_flux_boundaries, only: applyBoundaryConditions
+      use mod_flux_boundaries, only: applyFluxBoundaryConditions
       use mod_transport_2d, only: SCALAR_TRANS_2D
 
       implicit none
@@ -128,7 +118,7 @@ contains
          if (CTIP) call applyTidePotentialForcing(TimeLoc, TimeH)
          call computeBaroclinicPressureGradient(TimeLoc)
 
-         call applyBoundaryConditions(IT, TimeLoc, TimeH)
+         call applyFluxBoundaryConditions(IT, TimeLoc, TimeH)
 
          call solveGWCE(it, ITIME_BGN, timeloc, timeh)
 
@@ -209,7 +199,7 @@ contains
             !!      species
             if (tidePotential%active()) then
                do I = 1, NP
-                  ARGSALT = ARGT - SALTPHA(J, I); 
+                  ARGSALT = ARGT - SALTPHA(J, I)
                   TIP2(I) = TIP2(I) + SALTMUL*SALTAMP(J, I)*cos(ARGSALT)
                end do
             else
