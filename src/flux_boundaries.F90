@@ -583,9 +583,9 @@ contains
          NY_R = SIII_OLD(IDX)
 
          ! Flux vector with normal component Q and no tangential component:
-         ! solves [NX_R NY_R; -NY_R NX_R] [QX_R; QY_R] = [Q; 0]. Written in
-         ! closed form so a boundary segment that is exactly vertical in
-         ! rotated coordinates (NY_R = 0) does not divide by zero.
+         ! solves [NX_R NY_R; -NY_R NX_R] [QX_R; QY_R] = [Q; 0]. Written
+         ! so a boundary segment that is exactly vertical in rotated coordinates
+         ! (NY_R = 0) does not divide by zero.
          NMAG2 = NX_R*NX_R + NY_R*NY_R
          QX_R = Q*NX_R/NMAG2
          QY_R = Q*NY_R/NMAG2
