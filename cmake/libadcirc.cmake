@@ -53,6 +53,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/baroclinic.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/flux_boundaries.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
