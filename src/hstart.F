@@ -92,7 +92,8 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
      &     OutputTau0, 
-     &     LoadRiver_et_WSE, River_et_WSE
+     &     LoadRiver_et_WSE, River_et_WSE, LoadManningsN
+      USE subgrid, ONLY : subgrid_level0, hotStartSubgrid
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
      &   inundationTime, inundationTime_onset, maxInunDepth, 
@@ -758,6 +759,16 @@ C           times for output if time step size has changed
 !     kmd48.33bc - added time and time step to be passed to the hotstart file
       IF(C3D) THEN
         CALL HOTSTART_3D(TimeLoc,ITHS)
+      ENDIF
+
+!     Subgrid lookups and flow depths for the hot start state
+      IF(subgrid_level0)THEN
+         IF(.NOT.LoadManningsN)THEN
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='subgrid requires the mannings_n_at_sea_floor '
+     &                //'nodal attribute')
+         ENDIF
+         CALL hotStartSubgrid()
       ENDIF
  
       DO I=1, NP
