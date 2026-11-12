@@ -1768,48 +1768,12 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
       IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
      &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
-         NBDJ=NBV(1)
-         IF ((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))    ! 64 is added for VEW  08-11-2022 SB
-     &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
-
-         IF (LBCODEI(1).EQ.30) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
-         ENDIF
-
-         IF (LBCODEI(1).EQ.32) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-!C DW, Below is an original scheme and is correct 
-!C            QFORCEJ=(QN1(1)-QN0(1))/DT
-!C     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-!C     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
-!C DW, a 2nd order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1} is used
-!C     and second order in time derivative is used
-            QFORCEJ=(QN2(1)-QN0(1))/DT2
-     &           - CELERITY*(2.0*ETAS(NBDJ) - (EN2(1)-EN0(1)))/DT2
-     &           + TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1))) 
-         ENDIF
-
-         IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
-
-C     jgf46.21 Added IBTYPE=52.
-         IF(LBCODEI(1).EQ.52) THEN
-            QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
-            IF (IT.GT.FluxSettlingIT) THEN
-C..............DMW202401 Use saved H1
-               Celerity=SQRT(G*H1(NBDJ))
-               QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
-     &              + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(1)))
-            ENDIF
-         ENDIF
-C
-         DO J=2,NVEL
+         QFORCEJ=0.d0
+         NBDJ=0
+         DO J=1,NVEL
             NBDI=NBDJ
-            NBDJ=NBV(J)
             QFORCEI=QFORCEJ
+            NBDJ=NBV(J)
 
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
      &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
@@ -1846,6 +1810,8 @@ C.................DMW202401 Use saved H1
      &                 + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(J)))
                ENDIF
             ENDIF
+
+            IF(J.EQ.1) CYCLE
 
             NCI=NodeCode(NBDI)
             NCJ=NodeCode(NBDJ)
@@ -3012,32 +2978,12 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
       IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
      &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
-         NBDJ=NBV(1)
-         IF((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))     ! 64 is added for VEW  08-22-2022 SB
-     &        QFORCEJ=(QN2(1)-QN0(1))/DT2 +
-     &          Tau0VAR(NBDJ)*QN1(1)
-
-         IF(LBCODEI(1).EQ.30) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
-            ENDIF
-
-         IF(LBCODEI(1).EQ.32) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-            QFORCEJ=(QN1(1)-QN0(1))/DT
-     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
-            ENDIF
-
-         IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
-
-         DO J=2,NVEL
+         QFORCEJ=0.d0
+         NBDJ=0
+         DO J=1,NVEL
             NBDI=NBDJ
-            NBDJ=NBV(J)
             QFORCEI=QFORCEJ
+            NBDJ=NBV(J)
 
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-22-2022 SB
      &         QFORCEJ=(QN2(J)-QN0(J))/DT2+Tau0VAR(NBDJ)*QN1(J)
@@ -3058,6 +3004,8 @@ C..............DMW202401 Use saved H1
 
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
      &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
+
+            IF(J.EQ.1) CYCLE
 
             NCI=NodeCode(NBDI)
             NCJ=NodeCode(NBDJ)
