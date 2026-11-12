@@ -450,7 +450,7 @@ NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
-ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F baroclinic.F90 timestep.F90 vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F baroclinic.F90 flux_boundaries.F90 timestep.F90 vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -878,7 +878,8 @@ $(O_DIR)cstart.o      : cstart.F $(O_DIR)baroclinic.o
 $(O_DIR)hstart.o      : hstart.F $(O_DIR)baroclinic.o
 $(O_DIR)transport.o   : transport.F
 $(O_DIR)baroclinic.o  : baroclinic.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(MSG_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o
-$(O_DIR)timestep.o    : timestep.F90 $(O_DIR)baroclinic.o $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(O_DIR)momentum3d.o $(O_DIR)wetdry.o $(WRIT_MOBJ) $(WIND_MOBJ) $(SPG_MOBJ) $(SG_MOBJ) $(TIDE_MOBJ) $(NA_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(COUP_MOBJ) $(O_DIR)normal_flow_boundary.o
+$(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(ADC_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(O_DIR)normal_flow_boundary.o
+$(O_DIR)timestep.o    : timestep.F90 $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(O_DIR)momentum3d.o $(O_DIR)wetdry.o $(WRIT_MOBJ) $(WIND_MOBJ) $(SPG_MOBJ) $(SG_MOBJ) $(TIDE_MOBJ) $(NA_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(COUP_MOBJ)
 ifeq ($(NETCDF),enable)
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
 else
