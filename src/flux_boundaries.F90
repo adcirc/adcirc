@@ -573,23 +573,24 @@ contains
       integer, intent(in) :: IDX
       real(8), intent(in) :: Q
 
-      real(8) :: QX_R, QY_R, TAUX_R, TAUY_R
+      real(8) :: QX_R, QY_R, NMAG2
       real(8) :: QX_ROT, QY_ROT
       real(8) :: VO(2), VR(2)
       real(8) :: NX_R, NY_R
 
       select case (ICS)
       case (20:24)
-         ! Compute rotated-coordinate normals
+         ! Boundary normal in rotated coordinates
          NX_R = CSII_OLD(IDX)/SFMX(NBV(IDX))
          NY_R = SIII_OLD(IDX)
 
-         TAUX_R = -1.0d0*NY_R
-         TAUY_R = NX_R
-
-         ! Solve for QX1_R and QY1_R
-         QY_R = Q/(((-1.0d0*TAUY_R)/TAUX_R)*NX_R + NY_R)
-         QX_R = -TAUY_R*QY_R/TAUX_R
+         ! Flux vector with normal component Q and no tangential component:
+         ! solves [NX_R NY_R; -NY_R NX_R] [QX_R; QY_R] = [Q; 0]. Written in
+         ! closed form so a boundary segment that is exactly vertical in
+         ! rotated coordinates (NY_R = 0) does not divide by zero.
+         NMAG2 = NX_R*NX_R + NY_R*NY_R
+         QX_R = Q*NX_R/NMAG2
+         QY_R = Q*NY_R/NMAG2
 
          if (IFSPROTS == 1) then
             VO = [QX_R, QY_R]
