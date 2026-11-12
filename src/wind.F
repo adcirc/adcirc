@@ -7978,9 +7978,17 @@ C.... CPB 10/2023: reorganized this subroutine to make it more readable
 C.... as well as to improve input for TACC
 C----------------------------------------------------------------------
       use mod_datetime, only: operator(+)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       INTEGER,INTENT(IN) :: NWS
-      
+
+      ! The forcing files are indexed by date, so a reference date is required
+      IF (.NOT.basedatetime%valid()) THEN
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='NWS=14 requires a valid base_date in the '
+     &      //'fort.15 netCDF metadata.')
+      ENDIF
+
       ! Initialise the datetime
       CurDT = basedatetime + t_timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
@@ -9228,6 +9236,8 @@ C----------------------------------------------------------------------
 #endif
       USE SIZES, ONLY : MYPROC
       use mod_datetime, only: operator(==), operator(+)
+      use mod_date_parsing, only: parse_datetime_lenient
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer :: iret, iter
       INTEGER,INTENT(INOUT) :: NC_ID
@@ -9267,6 +9277,11 @@ C----------------------------------------------------------------------
             do NT_OUT = 1,TL
                if (trim(str_date).eq.TimeStr(NT_OUT)) exit
             enddo
+            if (NT_OUT > TL) then
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='The start time '//trim(str_date)//
+     &            ' was not found in '//trim(fileN)//'.')
+            endif
             call logMessage(ECHO,'Starting from '//TimeStr(NT_OUT))
             DEALLOCATE( TIMESTR )
          ELSEIF (Tvar.eq.'refdate') THEN
@@ -9277,16 +9292,28 @@ C----------------------------------------------------------------------
             CALL logMessage(ECHO,"fort.22 provides a reference "
      &          //"date. Starting time index will be calculated.")
             ALLOCATE( NCTIMES(TL) )
-            refdate = t_datetime(trim(Tformat))
+            refdate = parse_datetime_lenient(Tformat)
+            IF (.NOT.refdate%valid()) THEN
+               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='Invalid reference date "'//trim(Tformat)
+     &            //'" for '//trim(fileN)//' in the fort.22.')
+            ENDIF
             CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
             DO NT_OUT = 1,TL
+               ! nint: times stored as reals may be a hair below the
+               ! whole second
                stepdate = refdate +
-     &                    t_timedelta(seconds=INT(NCTIMES(NT_OUT)))
+     &                    t_timedelta(seconds=NINT(NCTIMES(NT_OUT)))
                IF (stepdate == curDT) THEN
                   EXIT
                ENDIF
             ENDDO
+            IF (NT_OUT > TL) THEN
+               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='The start time '//trim(curDT%to_iso_string())
+     &            //' was not found in '//trim(fileN)//'.')
+            ENDIF
             DEALLOCATE( NCTIMES )
          else
             ! If neither of those two things are true we just assume

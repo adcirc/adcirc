@@ -184,18 +184,13 @@ C-----------------------------------------------------------------------
       real(8),allocatable :: Lonc(:), Lon(:), Latc(:), Lat(:), Lats(:)
       type(t_timedelta) :: DT
       type(t_datetime)  :: TNDT, TNDT1
-      character(len=16) :: TSS
 
       if (BC3D_IT > 1) then
          ! Check times if not first iteration
          call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
          ! Get current and next date times and update BC3D_DT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
-         TNDT = t_datetime(trim(TSS), "%Y-%m-%d %H:%M")
-         call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
-     &      start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
-         TNDT1 = t_datetime(trim(TSS), "%Y-%m-%d %H:%M")
+         TNDT = BC3D_Time(NC_ID, Temp_ID, BC3D_IT)
+         TNDT1 = BC3D_Time(NC_ID, Temp_ID, BC3D_IT+densityTimeIterator)
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
@@ -214,24 +209,29 @@ C-----------------------------------------------------------------------
       call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
       BC3D_DT = 0d0
       if (iden.gt.0) then
+      ! The start time comes from the base_date metadata
+      if (.not.CurDT%valid()) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='NetCDF BC3D forcing requires a valid base_date '
+     &      //'in the fort.15 netCDF metadata.')
+      endif
       ! Let's get the start time index
       do BC3D_IT = 1,NT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
-         TNDT = t_datetime(trim(TSS), "%Y-%m-%d %H:%M")
+         TNDT = BC3D_Time(NC_ID, Temp_ID, BC3D_IT)
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
       IF (DT%total_seconds().LT.0) THEN
          BC3D_IT = BC3D_IT - 1
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = CurDT
       ENDIF
+      if (BC3D_IT + densityTimeIterator > NT) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The BC3D netCDF file does not cover the '
+     &      //'simulation start time '//trim(CurDT%to_iso_string()))
+      endif
       !write(16,*) 'bc3d_it = ',bc3d_it
-      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
-     &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
-      TNDT1 = t_datetime(trim(TSS), "%Y-%m-%d %H:%M")
+      TNDT1 = BC3D_Time(NC_ID, Temp_ID, BC3D_IT+densityTimeIterator)
       DT = TNDT1 - TNDT 
       BC3D_DT = DT%total_seconds()
       endif
@@ -462,6 +462,33 @@ C-----------------------------------------------------------------------
           if (abs(IDEN).ne.7) deallocate(Lonc,Latc)
           if (abs(IDEN).eq.6) deallocate(Lats)
       endif
+      contains
+
+      !> Read and validate the date string at time index IT of the BC3D file
+      type(t_datetime) function BC3D_Time(NC_ID, Temp_ID, IT)
+     &   result(T)
+      use mod_date_parsing, only: parse_datetime_lenient
+      implicit none
+      integer, intent(in) :: NC_ID, Temp_ID, IT
+      character(len=64) :: TSS
+      character(len=16) :: itstr
+
+      if (SL > len(TSS)) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The BC3D netCDF time strings are too long.')
+      endif
+      TSS = ' '
+      call check_err(nf90_get_var(nc_id, Temp_ID,
+     &               TSS(1:SL),start=[1, IT],count=[SL, 1]))
+      T = parse_datetime_lenient(TSS)
+      if (.not.T%valid()) then
+         write(itstr,'(i0)') IT
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid time "'//trim(TSS)//'" at index '
+     &      //trim(itstr)//' of the BC3D netCDF file.')
+      endif
+      end function BC3D_Time
+
       END SUBROUTINE Get_LonLatDepthTime
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
