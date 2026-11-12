@@ -1057,10 +1057,9 @@ C----------------------------------------------------------------------
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
      &   loadManningsN, iflinbf, ifnlbf, ifhybf
-      use global, only : cprecor
       use wetdry, only : habsmin
       use mod_subgrid, only: subgrid_level0, gridDepthVertETA2
-     &   , subgrid_validate, subgrid_initialize, subgrid_update
+     &   , subgrid_initialize, subgrid_update
      &   , subgrid_cold_start
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
@@ -1123,8 +1122,6 @@ C----------------------------------------------------------------------
       END DO
 
 !JLW: adding subgrid lookup table read in
-      call subgrid_validate(nolifa=nolifa, predictor_corrector=cprecor,
-     &   load_mannings_n=loadManningsN)
       IF(subgrid_level0.EQV..true.)THEN
          ! Set all nodes to wet by default.
          nnodecode(:)=1

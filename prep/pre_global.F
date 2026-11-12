@@ -320,12 +320,8 @@ Casey 180318: Added NWS=13
        
 
 
-!JLW: add subgrid namelist control
+!JLW: add subgrid namelist control (mod_subgrid holds the values)
       logical :: foundSubgridControlNamelist = .false.
-      character(200) :: subgridFilename = 'null'
-      logical :: level0 = .true. 
-      logical :: level1 = .false.
-      logical :: phi_time_derivative = .false.
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,

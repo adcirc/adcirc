@@ -92,8 +92,8 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
      &     OutputTau0, 
-     &     LoadRiver_et_WSE, River_et_WSE, LoadManningsN
-      USE mod_subgrid, ONLY : subgrid_level0, subgrid_validate,
+     &     LoadRiver_et_WSE, River_et_WSE
+      USE mod_subgrid, ONLY : subgrid_level0,
      &   subgrid_initialize, subgrid_hot_start, gridDepthVertETA1,
      &   gridDepthVertETA2
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
@@ -762,9 +762,6 @@ C           times for output if time step size has changed
       IF(C3D) THEN
         CALL HOTSTART_3D(TimeLoc,ITHS)
       ENDIF
-
-      CALL subgrid_validate(nolifa=NOLIFA, predictor_corrector=CPRECOR,
-     &   load_mannings_n=LoadManningsN)
 
 !     Subgrid values and flow depths H1, H2 at the hot-start
 !     elevations. They replace H1, H2 = DP + IFNLFA*ETA set above and,

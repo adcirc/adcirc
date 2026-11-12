@@ -513,6 +513,7 @@ C---------------------------------------------------------------------
       USE PREP_WEIR
       USE NODALATTRIBUTES, ONLY : outputTau0
       use memory_usage
+      use mod_subgrid, only : subgrid_read_namelist
       IMPLICIT NONE
 
 C    ===================================================================
@@ -568,7 +569,7 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
 !JLW: adding subgrid control namelist
       integer :: ios_subgrid
-      namelist /subgridControl/ subgridFilename, level0, level1, phi_time_derivative
+      character(len=256) :: ios_subgrid_msg
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
@@ -739,15 +740,10 @@ Casey 180318: Added NWS=13
       rewind(15)  !Return to the top of the fort.15 file
 
 !JLW: adding subgrid control namelist
-      READ(UNIT = 15, NML = subgridControl,IOSTAT = ios_subgrid)
-      if ( ios_subgrid.ge.0) then
-         foundSubgridControlNamelist = .true.
-         call logMessage(INFO,
-     &         'The subgridControl namelist was found.')
-      else
-         call logMessage(INFO,
-     &         'The subgridControl namelist was not found.')
-      endif
+!     mod_subgrid reads the namelist, so adcprep has the same defaults
+!     and the same stop on a read error as adcirc and padcirc
+      call subgrid_read_namelist(15, ios_subgrid, ios_subgrid_msg)
+      foundSubgridControlNamelist = (ios_subgrid.eq.0)
       rewind(15)  !Return to the top of the fort.15 file
 
       read(unit=15,nml=inundationOutputControl,iostat=ios)

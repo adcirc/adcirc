@@ -1793,6 +1793,8 @@ C---------------------------------------------------------------------------C
       USE HARM, ONLY : NAMEFR
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
       use nodalattributes, only : outputTau0
+      use mod_subgrid, only : subgridFilename, subgrid_level0,
+     &   subgrid_level1, phi_time_derivative
       IMPLICIT NONE
       integer(8) :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
@@ -2388,8 +2390,8 @@ Casey 180318: Added NWS=13
             WRITE(15,*)
      &         "&subgridControl",
      &         " subgridFilename='",trim(adjustl(subgridFilename)),
-     &         "' level0=",level0,
-     &         " level1=",level1,
+     &         "' level0=",subgrid_level0,
+     &         " level1=",subgrid_level1,
      &         " phi_time_derivative=",phi_time_derivative," /"
          endif
 

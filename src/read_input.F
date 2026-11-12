@@ -165,7 +165,7 @@ Casey 251212: Adding time control.
 C.....SB
      &     activateVEW1DChannelWetPerimeter,
 C ....DW
-     &     LoadAbsLayerSigma, FoundAbsLayerSigma 
+     &     LoadAbsLayerSigma, FoundAbsLayerSigma, LoadManningsN
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
 C ... END DW
       USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, ALLOC_BC3D_to_2D, 
@@ -190,7 +190,7 @@ Casey 180318: Added NWS=13
 #endif
 !JLW: add subgrid
       use iso_fortran_env, only: output_unit
-      USE mod_subgrid, only: subgrid_read_namelist
+      USE mod_subgrid, only: subgrid_read_namelist, subgrid_validate
       use mod_tidepotential, only: tidePotential, t_tidePotential
       use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
      &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
@@ -4839,6 +4839,10 @@ C...
 C...  CLOSE FORT.15
 C...
       CLOSE(15)
+
+!...  Stop here if this input does not support the subgrid options
+      call subgrid_validate(nolifa=NOLIFA, predictor_corrector=CPRECOR,
+     &   load_mannings_n=LoadManningsN, nddt=NDDT)
 
 !...  When using the consistent matrix, we need to pre-compute the CSR positions
       if (ILUMP==0) call compute_csr_positions()
