@@ -1068,6 +1068,8 @@ C----------------------------------------------------------------------
      &                   , wetDepthVertETA2
      &                   , gridDepthVertTab
      &                   , phi_time_derivative, dphidt
+     &                   , subgrid_level1, wetFracVertETA1, wetFracVertETA2
+     &                   , gridDepthVertETA1, cadvVertETA1, cadvVertETA2
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
       integer :: nc1, nc2, nc3  ! nodecodes around the element
@@ -1265,6 +1267,10 @@ C----------------------------------------------------------------------
                   endif
                endif
             enddo
+            ! Previous-level lookups for the first time step
+            wetFracVertETA1 = wetFracVertETA2
+            gridDepthVertETA1 = gridDepthVertETA2
+            if(subgrid_level1) cadvVertETA1 = cadvVertETA2
          endif
 #else
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
