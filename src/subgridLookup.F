@@ -93,8 +93,6 @@
       ! Grid-averaged Manning's n, used above the top of the table
       REAL(8), DIMENSION(:), ALLOCATABLE :: manningAvg
       LOGICAL :: haveManningAvg = .false.
-      ! Minimum depth in depth array used to preprocess lookup table 
-      REAL(8) :: minDepth
       ! Maximum depth in depth array used to preprocess lookup table 
       REAL(8) :: maxDepth
 
@@ -444,11 +442,11 @@
                      cfVertETA2(i) = cfVertTab(i,numPhi)
                   ENDIF
                ENDIF
-            ELSEIF(wetFracVertTab(i,numPhi-numGreater).NE.
-!JLW: as long as the depth we are indexing is not equal to the minimum
-!depth that we used to calculate the subgrid lookup table we interpolate
-!between depths to find subgrid values
-     &         minDepth)THEN
+            ELSEIF(wetFracVertTab(i,numPhi-numGreater+1).GT.
+!     eta2 lies between the elevations at which two consecutive phi
+!     levels are reached: interpolate. The test guards the division against
+!     two equal (or decreasing) levels, which a monotone table never has here
+     &         wetFracVertTab(i,numPhi-numGreater))THEN
                wetFracVertETA2(i) = ((eta2(i)
      &            - wetFracVertTab(i,numPhi-numGreater))
      &            /(wetFracVertTab(i,numPhi-numGreater+1)
@@ -495,8 +493,7 @@
      &               + cfVertTab(i,numPhi-numGreater))
                ENDIF
             ELSE
-!JLW: if the current water level is equal to the first depth of the
-!array wet set our averaged variables to fully wet
+!     degenerate table interval (equal levels): use the upper level
                wetFracVertETA2(i) = setPhi(numPhi-numGreater+1)
                gridDepthVertETA2(i) = 
      &            gridDepthVertTab(i,numPhi-numGreater+1)
@@ -521,6 +518,37 @@
 !----------------------------------------------------------------------
       end subroutine getVertLookup
 !----------------------------------------------------------------------
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     HOT START: read the table if needed and set the lookups for the
+!     two time levels in the hot start file, the previous level from
+!     ETA1 and the current level from ETA2, then the flow depths.
+!----------------------------------------------------------------------
+      subroutine hotStartSubgrid()
+      use mesh, only : np
+      use global, only : eta1, H1, H2
+      implicit none
+      REAL(8), DIMENSION(:), ALLOCATABLE :: eta2Save
+
+      IF(.NOT.ALLOCATED(subgridVertList)) CALL readSubgridLookup()
+      IF(phi_time_derivative)THEN
+         dphidt = 1
+      ELSE
+         dphidt = 0
+      ENDIF
+      CALL initVar()
+      ALLOCATE(eta2Save(np))
+      eta2Save = eta2
+      eta2 = eta1
+      CALL getVertLookup()
+      eta2 = eta2Save
+      CALL getVertLookup()
+      DEALLOCATE(eta2Save)
+      H1 = gridDepthVertETA1
+      H2 = gridDepthVertETA2
+!----------------------------------------------------------------------
+      end subroutine hotStartSubgrid
 !----------------------------------------------------------------------
 
       end module subgrid
