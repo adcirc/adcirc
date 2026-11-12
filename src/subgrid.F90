@@ -42,8 +42,9 @@ module mod_subgrid
 
    private
 
-   !> Lookup table file name (namelist &subgridControl)
-   character(len=200) :: subgridFilename = 'null'
+   !> Lookup table file name (namelist &subgridControl; adcprep copies the
+   !> namelist values into the subdomain fort.15 files)
+   character(len=200), public, protected :: subgridFilename = 'null'
    !> Enable the subgrid corrections to wetting/drying, mass and the gravity term
    !> (namelist key level0)
    logical, public, protected :: subgrid_level0 = .false.
@@ -51,7 +52,7 @@ module mod_subgrid
    !> key level1). After subgrid_validate, subgrid_level1 implies subgrid_level0.
    logical, public, protected :: subgrid_level1 = .false.
    !> Include the dphi/dt * dzeta/dt term in the GWCE
-   logical :: phi_time_derivative = .false.
+   logical, public, protected :: phi_time_derivative = .false.
    !> 1 if phi_time_derivative, 0 otherwise; multiplies the dphi/dt term.
    !> Set by subgrid_read_namelist.
    integer, public, protected :: dphidt = 0
@@ -131,10 +132,12 @@ module mod_subgrid
 contains
 
    !=====================================================================
-   !> \brief Read the &subgridControl namelist from an open unit and echo
-   !>        the values.
+   !> \brief Read the &subgridControl namelist from an open unit.
    !>
-   !> A missing namelist (end of file) leaves the defaults in place.
+   !> A missing namelist (end of file) leaves the defaults in place. Any
+   !> other read error, such as a misspelled variable name, stops the run.
+   !> Echoes the values, and writes a WARNING if subgridFilename is set
+   !> while level0 is off.
    !> \param[in]    unit    unit to read from (positioned by the caller)
    !> \param[out]   ios     iostat of the read
    !> \param[inout] iomsg   iomsg of the read (unchanged if the read
@@ -142,7 +145,8 @@ contains
    !=====================================================================
    subroutine subgrid_read_namelist(unit, ios, iomsg)
       use global, only: logNamelistReadStatus
-      use mod_logging, only: logMessage, ECHO, t_log_scope, init_log_scope
+      use mod_logging, only: logMessage, allMessage, ECHO, WARNING, t_log_scope, init_log_scope
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer, intent(in) :: unit
       integer, intent(out) :: ios
@@ -158,6 +162,10 @@ contains
       level1 = subgrid_level1
       read (unit=unit, nml=subgridControl, iostat=ios, iomsg=iomsg)
       call logNamelistReadStatus('subgridControl', ios, iomsg)
+      if (ios > 0) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Could not read the subgridControl namelist in fort.15: "//trim(iomsg))
+      end if
       subgrid_level0 = level0
       subgrid_level1 = level1
       dphidt = merge(1, 0, phi_time_derivative)
@@ -169,23 +177,31 @@ contains
       call logMessage(ECHO, trim(scratchMessage))
       write (scratchMessage, *) "phi_time_derivative=", phi_time_derivative
       call logMessage(ECHO, trim(scratchMessage))
+      if (subgridFilename /= 'null' .and. .not. subgrid_level0) then
+         call allMessage(WARNING, "subgridControl: subgridFilename='"//trim(subgridFilename)// &
+                         "' is set but level0=.false.; subgrid corrections are off. "// &
+                         "Set level0=.true. to use the table.")
+      end if
    end subroutine subgrid_read_namelist
 
    !=====================================================================
    !> \brief Stop at startup if the subgrid configuration is not supported.
    !>
-   !> The cold start and the hot start call it before the subgrid setup.
+   !> READ_INPUT calls it once at its end, before the cold start or the
+   !> hot-start read.
    !> \param[in] nolifa              finite amplitude and wetting/drying option
    !> \param[in] predictor_corrector .true. if fort.15 gives DTDP < 0
    !> \param[in] load_mannings_n     .true. if mannings_n_at_sea_floor is loaded
+   !> \param[in] nddt                time-varying bathymetry option (must be 0)
    !=====================================================================
-   subroutine subgrid_validate(nolifa, predictor_corrector, load_mannings_n)
+   subroutine subgrid_validate(nolifa, predictor_corrector, load_mannings_n, nddt)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use mod_logging, only: t_log_scope, init_log_scope
       implicit none
       integer, intent(in) :: nolifa
       logical, intent(in) :: predictor_corrector
       logical, intent(in) :: load_mannings_n
+      integer, intent(in) :: nddt
 
       LOG_SCOPE_TRACED("subgrid_validate", SUBGRID_TRACING)
 
@@ -211,6 +227,11 @@ contains
       if (.not. load_mannings_n) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
                         message='subgrid requires the mannings_n_at_sea_floor nodal attribute; add it to fort.13 and fort.15.')
+      end if
+      if (nddt /= 0) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="subgrid does not support time-varying bathymetry "// &
+                        "(NDDT /= 0); set NDDT = 0.")
       end if
    end subroutine subgrid_validate
 
@@ -277,16 +298,17 @@ contains
    !> Sets numPhi, setPhi, the per-vertex table arrays (cf or cmf and cadv
    !> depending on level1, H_G, H_W, the level elevations), isSubgridVert
    !> and, if present, manningAvg. In parallel, nodes_lg maps the global
-   !> vertex numbers to local ones. Stops if the file does not exist.
+   !> vertex numbers to local ones. Stops with the file and variable names if
+   !> the file is missing or a read fails.
    !=====================================================================
    subroutine read_table()
 #ifdef ADCNETCDF
       use netcdf, only: nf90_open, nf90_close, nf90_inq_dimid, nf90_inquire_dimension, &
-                        nf90_inq_varid, nf90_get_var, NF90_NOWRITE, NF90_NOERR
-      use netcdf_error, only: check_err
+                        nf90_inq_varid, nf90_get_var, nf90_strerror, NF90_NOWRITE, NF90_NOERR
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use mod_logging, only: allMessage, logMessage, WARNING, INFO, t_log_scope, init_log_scope
       use mesh, only: np
+      use global, only: np_g
       implicit none
       integer :: numVerts
       integer :: nc_id, nc_var, nc_err
@@ -300,14 +322,31 @@ contains
 
       inquire (file=trim(subgridFilename), exist=file_exists)
       if (.not. file_exists) then
-         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="subgrid lookup file does not exist")
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="The subgrid table '"//trim(subgridFilename)//"' does not exist; check subgridFilename.")
       end if
 
-      call check_err(nf90_open(trim(subgridFilename), NF90_NOWRITE, nc_id))
-      call check_err(nf90_inq_dimid(nc_id, "numNode", nc_var))
-      call check_err(nf90_inquire_dimension(nc_id, nc_var, len=numVerts))
-      call check_err(nf90_inq_dimid(nc_id, "numPhi", nc_var))
-      call check_err(nf90_inquire_dimension(nc_id, nc_var, len=numPhi))
+      nc_err = nf90_open(trim(subgridFilename), NF90_NOWRITE, nc_id)
+      if (nc_err /= NF90_NOERR) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Could not open the subgrid table '"//trim(subgridFilename)// &
+                        "': "//trim(nf90_strerror(nc_err)))
+      end if
+      call check_nc(nf90_inq_dimid(nc_id, "numNode", nc_var), "numNode")
+      call check_nc(nf90_inquire_dimension(nc_id, nc_var, len=numVerts), "numNode")
+      if (numVerts /= np_g) then
+         write (scratchMessage, '(a,a,a,i0,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+            "' has ", numVerts, " vertices but the mesh has ", np_g, &
+            "; regenerate the table for this fort.14."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(scratchMessage))
+      end if
+      call check_nc(nf90_inq_dimid(nc_id, "numPhi", nc_var), "numPhi")
+      call check_nc(nf90_inquire_dimension(nc_id, nc_var, len=numPhi), "numPhi")
+      if (numPhi < 2) then
+         write (scratchMessage, '(a,a,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+            "' has ", numPhi, " phi levels; regenerate the table with at least 2."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(scratchMessage))
+      end if
 
       ! global vertex number of each local vertex
       allocate (lg(np))
@@ -315,8 +354,8 @@ contains
 
       if (allocated(setPhi)) deallocate (setPhi)
       allocate (setPhi(numPhi))
-      call check_err(nf90_inq_varid(nc_id, "phiSet", nc_var))
-      call check_err(nf90_get_var(nc_id, nc_var, setPhi))
+      call check_nc(nf90_inq_varid(nc_id, "phiSet", nc_var), "phiSet")
+      call check_nc(nf90_get_var(nc_id, nc_var, setPhi), "phiSet")
 
       if (subgrid_level1) then
          call read_vertex_table(nc_id, "cmfVertex", numVerts, lg, fricVertTab)
@@ -329,8 +368,8 @@ contains
       call read_vertex_table(nc_id, "wetFractionVertex", numVerts, lg, wetFracVertTab)
 
       allocate (globalSubVertList(numVerts))
-      call check_err(nf90_inq_varid(nc_id, "binaryVertexList", nc_var))
-      call check_err(nf90_get_var(nc_id, nc_var, globalSubVertList))
+      call check_nc(nf90_inq_varid(nc_id, "binaryVertexList", nc_var), "binaryVertexList")
+      call check_nc(nf90_get_var(nc_id, nc_var, globalSubVertList), "binaryVertexList")
       if (allocated(isSubgridVert)) deallocate (isSubgridVert)
       allocate (isSubgridVert(np))
       isSubgridVert(:) = globalSubVertList(lg) == 1
@@ -340,7 +379,7 @@ contains
       if (allocated(manningAvg)) deallocate (manningAvg)
       if (nf90_inq_varid(nc_id, "manningAvg", nc_var) == NF90_NOERR) then
          allocate (globalVertList(numVerts))
-         call check_err(nf90_get_var(nc_id, nc_var, globalVertList))
+         call check_nc(nf90_get_var(nc_id, nc_var, globalVertList), "manningAvg")
          allocate (manningAvg(np))
          manningAvg(:) = globalVertList(lg)
          deallocate (globalVertList)
@@ -349,6 +388,8 @@ contains
          call allMessage(WARNING, "subgrid table has no manningAvg; "// &
                          "above the top level the friction stays at the top-level value")
       end if
+      call validate_table(lg)
+      if (subgrid_level1) call warn_cadv_below_one(lg)
 
       nc_err = nf90_close(nc_id)
       write (scratchMessage, '(a,a,a,i0,a)') "Read the subgrid table '", trim(subgridFilename), &
@@ -371,6 +412,161 @@ contains
 
 #ifdef ADCNETCDF
    !=====================================================================
+   !> \brief Stop if the table read by read_table cannot be used.
+   !>
+   !> The lookups need finite, strictly increasing phi levels and, at every subgrid
+   !> vertex, finite and non-decreasing elevations (wetFractionVertex) and
+   !> grid-averaged depths (gridTotWatDepthVertex). Equal neighbouring
+   !> values are allowed; the interval that the forward and inverse lookups
+   !> find still has a nonzero width. The other columns read at subgrid
+   !> vertices (wet-averaged depth, friction and, under level1, cadv) must
+   !> be finite, in any order. A magnitude of 1e30 or more (the fill value
+   !> of the table generator) fails the check in all of these columns.
+   !> manningAvg, if present, must be finite and positive at subgrid
+   !> vertices. The finiteness test comes before each comparison, so a NaN
+   !> cannot raise a floating-point trap before the message is written.
+   !> \param[in] lg global vertex number of each local vertex (np)
+   !=====================================================================
+   subroutine validate_table(lg)
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_scope, init_log_scope
+      implicit none
+      integer, intent(in) :: lg(:)
+      integer :: i
+      logical :: valid
+      character(len=9) :: fricName
+      character(len=1024) :: scratchMessage
+
+      LOG_SCOPE_TRACED("subgrid_validate_table", SUBGRID_TRACING)
+
+      valid = all(ieee_is_finite(setPhi))
+      if (valid) valid = all(setPhi(2:numPhi) > setPhi(1:numPhi - 1))
+      if (.not. valid) then
+         write (scratchMessage, '(a,a,a)') "The phiSet values in the subgrid table '", &
+            trim(subgridFilename), "' are not finite and strictly increasing; regenerate the table."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(scratchMessage))
+      end if
+      if (subgrid_level1) then
+         fricName = "cmfVertex"
+      else
+         fricName = "cfVertex"
+      end if
+      do i = 1, size(isSubgridVert)
+         if (.not. isSubgridVert(i)) cycle
+         if (.not. valid_row(wetFracVertTab(i, :))) call bad_row(lg(i), "wetFractionVertex")
+         if (.not. valid_row(gridDepthVertTab(i, :))) call bad_row(lg(i), "gridTotWatDepthVertex")
+         if (.not. finite_row(wetDepthVertTab(i, :))) call bad_value(lg(i), "wetTotWatDepthVertex")
+         if (.not. finite_row(fricVertTab(i, :))) call bad_value(lg(i), trim(fricName))
+         if (subgrid_level1) then
+            if (.not. finite_row(cadvVertTab(i, :))) call bad_value(lg(i), "cadvVertex")
+         end if
+         if (allocated(manningAvg)) then
+            valid = ieee_is_finite(manningAvg(i))
+            if (valid) valid = manningAvg(i) > 0.d0
+            if (.not. valid) then
+               write (scratchMessage, '(a,a,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+                  "' has a non-finite or non-positive manningAvg at node ", lg(i), "; regenerate the table."
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(scratchMessage))
+            end if
+         end if
+      end do
+
+   contains
+
+      !> .true. if every value of the row is finite and of magnitude below 1e30
+      pure logical function finite_row(row) result(valid)
+         implicit none
+         real(8), intent(in) :: row(:)
+
+         valid = all(ieee_is_finite(row))
+         if (valid) valid = all(abs(row) < 1.d30)
+      end function finite_row
+
+      !> .true. if finite_row(row) and the values do not decrease along the row
+      pure logical function valid_row(row) result(valid)
+         implicit none
+         real(8), intent(in) :: row(:)
+         integer :: n
+
+         n = size(row)
+         valid = finite_row(row)
+         if (valid) valid = all(row(2:n) >= row(1:n - 1))
+      end function valid_row
+
+      subroutine bad_row(node, name)
+         implicit none
+         integer, intent(in) :: node
+         character(len=*), intent(in) :: name
+
+         write (scratchMessage, '(a,a,a,a,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+            "' has a non-finite, fill-valued (|x| >= 1e30) or decreasing ", name, &
+            " row at node ", node, "; regenerate the table."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(scratchMessage))
+      end subroutine bad_row
+
+      subroutine bad_value(node, name)
+         implicit none
+         integer, intent(in) :: node
+         character(len=*), intent(in) :: name
+
+         write (scratchMessage, '(a,a,a,a,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+            "' has a non-finite or fill-valued (|x| >= 1e30) ", name, &
+            " row at node ", node, "; regenerate the table."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=trim(scratchMessage))
+      end subroutine bad_value
+   end subroutine validate_table
+
+   !=====================================================================
+   !> \brief Warn if the advection coefficient C_adv is below 1 anywhere in
+   !>        the table rows of the subgrid vertices (level1).
+   !>
+   !> A consistent table has C_adv >= 1, so values below 1 point to a
+   !> defect in the table generator. The run continues with the table as
+   !> read. Call after validate_table, which ensures the rows are finite.
+   !> \param[in] lg global vertex number of each local vertex (np)
+   !=====================================================================
+   subroutine warn_cadv_below_one(lg)
+      use mod_logging, only: allMessage, WARNING, t_log_scope, init_log_scope
+      implicit none
+      integer, intent(in) :: lg(:)
+      integer :: i
+      integer :: numBelow
+      integer :: worstNode
+      real(8) :: rowMin
+      real(8) :: worst
+      character(len=1024) :: scratchMessage
+
+      LOG_SCOPE_TRACED("subgrid_warn_cadv_below_one", SUBGRID_TRACING)
+
+      numBelow = 0
+      worst = 1.d0
+      worstNode = 0
+      do i = 1, size(isSubgridVert)
+         if (.not. isSubgridVert(i)) cycle
+         rowMin = minval(cadvVertTab(i, :))
+         if (rowMin < 1.d0) then
+            numBelow = numBelow + 1
+            if (rowMin < worst) then
+               worst = rowMin
+               worstNode = lg(i)
+            end if
+         end if
+      end do
+      if (numBelow == 0) return
+#ifdef CMPI
+      write (scratchMessage, '(a,a,a,i0,a,g0.8,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+         "' has cadvVertex < 1 at ", numBelow, " subgrid vertices in this subdomain (minimum ", &
+         worst, " at node ", worstNode, "); a consistent table has C_adv >= 1."
+#else
+      write (scratchMessage, '(a,a,a,i0,a,g0.8,a,i0,a)') "The subgrid table '", trim(subgridFilename), &
+         "' has cadvVertex < 1 at ", numBelow, " subgrid vertices (minimum ", &
+         worst, " at node ", worstNode, "); a consistent table has C_adv >= 1."
+#endif
+      call allMessage(WARNING, trim(scratchMessage))
+   end subroutine warn_cadv_below_one
+
+   !=====================================================================
    !> \brief Read one (numPhi, numNode) table variable into tab(n, numPhi).
    !> \param[in]    nc_id    NetCDF id of the open table file
    !> \param[in]    name     name of the variable
@@ -380,7 +576,6 @@ contains
    !=====================================================================
    subroutine read_vertex_table(nc_id, name, numVerts, lg, tab)
       use netcdf, only: nf90_inq_varid, nf90_get_var
-      use netcdf_error, only: check_err
       use mod_logging, only: t_log_scope, init_log_scope
       implicit none
       integer, intent(in) :: nc_id
@@ -395,8 +590,8 @@ contains
       LOG_SCOPE_TRACED("subgrid_read_vertex_table", SUBGRID_TRACING)
 
       allocate (globalVertLookup(numPhi, numVerts))
-      call check_err(nf90_inq_varid(nc_id, name, nc_var))
-      call check_err(nf90_get_var(nc_id, nc_var, globalVertLookup))
+      call check_nc(nf90_inq_varid(nc_id, name, nc_var), name)
+      call check_nc(nf90_get_var(nc_id, nc_var, globalVertLookup), name)
       if (allocated(tab)) deallocate (tab)
       allocate (tab(size(lg), numPhi))
       do i = 1, size(lg)
@@ -404,6 +599,25 @@ contains
       end do
       deallocate (globalVertLookup)
    end subroutine read_vertex_table
+
+   !=====================================================================
+   !> \brief Stop with the table file name, the item being read and the
+   !>        NetCDF message if a NetCDF call failed.
+   !> \param[in] status return value of the NetCDF call
+   !> \param[in] item   variable or dimension being read
+   !=====================================================================
+   subroutine check_nc(status, item)
+      use netcdf, only: nf90_strerror, NF90_NOERR
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      implicit none
+      integer, intent(in) :: status
+      character(len=*), intent(in) :: item
+
+      if (status == NF90_NOERR) return
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                     message="Error reading '"//item//"' from the subgrid table '"// &
+                     trim(subgridFilename)//"': "//trim(nf90_strerror(status)))
+   end subroutine check_nc
 
    !=====================================================================
    !> \brief Global vertex number of each local vertex (identity in serial).
@@ -434,7 +648,8 @@ contains
    !=====================================================================
    !> \brief Linear interpolation between (x0, y0) and (x1, y1).
    !>
-   !> Requires x1 /= x0.
+   !> Requires x1 /= x0; validate_table ensures this for the two table
+   !> levels that bracket x.
    !> \param[in] x  abscissa to interpolate at
    !> \param[in] x0 lower abscissa
    !> \param[in] x1 upper abscissa
@@ -461,7 +676,8 @@ contains
    !> eta above that level and, if the table has manningAvg, the friction
    !> coefficient computed from Manning's n at that H_G. In between, it
    !> interpolates linearly between the two levels that bracket eta. A
-   !> degenerate (equal or decreasing) interval gives the upper level.
+   !> degenerate (equal or decreasing) interval gives the upper level;
+   !> validate_table rejects tables that have one.
    !> \param[in] i   local vertex number (isSubgridVert(i))
    !> \param[in] eta elevation, m
    !> \return values at eta: wet area fraction (phi), grid- and wet-averaged
@@ -507,7 +723,8 @@ contains
                                             cadvVertTab(i, k), cadvVertTab(i, k + 1))
             end if
          else
-            ! degenerate interval: use the upper level
+            ! degenerate interval: use the upper level (validate_table
+            ! rejects tables that have one)
             v = table_row(i, k + 1)
          end if
       end if
@@ -676,6 +893,9 @@ contains
    !=====================================================================
    !> \brief Elevation at which subgrid vertex i reaches grid-averaged depth h
    !>        (inverse table lookup).
+   !>
+   !> validate_table guarantees non-decreasing depths, so the bracketing
+   !> interval in the interpolation has nonzero width.
    !> \param[in] i local vertex number (isSubgridVert(i))
    !> \param[in] h grid-averaged total depth, m
    !> \return elevation, m
