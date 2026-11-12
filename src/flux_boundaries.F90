@@ -38,7 +38,7 @@ module mod_flux_boundaries
 
    private
 
-   public :: applyBoundaryConditions, initializeNormalFlowBoundary, &
+   public :: applyFluxBoundaryConditions, initializeNormalFlowBoundary, &
              hotstartNormalFlowBoundary
 
    ! Whether the river radiation b.c. elevations still need to be filled
@@ -247,7 +247,7 @@ contains
 !> @param[in] TimeLoc Current simulation time (seconds)
 !> @param[in] TimeH   Harmonic analysis reference time (seconds)
 !-----------------------------------------------------------------------
-   subroutine applyBoundaryConditions(IT, TimeLoc, TimeH)
+   subroutine applyFluxBoundaryConditions(IT, TimeLoc, TimeH)
       use global, only: NFFR, FPER, FAMIG, FFACE, FFF, RampExtFlux, &
                         QTIME1, FTIMINC, FluxSettlingIT, EtaDisc, Eta2, &
                         NIBNODECODE
@@ -317,7 +317,7 @@ contains
 
       if (subdomainOn) call applySubdomainBCData(IT)
 
-   end subroutine applyBoundaryConditions
+   end subroutine applyFluxBoundaryConditions
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
