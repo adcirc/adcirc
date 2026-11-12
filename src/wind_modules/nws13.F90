@@ -176,7 +176,7 @@
 !-----------------------------------------------------------------------
 module mod_nws13
 !-----------------------------------------------------------------------
-   use mod_logging, only: INFO, DEBUG, ERROR, screenMessage, allMessage, t_log_scope, init_log_scope
+   use mod_logging, only: INFO, DEBUG, screenMessage, allMessage, t_log_scope, init_log_scope
    use mod_datetime, only: t_datetime, null_datetime
 
    implicit none
@@ -200,6 +200,7 @@ module mod_nws13
 
    real(8) :: NWS13WindMultiplier = 1.0d0
 
+   character(len=200) :: NWS13ColdStartString = ""
    type(t_datetime) :: NWS13ColdStart
    type(t_datetime) :: WindRefDatetime
 
@@ -223,25 +224,20 @@ contains
                                             NWS13ColdStart_in, &
                                             NWS13WindMultiplier_in, &
                                             NWS13GroupForPowell_in)
-      use mod_logging, only: logMessage
       implicit none
 
       character(len=*), intent(IN) :: NWS13Filename_in
       character(len=*), intent(IN) :: NWS13ColdStart_in
       real(8), intent(IN) :: NWS13WindMultiplier_in
       integer, intent(IN) :: NWS13GroupForPowell_in
-      character(len=256) :: message
 
-      ! Set the parameters from the namelist.
+      ! The namelist is read for every run, so only store the values here;
+      ! the cold start date is parsed and validated in NWS13INIT, which is
+      ! only reached when NWS=13 is in use.
       NWS13File = trim(adjustl(NWS13Filename_in))
-      NWS13ColdStart = t_datetime(NWS13ColdStart_in, "%Y%m%d.%H%M%S")
+      NWS13ColdStartString = adjustl(NWS13ColdStart_in)
       NWS13WindMultiplier = NWS13WindMultiplier_in
       NWS13GroupForPowell = NWS13GroupForPowell_in
-
-      call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(NWS13File)))
-      call logMessage(INFO, "NWS13 Cold Start Date: "//trim(NWS13ColdStart%to_iso_string()))
-      write (message, '(A,F0.4)') "NWS13 Wind Multiplier: ", NWS13WindMultiplier
-      call logMessage(INFO, trim(message))
 
    end subroutine nws13_set_namelist_parameters
 
@@ -258,10 +254,9 @@ contains
       use netcdf_error, only: check_err
       use MESH, only: NP
       use mod_datetime, only: t_datetime, t_timedelta, operator(+), operator(-)
-
-#ifdef CMPI
-      use messenger, only: msg_fini
-#endif
+      use mod_date_parsing, only: parse_datetime_lenient
+      use mod_logging, only: logMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
 
@@ -271,6 +266,7 @@ contains
       character(LEN=3100) :: TempOrder
       character(LEN=100) :: TimeUnits
       character(LEN=100) :: TimeString
+      character(LEN=256) :: message
 
       real(8), allocatable :: Lat(:, :)
       real(8), allocatable :: Lon(:, :)
@@ -289,6 +285,19 @@ contains
       integer :: IG
 
       LOG_SCOPE_TRACED("nws13init", WIND_TRACING)
+
+      ! Accepts the documented YYYYMMDD.hhmmss form (including the shorter
+      ! spellings the legacy fixed-column read accepted) and ISO-like dates.
+      NWS13ColdStart = parse_datetime_lenient(NWS13ColdStartString)
+      if (.not. NWS13ColdStart%valid()) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message='NWS13ColdStartString "'//trim(NWS13ColdStartString)// &
+                        '" in the owiWindNetcdf namelist is not a valid date (expected YYYYMMDD.hhmmss).')
+      end if
+      call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(NWS13File)))
+      call logMessage(INFO, "NWS13 cold start date: "//trim(NWS13ColdStart%to_iso_string()))
+      write (message, '(A,F0.4)') "NWS13 wind multiplier: ", NWS13WindMultiplier
+      call logMessage(INFO, trim(message))
 
       ! Open the NetCDF file.
       call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
@@ -349,25 +358,21 @@ contains
       ! and convert it into Julian format.
       call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
       call check_err(NF90_GET_ATT(NC_IDG, NC_VAR, "units", TimeUnits))
-      TimeString = trim(adjustl(TimeUnits))
-      TimeString = TimeUnits(15:len_trim(TimeUnits))
-
-      TimeUnits = TimeUnits(1:14)
-      if (TimeUnits /= "minutes since ") then
-         call allMessage(ERROR, "NWS13: Invalid time units in NWS13INIT.")
-#ifdef CMPI
-         call msg_fini()
-#endif
-         call exit(1)
+      TimeUnits = adjustl(TimeUnits)
+      if (TimeUnits(1:14) /= "minutes since ") then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message='NWS13: time units "'//trim(TimeUnits)//'" in '// &
+                        trim(NWS13File)//' must be "minutes since <date>".')
       end if
 
-      WindRefDatetime = t_datetime(TimeString, "%Y-%m-%dT%H:%M:%S")
+      ! The legacy reader took the reference date from fixed columns, so any
+      ! separators were accepted; keep accepting e.g. a space instead of T.
+      TimeString = TimeUnits(15:)
+      WindRefDatetime = parse_datetime_lenient(TimeString)
       if (.not. WindRefDatetime%valid()) then
-         call allMessage(ERROR, "NWS13: Invalid WindRefDatetime in NWS13INIT.")
-#ifdef CMPI
-         call msg_fini()
-#endif
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message='NWS13: reference date "'//trim(TimeString)//'" in the time units of '// &
+                        trim(NWS13File)//' is not a valid date.')
       end if
 
       ! Find the times associated with the first two time snaps in each
@@ -550,7 +555,10 @@ contains
       NWS13(:)%InclSnap = 0
       WTIME2 = -1.d0
       WTIME2_dt = null_datetime()
-      CurrentTime = NWS13Coldstart + t_timedelta(milliseconds=int(TimeLoc*1000d0))
+      ! t_timedelta takes default integers; TimeLoc in milliseconds overflows
+      ! them after ~24.8 days, so pass whole seconds and the remainder
+      CurrentTime = NWS13Coldstart + t_timedelta(seconds=int(TimeLoc), &
+                                                 milliseconds=nint((TimeLoc - aint(TimeLoc))*1000d0))
 
       do IG = 1, NumGroup
          if (CurrentTime < NWS13(IG)%PrevTime) then
@@ -560,8 +568,6 @@ contains
             ! time, then this current interval will be zero winds.
             if (WTIME2_dt == null_datetime() .or. NWS13(IG)%PrevTime < WTIME2_dt) then
                WTIME2_dt = NWS13(IG)%PrevTime
-               dt = NWS13(IG)%PrevTime - WindRefDatetime
-               WTIME2 = dble(dt%total_milliseconds())/1000.0d0
             end if
             cycle
          end if
@@ -596,8 +602,7 @@ contains
             ! Update our end time if this is the first snap we found ...
             ! ... or if it is earlier than what we have found already.
             if (WTIME2_dt == null_datetime() .or. (NWS13(IG)%NextTime < WTIME2_dt)) then
-               dt = NWS13(IG)%NextTime - WindRefDatetime
-               WTIME2 = dble(dt%total_milliseconds())/1000.0d0
+               WTIME2_dt = NWS13(IG)%NextTime
             end if
          end if
       end do
@@ -605,8 +610,13 @@ contains
       ! when the simulation has progressed past the end of the wind
       ! file.  In that case, we can use the simulation length as the end
       ! of this next snap.
+      ! WTIME2 is returned as model time (seconds since the cold start), which
+      ! is what wind.F compares against and passes back in as TimeLoc.
       if (WTIME2_dt == null_datetime()) then
          WTIME2 = RNDAY*86400.d0
+      else
+         dt = WTIME2_dt - NWS13ColdStart
+         WTIME2 = dble(dt%total_milliseconds())/1000.0d0
       end if
 
       ! If we don't need to include winds from any group (because the

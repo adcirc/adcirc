@@ -2040,7 +2040,11 @@ Casey 180318: Added for NWS=13, ARC modified 190108
         CALL NWS13INIT(W)
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
      &      WTIME2,EyeLon,EyeLat,FoundEye,W)
-        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
+        ! The timestep loop interpolates between WTIME1I and WTIME2I, so
+        ! the second field must be read at WTIME2I, not at the next snap
+        ! time returned in WTIME2 (they differ when the wind file starts
+        ! after the cold start or its snaps are not WTIMINC apart).
+        CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
      &      WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
         WTIME2 = WTIME2OUT
       ENDIF
@@ -2854,8 +2858,12 @@ Casey 180318: Added for NWS=13, ARC modified 190108
         CALL NWS13INIT(W)
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
      &      WTIME2,EyeLon,EyeLat,FoundEye,W)
-        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &                WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+        ! The timestep loop interpolates between WTIME1I and WTIME2I, so
+        ! the second field must be read at WTIME2I, not at the next snap
+        ! time returned in WTIME2 (they differ when the wind file starts
+        ! after the cold start or its snaps are not WTIMINC apart).
+        CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
+     &      WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
         WTIME2 = WTIME2OUT
         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
         DO I=1,NP
