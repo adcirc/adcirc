@@ -24,15 +24,15 @@
 !>
 !> This module computes the normal flux (QN1/QN2) and elevation (EN2)
 !> boundary values used by the GWCE and momentum equations for:
-!> - Specified normal flow boundaries (periodic or fort.20 time series)
+!> - Specified normal flow boundaries (periodic or fort.20 time series),
+!>   including cold start/hotstart setup and conversion to rotated
+!>   coordinate systems
 !> - Radiation and zero normal velocity gradient boundaries
 !> - External and internal barrier (weir) boundaries, including vertical
 !>   element walls and cross-barrier pipes
 !> - Subdomain modeling boundary data
 !-----------------------------------------------------------------------
 module mod_flux_boundaries
-
-   use mod_normal_flow_boundary, only: rotate_normal_flux
 
    implicit none
 
@@ -68,8 +68,8 @@ contains
 
       QNIN1 = 0d0
       QNIN2 = 0d0
-      call readNormalFlowSnapshot(QNIN1, ENIN1, rotate=.true.)
-      call readNormalFlowSnapshot(QNIN2, ENIN2, rotate=.true.)
+      call readNormalFlowSnapshot(QNIN1, ENIN1)
+      call readNormalFlowSnapshot(QNIN2, ENIN2)
       QTIME1 = STATIM*86400.d0
       QTIME2 = QTIME1 + FTIMINC
 
@@ -119,12 +119,12 @@ contains
 
          QNIN1(1:NVEL) = 0d0
          QNIN2(1:NVEL) = 0d0
-         call readNormalFlowSnapshot(QNIN1, ENIN1, rotate=.true.)
-         call readNormalFlowSnapshot(QNIN2, ENIN2, rotate=.true.)
+         call readNormalFlowSnapshot(QNIN1, ENIN1)
+         call readNormalFlowSnapshot(QNIN2, ENIN2)
 
          if (NFFR == 0) then
             do IT = 1, ITHS - 1
-               call advanceNormalFlowSnapshots(dble(IT)*DTDPHS + STATIM*86400.d0, rotate=.true.)
+               call advanceNormalFlowSnapshots(dble(IT)*DTDPHS + STATIM*86400.d0)
             end do
             TimePrevious = dble(ITHS - 1)*DTDPHS + STATIM*86400.d0
          else
@@ -135,7 +135,7 @@ contains
          QN1 = RampExtFlux1*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))
          EN1 = RampExtFlux1*(ENIN1 + QTRATIO*(ENIN2 - ENIN1))
 
-         call advanceNormalFlowSnapshots(TimeLoc, rotate=.true.)
+         call advanceNormalFlowSnapshots(TimeLoc)
 
          QTRATIO = (TimeLoc - QTIME1)/FTIMINC
          QN2 = RampExtFlux2*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))
@@ -173,15 +173,13 @@ contains
 !>
 !> @param[inout] QNIN   Normal flux at each flow boundary node
 !> @param[inout] ENIN   Elevation at each flow boundary node
-!> @param[in]    rotate Apply the rotated coordinate system transform
 !-----------------------------------------------------------------------
-   subroutine readNormalFlowSnapshot(QNIN, ENIN, rotate)
+   subroutine readNormalFlowSnapshot(QNIN, ENIN)
       use mesh, only: ICS
       use boundaries, only: NVEL, LBCODEI
       implicit none
 
       real(8), intent(inout) :: QNIN(:), ENIN(:)
-      logical, intent(in) :: rotate
       real(8) :: QNIN_TMP
       integer :: J
 
@@ -194,11 +192,7 @@ contains
          case default
             cycle
          end select
-         if (rotate) then
-            QNIN(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-         else
-            QNIN(J) = QNIN_TMP
-         end if
+         QNIN(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
       end do
 
    end subroutine readNormalFlowSnapshot
@@ -208,15 +202,13 @@ contains
 !> @brief Shift to the next fort.20 snapshot if TimeLoc is past QTIME2
 !>
 !> @param[in] TimeLoc Simulation time (seconds)
-!> @param[in] rotate  Apply the rotated coordinate system transform
 !-----------------------------------------------------------------------
-   subroutine advanceNormalFlowSnapshots(TimeLoc, rotate)
+   subroutine advanceNormalFlowSnapshots(TimeLoc)
       use global, only: QTIME1, QTIME2, FTIMINC, QNIN1, QNIN2, ENIN1, ENIN2
       use boundaries, only: NVEL, LBCODEI
       implicit none
 
       real(8), intent(in) :: TimeLoc
-      logical, intent(in) :: rotate
       integer :: J
 
       if (TimeLoc > QTIME2) then
@@ -231,7 +223,7 @@ contains
                ENIN1(J) = ENIN2(J)
             end select
          end do
-         call readNormalFlowSnapshot(QNIN2, ENIN2, rotate)
+         call readNormalFlowSnapshot(QNIN2, ENIN2)
       end if
 
    end subroutine advanceNormalFlowSnapshots
@@ -284,7 +276,7 @@ contains
             end do
          end do
       elseif ((NFFR == 0) .or. (NFFR == -1)) then
-         call advanceNormalFlowSnapshots(TimeLoc, rotate=.true.)
+         call advanceNormalFlowSnapshots(TimeLoc)
 
          QTRATIO = (TimeLoc - QTIME1)/FTIMINC
          QN2 = RampExtFlux*(QNIN1 + QTRATIO*(QNIN2 - QNIN1))
@@ -556,4 +548,66 @@ contains
 
    end subroutine applyBoundaryConditions
    !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!> @brief Convert a boundary normal flux to the rotated coordinate system
+!>
+!> For rotated coordinate systems (ICS = 20-24), the normal flux Q at flow
+!> boundary node IDX is decomposed into flux components along the rotated
+!> coordinate axes using the boundary normal in rotated coordinates,
+!> optionally rotated again for IFSPROTS = 1, and projected back onto the
+!> boundary normal used by the model. Otherwise Q is returned unchanged.
+!>
+!> @param[in] ICS Coordinate system flag
+!> @param[in] IDX Flow boundary node index
+!> @param[in] Q   Normal flux in the input coordinate system
+!> @return        Normal flux in the model coordinate system
+!-----------------------------------------------------------------------
+   real(8) function rotate_normal_flux(ICS, IDX, Q) result(QROT)
+      use boundaries, only: NBV, CSII, SIII, CSII_OLD, SIII_OLD
+      use mesh, only: SFMX, SFCX, SFCY, YCSFAC, RVELF
+      use global, only: IFSPROTS
+
+      implicit none
+
+      integer, intent(in) :: ICS
+      integer, intent(in) :: IDX
+      real(8), intent(in) :: Q
+
+      real(8) :: QX_R, QY_R, TAUX_R, TAUY_R
+      real(8) :: QX_ROT, QY_ROT
+      real(8) :: VO(2), VR(2)
+      real(8) :: NX_R, NY_R
+
+      select case (ICS)
+      case (20:24)
+         ! Compute rotated-coordinate normals
+         NX_R = CSII_OLD(IDX)/SFMX(NBV(IDX))
+         NY_R = SIII_OLD(IDX)
+
+         TAUX_R = -1.0d0*NY_R
+         TAUY_R = NX_R
+
+         ! Solve for QX1_R and QY1_R
+         QY_R = Q/(((-1.0d0*TAUY_R)/TAUX_R)*NX_R + NY_R)
+         QX_R = -TAUY_R*QY_R/TAUX_R
+
+         if (IFSPROTS == 1) then
+            VO = [QX_R, QY_R]
+            VR = matmul(RVELF(1:2, 1:2, IDX), VO)
+            QX_ROT = VR(1)
+            QY_ROT = VR(2)
+         else
+            QX_ROT = QX_R
+            QY_ROT = QY_R
+         end if
+
+         ! Generate the new flux forcing terms
+         QROT = SFCX(NBV(IDX))*QX_ROT*CSII(IDX) + SFCY(NBV(IDX))*QY_ROT*SIII(IDX)*YCSFAC(NBV(IDX))
+      case default
+         QROT = Q
+      end select
+
+   end function rotate_normal_flux
+   !-----------------------------------------------------------------------
+
 end module mod_flux_boundaries
