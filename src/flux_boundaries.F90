@@ -119,12 +119,12 @@ contains
 
          QNIN1(1:NVEL) = 0d0
          QNIN2(1:NVEL) = 0d0
-         call readNormalFlowSnapshot(QNIN1, ENIN1, rotate=.false.)
-         call readNormalFlowSnapshot(QNIN2, ENIN2, rotate=.false.)
+         call readNormalFlowSnapshot(QNIN1, ENIN1, rotate=.true.)
+         call readNormalFlowSnapshot(QNIN2, ENIN2, rotate=.true.)
 
          if (NFFR == 0) then
             do IT = 1, ITHS - 1
-               call advanceNormalFlowSnapshots(dble(IT)*DTDPHS + STATIM*86400.d0, rotate=.false.)
+               call advanceNormalFlowSnapshots(dble(IT)*DTDPHS + STATIM*86400.d0, rotate=.true.)
             end do
             TimePrevious = dble(ITHS - 1)*DTDPHS + STATIM*86400.d0
          else
