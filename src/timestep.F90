@@ -95,9 +95,7 @@ contains
       use HSWRITER, only: writeHotstart_through_HSwriter !st3 100711 for hsfile
 #endif
 
-      use SPONGELAYER, only: sponge_opsplit0, &
-                             adjust_sponge_sigma, getabslayerext, sponge_shift_soln, &
-                             LoadAbsLayerSigma
+      use SPONGELAYER, only: updateAbsorbingLayerBoundary, applyAbsorbingSpongeLayer
       use subgrid, only: getVertLookup
       use mod_baroclinic, only: computeBaroclinicPressureGradient, updateBaroclinicBoundaryConditions
       use mod_flux_boundaries, only: applyBoundaryConditions
@@ -113,7 +111,7 @@ contains
       call computeTimeVariables(IT, TimeLoc, TimeH)
       call computeRampFunctions(IT, TimeLoc)
       call shiftTimeLevels(IT)
-      if (LoadAbsLayerSigma) call initializeAbsorbingLayer(TimeLoc, TimeH)
+      call updateAbsorbingLayerBoundary(TimeLoc, TimeH)
       if (NDDT /= 0) call updateTimeDependentBathymetry(TimeLoc)
       call computeBottomFriction(IT)
       call updateIceFields(TimeLoc)
@@ -606,8 +604,6 @@ contains
                         DRamp, DRampExtFlux, DRampIntFlux, DRampElev, &
                         DRampTip, DRampMete, DRampWRad, DUnRampMete, &
                         FluxSettlingIT, DTDP, STATIM, CHOTHS
-      use spongelayer, only: LoadAbsLayerSigma, Adjust_Sponge_Sigma, &
-                             sponge_sigma_adjusted
       implicit none
 
       integer, intent(in) :: IT
@@ -679,14 +675,6 @@ contains
       if (DRampMete < 1.0d-6) RampMete = 1.0d0
       if (DRampWRad < 1.0d-6) RampWRad = 1.0d0
 
-      !     Sponge layer sigma adjustment (DW)
-      if (LoadAbsLayerSigma) then
-         if (.not. sponge_sigma_adjusted) then
-            call Adjust_Sponge_Sigma(abs(DTDP))
-            sponge_sigma_adjusted = .true.
-         end if
-      end if
-
    end subroutine computeRampFunctions
    !-----------------------------------------------------------------------
 
@@ -743,52 +731,6 @@ contains
       end if
 
    end subroutine computeTimeVariables
-   !-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!> @brief Initialize absorbing sponge layer boundary conditions
-!>
-!> Initializes the absorbing/sponge layer external boundary values. On
-!> first entry, steps back in time to properly initialize the previous
-!> time level states needed for the time integration scheme.
-!>
-!> @param[in] TimeLoc Current simulation time (seconds)
-!> @param[in] TimeH   Harmonic analysis reference time (seconds)
-!-----------------------------------------------------------------------
-   subroutine initializeAbsorbingLayer(TimeLoc, TimeH)
-      use global, only: NRamp, RampElev, DRampElev, DTDP
-      use spongelayer, only: GETABSLAYEREXT, SPONGE_SHIFT_SOLN, sponge_initialized
-      use NodalAttributes, only: GeoidOffset
-      implicit none
-
-      real(8), intent(in) :: TimeLoc, TimeH
-      real(8) :: RampTMP
-      integer :: istep
-
-      if (sponge_initialized) then
-         ! Normal timestep: get external boundary values
-         call GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset)
-      else
-         ! First entry: step back in time to initialize previous states
-         RampTMP = RampElev
-         do istep = 2, 1, -1
-            if (NRamp > 0) then
-               RampTMP = tanh((2.d0*(TimeLoc - dble(istep)*DTDP)/86400.d0) &
-                              /DRampElev)
-            end if
-            RampTMP = max(0.d0, RampTMP)
-
-            ! Get external values at previous time
-            call GETABSLAYEREXT(TimeLoc - dble(istep)*DTDP, &
-                                TimeH - dble(istep)*DTDP, RampTMP, GeoidOffset)
-            call SPONGE_SHIFT_SOLN()
-         end do
-         ! Get current external values
-         call GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset)
-         sponge_initialized = .true.
-      end if
-
-   end subroutine initializeAbsorbingLayer
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -1245,27 +1187,6 @@ contains
       H2 = DP + dble(IFNLFA)*ETA2
 
    end subroutine updateFlowDepth
-   !-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!> @brief Apply absorbing sponge layer operations
-!>
-!> Applies absorbing sponge layer boundary treatment after the momentum
-!> solve. Uses operator splitting for the sponge relaxation terms and
-!> shifts the sponge solution arrays for the next timestep.
-!-----------------------------------------------------------------------
-   subroutine applyAbsorbingSpongeLayer()
-      use global, only: C2DDI, DTDP
-      use spongelayer, only: LoadAbsLayerSigma, sponge_dis_mthd, &
-                             SPONGE_OPSPLIT0, SPONGE_SHIFT_SOLN
-      implicit none
-
-      if (C2DDI .and. LoadAbsLayerSigma .and. sponge_dis_mthd == 0) &
-         call SPONGE_OPSPLIT0(DTDP/2)
-
-      if (LoadAbsLayerSigma) call SPONGE_SHIFT_SOLN()
-
-   end subroutine applyAbsorbingSpongeLayer
    !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
