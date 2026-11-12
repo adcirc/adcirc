@@ -40,6 +40,9 @@ LLVM project compilers (`clang`, `clang++`, and `flang`). These compilers are
 less well tested in the ADCIRC community, but in principle they should be 
 suitable for building ADCIRC.
 
+With the legacy GNU Make build, the Intel compiler profiles use `icpx` for C++ when it is available
+(oneAPI) and fall back to `icpc` for installations that only provide the classic compilers.
+
 ## Building with CMake
 
 CMake is available to use on Windows, Linux, Macintosh, and Cygwin. It provides availability to configure the model using either a GUI interface or the command line.

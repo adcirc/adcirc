@@ -1,4 +1,9 @@
 # SRCDIR is set in makefile or on the compile line
+
+# C++ compiler for the Intel profiles (needed for the fdate library). oneAPI
+# provides icpx, while installations that only have the classic compilers
+# (ifort/icc) provide icpc.
+INTEL_CXX := $(shell command -v icpx >/dev/null 2>&1 && echo icpx || echo icpc)
 INCDIRS := -I. -I$(SRCDIR)/prep
 
 ########################################################################
@@ -280,7 +285,7 @@ ifeq ($(compiler),intel)
   IMODS         :=  -I
   CC            := icc
   CCBE		:= $(CC)
-  CXX		:= icpx
+  CXX		:= $(INTEL_CXX)
   CXXFLAGS	:= -O2 -xSSE4.2 -m64 -mcmodel=medium -std=c++17
   CXXLIBS	:= -lstdc++
   CLIBS         :=
@@ -396,7 +401,7 @@ ifeq ($(compiler),intel-ND)
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
-  CXX		:= icpx
+  CXX		:= $(INTEL_CXX)
   CXXFLAGS	:= -O3 -m64 -mcmodel=medium -std=c++17
   CXXLIBS	:= -lstdc++
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
@@ -440,7 +445,7 @@ ifeq ($(compiler),intel-sgi)
   PFC           ?=  mpif90
   CC            :=  icc -O2 -no-ipo
   CCBE          :=  icc -O2 -no-ipo
-  CXX		:= icpx -O2 -no-ipo
+  CXX		:= $(INTEL_CXX)
   CXXFLAGS	:= -O2 -finline-limit=1000 -std=c++17
   CXXLIBS	:= -lstdc++
   FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
@@ -764,7 +769,7 @@ ifeq ($(compiler),diamond)
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
-  CXX		:= icpx
+  CXX		:= $(INTEL_CXX)
   CXXFLAGS	:= -O3 -xSSSE3 -std=c++17
   CXXLIBS	:= -lstdc++
 #  CFLAGS        := $(INCDIRS) -O3 -xT
@@ -974,7 +979,7 @@ ifeq ($(compiler),intel)
   IMODS 	:=  -I
   CC            := icc
   CCBE          := $(CC)
-  CXX           := icpx
+  CXX           := $(INTEL_CXX)
   CXXFLAGS      := $(OPTLVL) -std=c++17
   CXXLIBS       := -lstdc++
   CFLAGS        := $(INCDIRS) $(OPTLVL) -DLINUX
@@ -1677,4 +1682,14 @@ ifneq ($(FOUND), TRUE)
 endif
 ifeq ($(MULTIPLE),TRUE)
      $(warning (WARNING) More than one match in cmplrflags.mk. This may result in the wrong compilers being selected. Please check the cmplrflags.mk file to ensure that only one set of compiler flags is specified for your platform.)
+endif
+########################################################################
+# The fdate library is C++17. Profiles written before that requirement do
+# not set the C++ variables; fall back to the GNU defaults (make's default
+# CXX is g++) so those builds still compile and link the C++ runtime.
+ifeq ($(origin CXXFLAGS),undefined)
+  CXXFLAGS := -O2 -std=c++17
+endif
+ifeq ($(origin CXXLIBS),undefined)
+  CXXLIBS := -lstdc++
 endif

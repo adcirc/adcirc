@@ -757,18 +757,12 @@ Casey 251212: Adding time control.
       ! zc: Add namelist for user to control time varying weirs
       IOS = 0
       READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
-      IF(IOS.ne.0)THEN
-         IF(NOUT_TVW.NE.0)THEN
-             WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
-     &          " was found."
-             found_tvw_nml = .TRUE.
-         ELSE
-             found_tvw_nml = .FALSE.
-         ENDIF
-      ELSEIF(IOS.EQ.0) then
+      IF(IOS.EQ.0)THEN
          WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
      &      " was found."
          found_tvw_nml = .TRUE.
+      ELSE
+         found_tvw_nml = .FALSE.
       ENDIF
       REWIND(15)
 
