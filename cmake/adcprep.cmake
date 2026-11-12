@@ -58,7 +58,7 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/baroclinic.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subgrid.F90)
 
 if(NETCDF_WORKING)
   set(ADCPREP_SOURCES

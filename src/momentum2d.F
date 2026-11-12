@@ -209,7 +209,8 @@ C----- END DW
      &                       enforceUVCB
       USE SPONGELAYER
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
-      USE subgrid, ONLY: subgrid_level0, subgrid_level1
+      USE WETDRY, ONLY: HABSMIN
+      USE mod_subgrid, ONLY: subgrid_level0, subgrid_level1
      &   , wetFracVertETA1, wetFracVertETA2
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , cadvVertETA1
@@ -263,7 +264,7 @@ C... SB
       REAL(8) :: CADV1, CADV2, CADV3
       REAL(8) :: DCU1DXA, DCU1DYA, DCV1DXA, DCV1DYA
       REAL(8) :: SGS1, SGS2, SGS3
-      REAL(8) :: HG1I, HG2I, HABSMIN
+      REAL(8) :: HG1I, HG2I
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -312,8 +313,6 @@ C..... DW
 C     WJP: initialize baroclinic pressure gradients to zero
       DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
       DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
-
-      HABSMIN = 0.8d0*H0
 
       DO IE=1,NE
 
@@ -511,7 +510,7 @@ C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
 
 C...  Compute the advective term gradients x area for the element
          
-         IF(subgrid_level0.AND.subgrid_level1)THEN
+         IF(subgrid_level1)THEN
             CADV1=cadvVertETA1(NM1)
             CADV2=cadvVertETA1(NM2)
             CADV3=cadvVertETA1(NM3)
@@ -527,9 +526,6 @@ C...  Compute the advective term gradients x area for the element
             V1AvgDU1DYA=V1Avg*DCU1DYA
             U1AvgDV1DXA=U1Avg*DCV1DXA
             V1AvgDV1DYA=V1Avg*DCV1DYA
-            SGS1=MAX(-1.d0,MIN(1.d0,(CADV1-1.d0)*(H2N1-H1N1)/H2N1))
-            SGS2=MAX(-1.d0,MIN(1.d0,(CADV2-1.d0)*(H2N2-H1N2)/H2N2))
-            SGS3=MAX(-1.d0,MIN(1.d0,(CADV3-1.d0)*(H2N3-H1N3)/H2N3))
          ELSE
             U1AvgDU1DXA=U1Avg*DU1DXA
             V1AvgDU1DYA=V1Avg*DU1DYA
@@ -715,9 +711,15 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  SUBGRID LEVEL 1 STORAGE TERM -(C-1)*U*DH_G/DT/H_G (S IS DT TIMES THE RATE)
-C...  APPLIED ONLY WHEN NOLICA AND NOLICAT ARE BOTH NONZERO
-         IF(subgrid_level0.AND.subgrid_level1)THEN
+C...  SUBGRID LEVEL 1 STORAGE TERM. THE LHS TERM -(C-1)*U*DH_G/DT/H_G
+C...  GOES TO THE RHS AS +S*U WITH
+C...  S = (C-1)*(H_G^(K+1)-H_G^K)/H_G^(K+1), THE RATE TIMES DT, CLIPPED
+C...  TO [-1,1]. THE TERM IS ON ONLY WHEN NOLICA AND NOLICAT ARE BOTH
+C...  NONZERO
+         IF(subgrid_level1)THEN
+            SGS1=MAX(-1.d0,MIN(1.d0,(CADV1-1.d0)*(H2N1-H1N1)/H2N1))
+            SGS2=MAX(-1.d0,MIN(1.d0,(CADV2-1.d0)*(H2N2-H1N2)/H2N2))
+            SGS3=MAX(-1.d0,MIN(1.d0,(CADV3-1.d0)*(H2N3-H1N3)/H2N3))
             TEMP_LV_A1=TEMP_LV_A1+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS1*U1N1
             TEMP_LV_A2=TEMP_LV_A2+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS2*U1N2
             TEMP_LV_A3=TEMP_LV_A3+NCEle*IFNLCT*IFNLCAT*AreaIE*SGS3*U1N3
@@ -798,6 +800,8 @@ C      DispY=0.D0
             
 !.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
+               ! H2 equals gridDepthVertETA2 under level0; the branch
+               ! names the array the subgrid case reads
                IF(subgrid_level0)THEN
                   CALL windLimiter(gridDepthVertETA2(I),fwind)
                ELSE
@@ -1334,8 +1338,8 @@ C
       USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
       use mod_logging, only: t_log_scope, init_log_scope
 !JLW: add subgrd additions
-      USE subgrid, ONLY: subgrid_level0, subgrid_level1
-     &   , wetFracVertETA2, subgridVertList
+      USE mod_subgrid, ONLY: subgrid_level0, subgrid_level1
+     &   , wetFracVertETA2
      &   , gridDepthVertETA2
      &   , gridDepthVertETA1
      &   , cadvVertETA2
@@ -1841,6 +1845,8 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             
 C...........DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
+               ! H2 equals gridDepthVertETA2 under level0; the branch
+               ! names the array the subgrid case reads
                IF(subgrid_level0)THEN
                   CALL windLimiter(gridDepthVertETA2(I),fwind)
                ELSE
@@ -2046,43 +2052,29 @@ C...
 C...  Compute velocities
 
       DO I=1,NP
+         ! H2 equals gridDepthVertETA2 under level0; the branch names
+         ! the array the subgrid case reads
          IF(subgrid_level0)THEN
             H2s = gridDepthVertETA2(I)
-            IF(H2s.NE.0D0)THEN
-              UU2(I)=QX2(I)/H2s
-              VV2(I)=QY2(I)/H2s
-            ELSE
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-               WRITE(16,*) '         Velocities set = -999.'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               UU2(I)=-999.
-               VV2(I)=-999.
-            ENDIF
          ELSE
-            IF(H2(I).NE.0.) THEN
-               UU2(I)=QX2(I)/H2(I)
-               VV2(I)=QY2(I)/H2(I)
-               ELSE
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-               WRITE(16,*) '         Velocities set = -999.'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               UU2(I)=-999.
-               VV2(I)=-999.
-            ENDIF
+            H2s = H2(I)
+         ENDIF
+         IF(H2s.NE.0D0)THEN
+           UU2(I)=QX2(I)/H2s
+           VV2(I)=QY2(I)/H2s
+         ELSE
+            WRITE(16,*) ''
+            WRITE(16,*) ''
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
+            WRITE(16,*) '         Velocities set = -999.'
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) ''
+            WRITE(16,*) ''
+            UU2(I)=-999.
+            VV2(I)=-999.
          ENDIF
       ENDDO
 

@@ -326,12 +326,12 @@ C... SB
       use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
 
 !JLW: add subgrid additions
-      USE subgrid, ONLY: subgrid_level0, subgrid_level1
-     &   , subgridVertList
+      USE mod_subgrid, ONLY: subgrid_level0, subgrid_level1
      &   , gridDepthVertETA1, gridDepthVertETA2
-     &   , wetFracVertETA1, wetFracVertETA2
+     &   , wetFracVertETA2
      &   , cadvVertETA2
      &   , dphidt
+     &   , subgrid_element_phi
 
       IMPLICIT NONE
 
@@ -424,7 +424,6 @@ C...... DW
       REAL(8) :: H0N1, H0N2, H0N3
       REAL(8) :: CADV1, CADV2, CADV3
       REAL(8) :: PHIAVG1, PHIAVG2
-      REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
       REAL(8) :: CUN1, CUN2, CUN3, CVN1, CVN2, CVN3, CUAvg, CVAvg, DHGDT
       INTEGER :: IFNLFAX
@@ -496,14 +495,7 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                   H1N1 = gridDepthVertETA2(NMI1)
                   H1N2 = gridDepthVertETA2(NMI2)
                   H1N3 = gridDepthVertETA2(NMI3)
-                  PHI1N1 = wetFracVertETA1(NMI1)
-                  PHI1N2 = wetFracVertETA1(NMI2)
-                  PHI1N3 = wetFracVertETA1(NMI3)
-                  PHI2N1 = wetFracVertETA2(NMI1)
-                  PHI2N2 = wetFracVertETA2(NMI2)
-                  PHI2N3 = wetFracVertETA2(NMI3)
-                  PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
-                  PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
+                  CALL subgrid_element_phi(NMI1,NMI2,NMI3,PHIAVG1,PHIAVG2)
                ENDIF
                NC1=NodeCode(NMI1)
                NC2=NodeCode(NMI2)
@@ -632,14 +624,7 @@ C              Assemble the LHS matrix
                NMI2=NM(IE,2)
                NMI3=NM(IE,3)
                IF(subgrid_level0)THEN
-                  PHI1N1 = wetFracVertETA1(NMI1)
-                  PHI1N2 = wetFracVertETA1(NMI2)
-                  PHI1N3 = wetFracVertETA1(NMI3)
-                  PHI2N1 = wetFracVertETA2(NMI1)
-                  PHI2N2 = wetFracVertETA2(NMI2)
-                  PHI2N3 = wetFracVertETA2(NMI3)
-                  PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
-                  PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
+                  CALL subgrid_element_phi(NMI1,NMI2,NMI3,PHIAVG1,PHIAVG2)
                ENDIF
                AreaIE2=Areas(IE)
                AreaIE =AreaIE2*0.5d0
@@ -910,11 +895,11 @@ C........ END DW:
 
 
 !JLW: adding subgrid to velocity based lateral stress
+C..............DMW202401 Use saved H2 (equal to H_G under level0)
                IF(subgrid_level0)THEN
                   H2N = gridDepthVertETA2(I)
                ELSE
-C..............DMW202401 Use saved H2
-                  H2N= H2(I)
+                  H2N = H2(I)
                ENDIF
                H2OTotalArea=H2N/TotalArea(I)
 
@@ -1045,6 +1030,14 @@ C..... End DW
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
+!     Under level0 DPAvg is the total depth H_G, so the separate
+!     finite-amplitude term is off
+      IF(subgrid_level0)THEN
+         IFNLFAX = 0
+      ELSE
+         IFNLFAX = IFNLFA
+      ENDIF
+
       DO IE=1,NE
 
 C...     Set nodal values for each element
@@ -1100,14 +1093,11 @@ Corbitt 120322: Localized Advection
                CADV2 = cadvVertETA2(NM2)
                CADV3 = cadvVertETA2(NM3)
             ENDIF
-            PHI1N1 = wetFracVertETA1(NM1)
-            PHI1N2 = wetFracVertETA1(NM2)
-            PHI1N3 = wetFracVertETA1(NM3)
             PHI2N1 = wetFracVertETA2(NM1)
             PHI2N2 = wetFracVertETA2(NM2)
             PHI2N3 = wetFracVertETA2(NM3)
-            PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
-            PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
+            ! PHIAVG2 is the mean of PHI2N1..3
+            CALL subgrid_element_phi(NM1,NM2,NM3,PHIAVG1,PHIAVG2)
          ELSE
 
 C...........DMW202401 Use saved H2, H1
@@ -1502,12 +1492,6 @@ C
          ENDIF
          Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
          A00pB00=A00+B00
-!        Under level0 DPAvg is already H_G: no separate finite-amplitude term
-         IF(subgrid_level0)THEN
-            IFNLFAX = 0
-         ELSE
-            IFNLFAX = IFNLFA
-         ENDIF
 
 C...     Compute the JX, JY terms less the advection terms
          JXAvg = CorifAvg*QY1Avg

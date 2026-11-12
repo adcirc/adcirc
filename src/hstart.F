@@ -93,7 +93,9 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
      &     OutputTau0, 
      &     LoadRiver_et_WSE, River_et_WSE, LoadManningsN
-      USE subgrid, ONLY : subgrid_level0, hotStartSubgrid
+      USE mod_subgrid, ONLY : subgrid_level0, subgrid_validate,
+     &   subgrid_initialize, subgrid_hot_start, gridDepthVertETA1,
+     &   gridDepthVertETA2
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
      &   inundationTime, inundationTime_onset, maxInunDepth, 
@@ -761,14 +763,18 @@ C           times for output if time step size has changed
         CALL HOTSTART_3D(TimeLoc,ITHS)
       ENDIF
 
-!     Subgrid lookups and flow depths for the hot start state
+      CALL subgrid_validate(nolifa=NOLIFA, predictor_corrector=CPRECOR,
+     &   load_mannings_n=LoadManningsN)
+
+!     Subgrid values and flow depths H1, H2 at the hot-start
+!     elevations. They replace H1, H2 = DP + IFNLFA*ETA set above and,
+!     with inundation output, the cold-start subgrid values that
+!     setColdWetDryStateAndWaterSurfaceElevation set.
       IF(subgrid_level0)THEN
-         IF(.NOT.LoadManningsN)THEN
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &         message='subgrid requires the mannings_n_at_sea_floor '
-     &                //'nodal attribute')
-         ENDIF
-         CALL hotStartSubgrid()
+         CALL subgrid_initialize()
+         CALL subgrid_hot_start(ETA1, ETA2)
+         H1 = gridDepthVertETA1
+         H2 = gridDepthVertETA2
       ENDIF
  
       DO I=1, NP

@@ -2332,9 +2332,8 @@ C     ----------------------------------------------------------------
      &     IFNLFA, NP, TK)
       USE GLOBAL, ONLY: MLD, DTDP
 !JLW: incorporate subgrid
-      USE subgrid, ONLY: subgrid_level0, subgrid_level1
-     &   , cmfVertETA2, cfVertETA2, subgridVertList
-     &   , wetDepthVertETA2
+      USE mod_subgrid, ONLY: subgrid_level0, subgrid_friction,
+     &   subgrid_has_friction, wetDepthVertETA2
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
@@ -2377,12 +2376,8 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
          DO I=1, NP
 !JLW: adding subgrid
             IF(subgrid_level0)THEN
-               IF(subgridVertList(I).EQ.1)THEN
-                  IF(subgrid_level1)THEN
-                     FRIC(I) = cmfVertETA2(I)
-                  ELSE
-                     FRIC(I) = cfVertETA2(I)
-                  ENDIF
+               IF(subgrid_has_friction(I))THEN
+                  FRIC(I) = subgrid_friction(I)
                ELSE
                   FRIC(I) = g*ManningsN(I)**2.d0
      &               /((DP(I)+IFNLFA*ETA2(I))**(1.d0/3.d0))

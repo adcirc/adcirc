@@ -1057,19 +1057,11 @@ C----------------------------------------------------------------------
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
      &   loadManningsN, iflinbf, ifnlbf, ifhybf
-!JLW: adding subgrid
-      use subgrid, only: subgrid_level0, readsubgridlookup
-     &                   , getvertlookup
-     &                   , initVar
-     &                   , gridDepthVertETA2
-     &                   , subgridVertList
-     &                   , wetFracVertTab
-     &                   , numPhi
-     &                   , wetDepthVertETA2
-     &                   , gridDepthVertTab
-     &                   , phi_time_derivative, dphidt
-     &                   , subgrid_level1, wetFracVertETA1, wetFracVertETA2
-     &                   , gridDepthVertETA1, cadvVertETA1, cadvVertETA2
+      use global, only : cprecor
+      use wetdry, only : habsmin
+      use mod_subgrid, only: subgrid_level0, gridDepthVertETA2
+     &   , subgrid_validate, subgrid_initialize, subgrid_update
+     &   , subgrid_cold_start
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
       integer :: nc1, nc2, nc3  ! nodecodes around the element
@@ -1077,9 +1069,6 @@ C----------------------------------------------------------------------
       integer :: i
       character(1024) :: scratchMessage
       real(8) :: H1
-      real(8) :: HABSMIN
-      integer :: numGreater
-      integer :: j
       ! jgf52.08.24: Investigate reasons why a node was dried by the
       ! setColdWetDryState() subroutine.  
       character(len=1000), allocatable :: dryReason(:)
@@ -1088,8 +1077,6 @@ C----------------------------------------------------------------------
       !
       
       LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
-
-      HABSMIN = h0*0.8d0
 
       !
       ! tcm v51.27 20140502 Changed from using a fort.88 file
@@ -1136,152 +1123,94 @@ C----------------------------------------------------------------------
       END DO
 
 !JLW: adding subgrid lookup table read in
+      call subgrid_validate(nolifa=nolifa, predictor_corrector=cprecor,
+     &   load_mannings_n=loadManningsN)
       IF(subgrid_level0.EQV..true.)THEN
-         IF(.NOT.LoadManningsN)THEN
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &         message='subgrid requires the mannings_n_at_sea_floor '
-     &                //'nodal attribute')
-         ENDIF
-#ifdef ADCNETCDF
          ! Set all nodes to wet by default.
          nnodecode(:)=1
          ! set all elements to wet by default.
          noff(:)=1
-!JLW: set dphidt term
-         if(phi_time_derivative)then
-            dphidt = 1
-         else
-            dphidt = 0
-         endif
-!JLW: call subgrid lookup table read in
-         call readSubgridLookup()
-         if(nolifa.eq.2)then
-!JLW: initialize subgrid variables
-            call initVar()
-!JLW: call the vertex lookup subroutine
-            call getVertLookup()
-            ! jgf52.08.23: Collect, store, and report the reasons why each
-            ! node was dried.
-            allocate(dryReason(np))
-            allocate(dryReasonInitialized(np))
-            dryReasonInitialized = .false.
-            do i=1,np
-               H1 = gridDepthVertETA2(i)
-               if (H1.le.h0) then
-                  nnodecode(i) = 0
-                  write(dryReason(i),'("node=",i0)') i
-                  write(scratchMessage,
+         call subgrid_initialize()
+         call subgrid_update(eta2)
+         ! jgf52.08.23: Collect, store, and report the reasons why each
+         ! node was dried.
+         allocate(dryReason(np))
+         allocate(dryReasonInitialized(np))
+         dryReasonInitialized = .false.
+         do i=1,np
+            H1 = gridDepthVertETA2(i)
+            if (H1.le.h0) then
+               nnodecode(i) = 0
+               write(dryReason(i),'("node=",i0)') i
+               write(scratchMessage,
      &               '(" dp+eta2<=h0: ",f10.3," + ",f10.3," <= ",f6.3)')
      &               dp(i), eta2(i), h0
-                  dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
+               dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
+               dryReasonInitialized(i) = .true.
+            endif
+            if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
+               nnodecode(i) = 0
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),'("node=",i0)') i
                   dryReasonInitialized(i) = .true.
+               else
+                  dryReason(i) = trim(dryReason(i)) // ", "
                endif
-               if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
-                  nnodecode(i) = 0
-                  if (dryReasonInitialized(i).eqv..false.) then
-                     write(dryReason(i),'("node=",i0)') i
-                     dryReasonInitialized(i) = .true.
-                  else
-                     dryReason(i) = trim(dryReason(i)) // ", "
-                  endif
-                  dryReason(i) = trim(dryReason(i)) // "startDry=1"
-               endif
-            end do
+               dryReason(i) = trim(dryReason(i)) // "startDry=1"
+            endif
+         end do
          !
-            ! Dry any landlocked nodes by checking that they are connected to at
-            ! least 1 functioning element.
-            mju(:)=0
-            do i=1,ne
-               nm1=nm(i,1)
-               nm2=nm(i,2)
-               nm3=nm(i,3)
-               nc1=nnodecode(nm1)
-               nc2=nnodecode(nm2)
-               nc3=nnodecode(nm3)
-               ncele=nc1*nc2*nc3*noff(i)
-               mju(nm1)=mju(nm1)+ncele
-               mju(nm2)=mju(nm2)+ncele
-               mju(nm3)=mju(nm3)+ncele
-            enddo
-            do i=1,np
-               if((nnodecode(i).eq.1).and.(mju(i).eq.0)) then
-                  nnodecode(i)=0
-                  write(scratchMessage,9883) I
-                  call allMessage(INFO,scratchMessage)
-                  if (dryReasonInitialized(i).eqv..false.) then
-                     write(dryReason(i),'("node=",i0)') i
-                     dryReasonInitialized(i) = .true.
-                  else
-                     dryReason(i) = trim(dryReason(i)) // ", "
-                  endif
-                  dryReason(i) = trim(dryReason(i)) // " landlocked"
+         ! Dry any landlocked nodes by checking that they are connected to at
+         ! least 1 functioning element.
+         mju(:)=0
+         do i=1,ne
+            nm1=nm(i,1)
+            nm2=nm(i,2)
+            nm3=nm(i,3)
+            nc1=nnodecode(nm1)
+            nc2=nnodecode(nm2)
+            nc3=nnodecode(nm3)
+            ncele=nc1*nc2*nc3*noff(i)
+            mju(nm1)=mju(nm1)+ncele
+            mju(nm2)=mju(nm2)+ncele
+            mju(nm3)=mju(nm3)+ncele
+         enddo
+         do i=1,np
+            if((nnodecode(i).eq.1).and.(mju(i).eq.0)) then
+               nnodecode(i)=0
+               write(scratchMessage,9883) I
+               call allMessage(INFO,scratchMessage)
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),'("node=",i0)') i
+                  dryReasonInitialized(i) = .true.
+               else
+                  dryReason(i) = trim(dryReason(i)) // ", "
                endif
-            enddo
+               dryReason(i) = trim(dryReason(i)) // " landlocked"
+            endif
+         enddo
 ! 9883       format('Node ',i0,' dried (landlocking).')
          !
-            !jgf52.08.23: Report the reasons why a node was initially dried.
-            call logMessage(DEBUG,
+         !jgf52.08.23: Report the reasons why a node was initially dried.
+         call logMessage(DEBUG,
      &         "Nodes were set to an initially dry state "
      &         // "for the following reasons:")
-            do i=1,np
-               if (nnodecode(i).eq.0) then
-                  if (dryReasonInitialized(i).eqv..false.) then
-                     write(dryReason(i),
+         do i=1,np
+            if (nnodecode(i).eq.0) then
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),
      &            '("node=",i0," This node is dry for no good reason.")') i
-                  dryReasonInitialized(i) = .true.
-                  endif
-                  call logMessage(DEBUG,trim(dryReason(i)))
+               dryReasonInitialized(i) = .true.
                endif
-            end do
-            ! release memory
-            deallocate(dryReason)
-            deallocate(dryReasonInitialized)
-            !
-            ! Finish initializing water surface elevation (eta2 and eta1)
-            do i=1,np
-               if(nnodecode(i).eq.0)then
-                  if(gridDepthVertETA2(i).lt.HABSMIN)then
-                     gridDepthVertETA2(i) = HABSMIN
-                     wetDepthVertETA2(i) = HABSMIN
-                     if(subgridVertList(i).eq.1)then
-                        numGreater = 0
-                        do j=1,numPhi
-                           if(gridDepthVertETA2(i).lt.
-     &                        gridDepthVertTab(i,j))then
-                              numGreater = numGreater + 1
-                           endif
-                        enddo
-                        if(numGreater.eq.numPhi)then
-                           eta2(i) = wetFracVertTab(i,1)
-                        elseif(numGreater.eq.0)then
-                           eta2(i) = wetFracVertTab(i,numPhi)
-     &                        + (HABSMIN-gridDepthVertTab(i,numPhi))
-                        else
-                        !JLW: now back calculate eta2 based on this change
-                           eta2(i) = ((gridDepthVertETA2(i)
-     &                     - gridDepthVertTab(i,numPhi-numGreater))
-     &                     / (gridDepthVertTab(i,numPhi-numGreater+1)
-     &                     - gridDepthVertTab(i,numPhi-numGreater))
-     &                     * (wetFracVertTab(i,numPhi-numGreater+1)
-     &                     - wetFracVertTab(i,numPhi-numGreater))
-     &                     + wetFracVertTab(i,numPhi-numGreater))
-                        endif
-                     else
-                           eta2(i)=HABSMIN-dp(i)
-                     endif
-                  endif
-               endif
-            enddo
-            ! Previous-level lookups for the first time step
-            wetFracVertETA1 = wetFracVertETA2
-            gridDepthVertETA1 = gridDepthVertETA2
-            if(subgrid_level1) cadvVertETA1 = cadvVertETA2
-         endif
-#else
-         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &      message='Subgrid calculation requires building '
-     &             //'with netcdf enabled')
-#endif
+               call logMessage(DEBUG,trim(dryReason(i)))
+            endif
+         end do
+         ! release memory
+         deallocate(dryReason)
+         deallocate(dryReasonInitialized)
+         !
+         ! Finish initializing water surface elevation (eta2 and eta1)
+         call subgrid_cold_start(eta2, nnodecode, HABSMIN)
       ELSE
       !
       ! Set all nodes to wet by default.

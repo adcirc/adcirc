@@ -190,7 +190,7 @@ Casey 180318: Added NWS=13
 #endif
 !JLW: add subgrid
       use iso_fortran_env, only: output_unit
-      USE subgrid, only: subgridFilename, subgrid_level0, subgrid_level1, phi_time_derivative
+      USE mod_subgrid, only: subgrid_read_namelist
       use mod_tidepotential, only: tidePotential, t_tidePotential
       use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
      &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
@@ -228,8 +228,6 @@ C
       real(8) :: k2Value = 0.302D0
       real(8) :: h2Value = 0.609D0
       logical :: UniformResMoonSunTimeData = .false.
-      logical :: level0 = .false.
-      logical :: level1 = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
       CHARACTER(len=1024) :: scratchMessage ! message buffer
@@ -275,10 +273,6 @@ C.... DMW
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
-!JLW: adding subgrid namelist
-      NAMELIST /subgridControl/ subgridFilename, level0, level1,
-     &    phi_time_derivative
-
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 !Aman Tejaswi
 
@@ -675,25 +669,7 @@ C.... DMW
       rewind(15)
 
 !JLW: adding subgrid namelist variable
-      !JLW: adding subgrid name list variable
-      namelistSpecifier = 'subgridControl'
-      read(unit=15,nml=subgridControl,iostat=IOS,iomsg=ios_nml_error_msg)
-      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
-      write(scratchMessage,*)
-     &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "level0=",level0
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "level1=",level1
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
-      call logMessage(ECHO,trim(scratchMessage))
-      subgrid_level0 = level0
-      subgrid_level1 = level1
-      IF (subgrid_level1.AND..NOT.subgrid_level0) THEN
-         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &      message="subgridControl: level1 requires level0.")
-      ENDIF
+      call subgrid_read_namelist(15,IOS,ios_nml_error_msg)
       rewind(15)
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
@@ -1559,10 +1535,6 @@ C...
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                     message="Your selection of NOLIFA (a UNIT 15 input parameter) is not an allowable value.")
          ENDIF
-      ENDIF
-      IF (subgrid_level0.AND.NOLIFA.NE.2) THEN
-         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &      message="subgrid requires NOLIFA=2.")
       ENDIF
       WRITE(16,9846) NOLIFA
  9846 FORMAT(/,5X,'NOLIFA = ',I3)
@@ -2532,12 +2504,6 @@ ckmd   Changed the time step to allow for negative values in
 ckmd   order to turn on the predictor-corrector algorithm.
       READ(15,*) DTDP
       IF(DTDP.LT.0.d0) THEN
-         IF (subgrid_level0) THEN
-            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &         message="Subgrid corrections (level0) are not "//
-     &         "implemented for the predictor-corrector "//
-     &         "algorithm (DTDP < 0). Use DTDP > 0.")
-         ENDIF
          CPRECOR    = .TRUE.
          CGWCE_New  = .FALSE. !jgf Turn off the default.
          CME_New_NC = .FALSE. !jgf Turn off the default.

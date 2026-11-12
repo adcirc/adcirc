@@ -524,6 +524,7 @@ C******************************************************************************
 #endif
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
+      use mod_subgrid, only: subgrid_finalize
 
       IMPLICIT NONE
 
@@ -539,6 +540,7 @@ C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
       CALL solveHarmonicAnalysis(ITIME)
       CALL writeHarmonicAnalysisOutput(ITIME)
+      CALL subgrid_finalize()
 
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL terminate(exit_code=ADCIRC_EXIT_SUCCESS,

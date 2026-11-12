@@ -239,7 +239,7 @@ contains
       use wind, only: PRBCKGRND_MH2O
       use mesh, only: DP
       use boundaries, only: NVEL
-      use subgrid, only: subgrid_level0, gridDepthVertETA2
+      use mod_subgrid, only: subgrid_level0, gridDepthVertETA2
       implicit none
 
       integer, intent(in) :: IT
@@ -883,32 +883,21 @@ contains
 !> @brief Apply wetting and drying algorithm
 !>
 !> Applies the wetting and drying algorithm to handle tidal flats and
-!> inundation. Supports subgrid barrier lookup tables when enabled.
+!> inundation. Under subgrid level0 the subgrid lookups are first updated
+!> to the new water surface elevation.
 !>
 !> @param[in] IT Current timestep number
 !-----------------------------------------------------------------------
    subroutine applyWettingAndDrying(IT)
-      use subgrid, only: subgrid_level0, getVertLookup
+      use global, only: ETA2
+      use mod_subgrid, only: subgrid_level0, subgrid_update
       use wetdry, only: computeWettingAndDrying
-#ifndef ADCNETCDF
-      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-#endif
       implicit none
 
       integer, intent(in) :: IT
 
-      if (subgrid_level0) then
-#ifdef ADCNETCDF
-         call getVertLookup()
-         call computeWettingAndDrying(IT)
-#else
-         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
-                        message="Subgrid calculation requires building " &
-                        //"with netcdf enabled")
-#endif
-      else
-         call computeWettingAndDrying(IT)
-      end if
+      if (subgrid_level0) call subgrid_update(ETA2)
+      call computeWettingAndDrying(IT)
 
    end subroutine applyWettingAndDrying
    !-----------------------------------------------------------------------
@@ -924,7 +913,7 @@ contains
    subroutine updateFlowDepth()
       use global, only: H2, ETA2, IFNLFA
       use mesh, only: DP
-      use subgrid, only: subgrid_level0, gridDepthVertETA2
+      use mod_subgrid, only: subgrid_level0, gridDepthVertETA2
       implicit none
 
       if (subgrid_level0) then

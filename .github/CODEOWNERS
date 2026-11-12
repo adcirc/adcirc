@@ -8,7 +8,7 @@
 ##############################
 
 # Subgrid
-src/subgridLookup.F @jlwoodr
+src/subgrid.F90 @jlwoodr
 
 # SWAN Coupling
 src/couple2swan.F90 @caseydietrich
