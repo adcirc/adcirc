@@ -1,0 +1,184 @@
+.. meta::
+   :description: A00, B00, C00 in ADCIRC
+   :keywords: adcirc, a00, b00, c00
+
+A00, B00, C00
+=============
+
+**A00, B00, C00** are the weighting factors (at time levels k+1, k, k-1,
+respectively) for the free surface and boundary fluxes in the GWCE,
+and must sum to 1. Most critically, the weighting factors are used in the
+discretization of the linear gravity wave (pressure gradient) term and are
+responsible for determining the inherent implicity (impacting solution
+stability), in addition to order of accuracy and dispersive characteristics of
+the numerical method.
+
+.. _typical_values:
+
+Typical Values
+--------------
+
+| If the consistent mass-matrix solver is chosen (see `IM <IM>`__ parameter)
+  then a semi-implicit method is possible and encouraged. In this case the most
+  common choice for the weighting factors are:
+| :math:`\mathrm{A00} = \mathrm{C00} = 0.35, \quad \mathrm{B00} = 0.30`
+
+| If the lumped mass-matrix solver is chosen then only an explicit method is
+  possible (the weighting A00 must be zero as no matrix solve is conducted), and
+  the weighting factors that are typically chosen become simply:
+| :math:`\mathrm{A00} = \mathrm{C00} = 0, \quad \mathrm{B00} = 1`
+
+Theory
+------
+
+.. _wave_continuity_equation:
+
+Wave Continuity Equation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Theory is dominated by analysis of the Wave Continuity Equation (WCE), a special
+case of the Generalized Wave Continuity Equation (GWCE) where the
+`TAU0 <TAU0>`__ parameter is equal to the linear friction coefficient. In what
+has been determined to be a third-order accurate method centered in time [1]_,
+which was first introduced by Lynch and Gray (1979) [2]_, the choice of A00,
+B00, C00 is reduced to depend on a single parameter, :math:`\theta`:
+
+:math:`\mathrm{A00} = \mathrm{C00} = 0.5\theta, \quad \mathrm{B00} = 1-\theta`
+
+In other words, k+1 and k-1 weightings are chosen to be equal. It would however
+not appear that any restriction other than the requirement that A00, B00, C00
+must sum to 1 is necessary to obtain second-order accuracy [1]_. Unconditional
+stability is achieved with the prescription of
+:math:`\theta \geq 0.5`\  [1]_ [2]_. Likely because of this fact, the typical
+choice for ADCIRC has become :math:`\theta = 0.7`, i.e.,
+:math:`\mathrm{A00} = \mathrm{C00} = 0.35, \mathrm{B00} = 0.30` as noted above.
+Different values of :math:`\theta` may be motivated by the following expression
+for optimal dispersive accuracy for the consistent mass-matrix solver [1]_:
+
+:math:`\theta = \frac{1}{6}\left(1 + \frac{1}{Cr^2}\right)`
+
+where :math:`Cr = \sqrt{gh}\Delta t/\Delta x` is the Courant number based on the
+linear gravity wave speed.
+
+A purely explicit method (:math:`\theta = 0`) for the WCE is found to be stable
+under the following conditions [3]_ [4]_:
+
+-  :math:`Cr < 1` : lumped mass-matrix solved in 1-D
+-  :math:`Cr < \sqrt{3}/3`: consistent mass-matrix solved in 1-D
+-  :math:`Cr < \sqrt{2}/2`: lumped mass-matrix solved in 2-D
+-  :math:`Cr < \sqrt{6}/6`: consistent mass-matrix solved in 2-D
+
+These conditions are for linear finite-elements (ADCIRC uses these) with even
+node spacings and constant bathymetry. Other conditions for quadratic
+finite-elements, uneven node spacings, and non-constant bathymetry are shown in
+Kinnmark and Gray (1985) [3]_.
+
+In the explicit method case, stability (and optimal dispersive accuracy [1]_)
+is superior for the lumped mass-matrix solver versus the consistent mass-matrix
+solver, hence the lumped solver should always be chosen when employing an
+explicit method (see `IM <IM>`__ parameter for setting the solver type).
+
+.. _generalized_wave_continuity_equation:
+
+Generalized Wave Continuity Equation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the theory based on the WCE, stability is shown to be independent of the
+choice of `TAU0 <TAU0>`__ (:math:`\tau_0`). However, experience tell us that in
+the GWCE a larger value of :math:`\tau_0` tends to be more unstable than a
+smaller value. This makes sense since the behavior of the equations will become
+more and more similar to the Primitive Continuity Equation with greater
+:math:`\tau_0`, which is responsible for 2Δx instabilities - the motive for
+using the GWCE in the finite-element method.
+
+Kinnmark's 1986 monograph [5]_ does offer some analysis that backs up this
+empirical experience. For the consistent mass-matrix solver employing the
+centered :math:`\theta` scheme it can be shown that unconditional stability is
+only possible if :math:`\theta \geq 0.5` and,
+
+:math:`\tau_0 \leq \tau`
+
+where :math:`\tau` is the linear friction coefficient. In the deep ocean when
+employing a quadratic drag law this could be a very restrictive requirement on
+:math:`\tau_0` (e.g., :math:`\tau = C_d|u|/H \sim 10^{-7}` assuming
+:math:`C_d \sim 0.001`, :math:`|u| \sim 0.1` m/s, :math:`H \sim 1000` m). In
+addition, it is in opposition to our desire to choose the recommended value,
+:math:`\tau_0 \sim 1-10\tau_{max}`, for good mass conservation and dispersive
+properties [6]_. An alternative way to view the criteria is to look for a
+Courant number which eliminates the restriction on the choice of :math:`\tau_0`.
+It can be shown that this is the case in 1-D when,
+
+-  :math:`Cr < 2\sqrt{3}/3`, when :math:`\theta \geq 0.5` (consistent
+   mass-matrix)
+-  :math:`Cr < \sqrt{3}/3`, when :math:`\theta = 0` (consistent mass-matrix)
+-  :math:`Cr < 2`, when :math:`\theta \geq 0.5` (lumped mass-matrix)
+-  :math:`Cr < 1`, when :math:`\theta = 0` (lumped mass-matrix)
+
+Assuming the same relationship between 1-D and 2-D as in the WCE, the conditions
+for 2-D can be recovered by multiplying by :math:`\sqrt{2}/2`. This means that
+the stability requirement for the semi-implicit scheme (:math:`\theta \geq 0.5`)
+is two-fold less restrictive than the explicit scheme (:math:`\theta = 0`), in
+which the latter has identical stability requirements as the WCE. Again, the
+only way to circumvent this stability requirement for the semi-implicit scheme
+in the GWCE is to choose a sufficiently small :math:`\tau_0 \leq \tau`.
+
+Critique
+~~~~~~~~
+
+One aspect missing from the theory above are different weighting schemes which
+are possibly non-centered, i.e., :math:`\mathrm{A00} \neq \mathrm{C00}`. Pringle
+et al. [7]_ shows that stability of the GWCE is improved if,
+
+:math:`\mathrm{A00} = \mathrm{B00} = 0.5\theta, \quad \mathrm{C00} = 1-\theta`
+
+which is unconditionally stable under the following conditions for the
+consistent mass-matrix solver,
+
+:math:`2/3 \leq \theta \leq 1, \quad \tau_0\Delta t \leq (16/3)(3\theta/2-1)`
+
+thus removing the restrictive condition in the centered-scheme
+(:math:`\tau_0 \leq \Delta t`), instead requiring only that :math:`\tau_0` is
+small enough for the given time step :math:`\Delta t`.
+
+Moreover, the equations analyzed are always linearized (a requirement of the
+`von Neumann stability
+analysis <https://en.wikipedia.org/wiki/Von_Neumann_stability_analysis>`__),
+thus stability may be more restricting in real-world problems, especially those
+with fine grid sizes and where nonlinearities are non-trivial. In such cases
+where it is not possible to achieve time steps more than twice that possible
+with an explicit method it becomes preferable to employ the explicit lumped
+mass-matrix solver since it is computationally twice as fast per time step
+solve [8]_.
+
+References
+----------
+
+.. raw:: html
+
+   <references />
+
+.. [1]
+   M.G.G. Foreman, An Analysis of the “Wave Equation” Model for Finite Element
+   Tidal Computations, J. Comput. Phys. 52 (1983) 290–312.
+
+.. [2]
+   D.R. Lynch, W.G. Gray, A Wave Equation Model for Finite Element Tidal
+   Computations, Computers & Fluids. 7 (1979) 207–228.
+
+.. [3]
+   I.P.E. Kinnmark, W.G. Gray, Stability and accuracy of spatial approximations for wave equation tidal models, J. Comput. Phys. 60 (1985) 447–466. doi:10.1016/0021-9991(85)90030-0.
+
+.. [4]
+   Kinnmark, I.P.E., Gray, W.G., 1984. A Two-Dimensional Analysis of the Wave Equation Model for Finite Element Tidal Computations. Int. J. Numer. Methods Eng. 20, 369–383.
+
+.. [5]
+   Kinnmark, I., 1986. The Shallow Water Wave Equations: Formulation, Analysis and Application, Lecture Notes in Engineering. Springer Berlin Heidelberg, Berlin, Heidelberg. doi:10.1007/978-3-642-82646-7.
+
+.. [6]
+   Kolar, R.L., Westerink, J.J., Cantekin, M.E., Blain, C.A., 1994. Aspects of Nonlinear Simulations using Shallow-water Models based on the Wave Continuity Equation. Comput. Fluids 23, 523–538.
+
+.. [7]
+   Pringle et al., Global Ocean-to-Coastal Storm Tide Modeling in ADCIRC v55: Unstructured Mesh Design, in preparation (2020).
+
+.. [8]
+   S. Tanaka, S. Bunya, J.J. Westerink, C. Dawson, R.A. Luettich, Scalability of an Unstructured Grid Continuous Galerkin Based Hurricane Storm Surge Model, J. Sci. Comput. 46 (2011) 329–358. doi:10.1007/s10915-010-9402-1.
