@@ -1998,6 +1998,10 @@ C..>>
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C...  JCG ITERATIVE MATRIX SOLVER
          IPARM(1)=ITMAX
+C        JCG returns the stopping test it reached in RPARM(1) when it
+C        fails to converge; without this, one such step would loosen the
+C        tolerance of every later solve
+         RPARM(1)=CONVCR
          CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
          NUMITR=IPARM(1)
@@ -3047,6 +3051,7 @@ C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 
 C...  JCG ITERATIVE MATRIX SOLVER
       IPARM(1)=ITMAX
+      RPARM(1)=CONVCR   ! see GWCE_New
       CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
      &     IWKSP,NW,WKSP,IPARM,RPARM,IER)
 
