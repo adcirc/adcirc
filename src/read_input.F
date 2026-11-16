@@ -133,6 +133,7 @@ Casey 251212: Adding time control.
      &   BARSLIM64_ELEM, BARSLIM64_EDGE
 
       USE WEIR, ONLY: FOUND_TVW_NML
+      USE WEIR_PAIRS, ONLY: IMPLICIT_WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
@@ -255,6 +256,8 @@ C.... SB
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
+C     Flux boundaries: internal barrier weirs (IBTYPE 4/24)
+      NAMELIST /boundaryControl/ IMPLICIT_WEIR
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -804,6 +807,15 @@ C     Channel wet perimeter for bottom friction 11/06/2023 sb
       write(scratchMessage,'(a,f15.7)') "BARSLIM64_ELEM=",BARSLIM64_ELEM
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "BARSLIM64_EDGE=",BARSLIM64_EDGE
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+C     Internal barrier weirs: flux at the new time level (WEIR_PAIRS)
+      namelistSpecifier = 'boundaryControl'
+      READ(UNIT=15,NML=boundaryControl,IOSTAT=ios,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
+      write(scratchMessage,'(a,l1)') "IMPLICIT_WEIR=",
+     &   IMPLICIT_WEIR
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -2548,6 +2560,12 @@ ckmd   order to turn on the predictor-corrector algorithm.
       END IF
       WRITE(16,9) DTDP
     9 FORMAT(5X,'TIME STEP =',F12.6,5X,'SECONDS',/)
+C...  The implicit weir pairs are not in the predictor-corrector GWCE
+      IF (CPRECOR.AND.IMPLICIT_WEIR) THEN
+         IMPLICIT_WEIR = .FALSE.
+         call logMessage(INFO,'IMPLICIT_WEIR is turned off: it is '
+     &      //'not available with the predictor-corrector GWCE.')
+      ENDIF
 C...  The streamline correction (NOLICA=2) is implemented only in the
 C...  2DDI non-conservative momentum equations.
       IF ((NOLICA.EQ.2).AND..NOT.(C2DDI.AND.CME_New_NC)) THEN

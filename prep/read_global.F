@@ -586,6 +586,7 @@ C.....Control for VEW1D channels 11/06/2023 sb
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
+      NAMELIST /boundaryControl/ IMPLICIT_WEIR
 
       LOG_SCOPE_TRACED("read15", READ_GLOBAL_TRACING)
 c.....tcm v51.20.03 initialize external station location specifications
@@ -603,6 +604,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
       foundVEW1DChannelControlNamelist = .false.
+      foundBoundaryControlNamelist = .false.
 #ifdef ADCNETCDF
       FOUND_OWINC_NML = .FALSE.
 #endif
@@ -789,6 +791,14 @@ c..
       else
          call logMessage(INFO,
      &         'The VEW1DChannelControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+      read(unit=15,nml=boundaryControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundBoundaryControlNamelist = .true.
+         call logMessage(INFO,'The boundaryControl namelist was found.')
+      else
+         call logMessage(INFO,'The boundaryControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 

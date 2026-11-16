@@ -1710,7 +1710,7 @@ module WEIR_FLUX
              COMPUTE_INTERNAL_BOUNDARY_FLUX, &
              COMPUTE_CROSS_BARRIER_PIPE_FLUX, &
              COMPUTE_INTERNAL_BOUNDARY64_FLUX, &
-             SET_SUBMERGED64_AT
+             SET_SUBMERGED64_AT, UPDATE_INTERNAL_BARRIER_CREST
 
    !-----------------------------------------------------------------------
 contains
@@ -1760,6 +1760,29 @@ contains
 
       !-----------------------------------------------------------------------
    end subroutine COMPUTE_EXTERNAL_BOUNDARY_FLUX
+   !-----------------------------------------------------------------------
+
+   !-----------------------------------------------------------------------
+   !     S U B R O U T I N E
+   !       U P D A T E _ I N T E R N A L _ B A R R I E R _ C R E S T
+   !-----------------------------------------------------------------------
+   !  The crest of an internal barrier entry at TIMELOC (time-varying weirs),
+   !  as COMPUTE_INTERNAL_BOUNDARY_FLUX sets it, without the flux. Used for
+   !  the IBTYPE 4/24 pairs solved at the new time level (WEIR_PAIRS).
+   !-----------------------------------------------------------------------
+   subroutine UPDATE_INTERNAL_BARRIER_CREST(I, TIMELOC)
+      use BOUNDARIES, only: BARINHT
+      use GLOBAL, only: TVW
+      implicit none
+      integer, intent(IN) :: I
+      real(8), intent(IN) :: TIMELOC
+      if (INT_TVW) then
+         if (BAR_DEG(I)) then
+            call COMPUTE_BARRIER_HEIGHT(I, TIMELOC, BARINHT1(I), BARINHT2(I))
+         end if
+         TVW(NBV(I)) = BARINHT2(I) - BARINHT(I)
+      end if
+   end subroutine UPDATE_INTERNAL_BARRIER_CREST
    !-----------------------------------------------------------------------
 
    !-----------------------------------------------------------------------
