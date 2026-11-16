@@ -392,7 +392,7 @@ COUP_MSRC  =  couple2swan.F90
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 # DW sponge layer
-SPG_MSRC = quadrature.F90 sponge_layer.F90
+SPG_MSRC = quadrature.F90 sponge_layer.F90 weir_pairs.F90
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
 # CPB baroclinic internal tide updates
@@ -807,7 +807,7 @@ endif
 $(O_DIR)logging.o     :  logging.F90
 $(O_DIR)io.o          :  io.F90 $(O_DIR)logging.o $(O_DIR)terminate.o
 
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)baroclinic.o $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum2d.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)weir_pairs.o $(O_DIR)baroclinic.o $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum2d.o
 $(O_DIR)momentum2d.o  :  momentum2d.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)momentum3d.o  :  momentum3d.F90
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
@@ -866,18 +866,19 @@ $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
 $(O_DIR)sponge_layer.o : sponge_layer.F90 $(O_DIR)quadrature.o $(ADC_MOBJ)
+$(O_DIR)weir_pairs.o : weir_pairs.F90 $(ADC_MOBJ) $(MSG_MOBJ)
 $(O_DIR)quadrature.o : quadrature.F90
 # WJP
 $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
-$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ) $(O_DIR)baroclinic.o
+$(O_DIR)read_input.o  : read_input.F $(O_DIR)weir_pairs.o $(SUBD_MOBJ) $(O_DIR)baroclinic.o
 $(O_DIR)cstart.o      : cstart.F $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o
 $(O_DIR)hstart.o      : hstart.F $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o
 $(O_DIR)transport_3d.o : transport_3d.F
 $(O_DIR)baroclinic.o  : baroclinic.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(MSG_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o
-$(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(ADC_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o
+$(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(O_DIR)weir_pairs.o $(ADC_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o
 $(O_DIR)transport_2d.o : transport_2d.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(MESH_MOBJ) $(NA_MOBJ)
 $(O_DIR)timestep.o    : timestep.F90 $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o $(O_DIR)transport_2d.o $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(O_DIR)momentum3d.o $(O_DIR)wetdry.o $(WRIT_MOBJ) $(WIND_MOBJ) $(SPG_MOBJ) $(SG_MOBJ) $(TIDE_MOBJ) $(NA_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(COUP_MOBJ)
 ifeq ($(NETCDF),enable)
