@@ -2448,6 +2448,10 @@ C....    SB VEW1D channel control namelist
      &       ', barslim64_edge=',BARSLIM64_EDGE,
      &       ' /'
          endif
+         if (foundBoundaryControlNamelist) then
+            write(15,'(a,l1,a)') '&boundaryControl IMPLICIT_WEIR=',
+     &       IMPLICIT_WEIR, ' /'
+         endif
 
 C...     wjp additions for WarnElev Namelist
          IF (FOUND_WARNELEV_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
@@ -7833,7 +7837,8 @@ C---------------------------------------------------------------------------
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
-     &    foundVEW1DChannelControlNamelist, meshHasWeir, meshHasInternalWeir,
+     &    foundVEW1DChannelControlNamelist, foundBoundaryControlNamelist,
+     &    IMPLICIT_WEIR, meshHasWeir, meshHasInternalWeir,
      &    meshHasWeirWithPipes
       USE GLOBAL_3DVS, ONLY: I3DGB
       USE NODALATTRIBUTES, ONLY : outputTau0

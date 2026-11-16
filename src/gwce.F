@@ -140,7 +140,10 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       use sizes, only : mnp, mneta, mnei
       use global, only : dt, ilump
       USE ADC_CONSTANTS, only: g
-      use mesh, only : np
+      use mesh, only : np, NeiTab, NNeigh
+      use boundaries, only : NFLUXIB
+      use weir_pairs, only : WEIR_PAIRS_SETUP, WEIR_PAIRS_GRAPH, MNEIW,
+     &   IMPLICIT_WEIR
       use itpackv, only : dfault
       use mod_logging, only: log_unit
       implicit none
@@ -159,10 +162,17 @@ C     Allocate GWCE load vector (always needed)
 
 C     jgf48.4619: Accommodate Seizos changes for explicit solve
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
-C        allocate arrays needed by GWCE matrix and iterative solver
-         allocate(coef(mnp,mnei))
+C        allocate arrays needed by GWCE matrix and iterative solver;
+C        internal weir pairs at the new time level add a column for each
+C        weir node's partner (WEIR_PAIRS_GRAPH)
+         MNEIW = MNEI
+         IF (IMPLICIT_WEIR) THEN
+            CALL WEIR_PAIRS_SETUP()   ! on every subdomain (a collective)
+            IF (NFLUXIB.EQ.1) CALL WEIR_PAIRS_GRAPH(NeiTab, NNeigh, MNEI)
+         ENDIF
+         allocate(coef(mnp,MNEIW))
          coef = -99999.d0
-         allocate(obccoef(mneta,mnei-1))
+         allocate(obccoef(mneta,MNEIW-1))
          obccoef = -99999.d0
 C        initialize parameter arrays needed by iterative solver
          CALL DFAULT(IPARM,RPARM)
@@ -286,7 +296,7 @@ C
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
-     &   dynamicWaterLevelCorrectionDelta
+     &   dynamicWaterLevelCorrectionDelta, RampIntFlux
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -316,6 +326,9 @@ C... DW
 C... DW
 C... SB
       USE VEW1D, ONLY : ROTATE_AT_CONDENSEDNODES_ALL
+      USE WEIR_PAIRS, ONLY : IMPLICIT_WEIR, WEIR_PAIRS_SETUP,
+     &   WEIR_PAIRS_SOLVE_LUMPED, WEIR_PAIR_ENTRY, WEIR_PAIRS_LINEARIZE,
+     &   WEIR_PAIRS_FINISH, WEIR_PAIRS_SYNC_MARKS, MNEIW, NEITABW
 C... SB
 #ifdef CMPI
       USE MESSENGER
@@ -1766,6 +1779,11 @@ C...  the formulation these terms must be explicitly multiplied by -1.
 
 C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
+C...  Internal weir pairs (IBTYPE 4/24) solved at the new time level
+C...  (WEIR_PAIRS): their forcing is left out here and added with the
+C...  solved flux after the GWCE division
+C     every subdomain, for the collective in the setup
+      CALL WEIR_PAIRS_SETUP()
       IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
      &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
          QFORCEJ=0.d0
@@ -1777,6 +1795,9 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
      &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
+            IF (ALLOCATED(WEIR_PAIR_ENTRY)) THEN
+               IF (WEIR_PAIR_ENTRY(J)) QFORCEJ=0.d0
+            ENDIF
             IF(LBCODEI(J).EQ.30) THEN
 C..............DMW202401 Use saved H1
                CELERITY=SQRT(G*H1(NBDJ))
@@ -2002,8 +2023,17 @@ C        JCG returns the stopping test it reached in RPARM(1) when it
 C        fails to converge; without this, one such step would loosen the
 C        tolerance of every later solve
          RPARM(1)=CONVCR
-         CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
-     &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
+         IF (ALLOCATED(NEITABW)) THEN
+C           internal weir pairs: their blocks in the matrix for this solve
+            CALL WEIR_PAIRS_LINEARIZE(COEF, GWCE_LV, ETA1, ETAS,
+     &         Tau0VAR, DT, QN0, QN1, NODECODE, RampIntFlux)
+            CALL JCG(NP,MNP,MNEIW,NEITABW,COEF,GWCE_LV,ETAS,
+     &           IWKSP,NW,WKSP,IPARM,RPARM,IER)
+            CALL WEIR_PAIRS_FINISH(COEF, ETAS, ETA1, QN2, NODECODE)
+         ELSE
+            CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
+     &           IWKSP,NW,WKSP,IPARM,RPARM,IER)
+         ENDIF
          NUMITR=IPARM(1)
          DO I=1,NP
             ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
@@ -2017,11 +2047,17 @@ C        tolerance of every later solve
             ENDIF
             ETAS(I) = GWCE_LV(I) * RDIAG
          ENDDO
+C...     Internal weir pairs: flux with both levels at the new time level
+         IF (ALLOCATED(WEIR_PAIR_ENTRY)) CALL WEIR_PAIRS_SOLVE_LUMPED(
+     &      ETAS, COEFDTemp, ETA1, Tau0VAR, DT, QN0, QN1, QN2, NODECODE,
+     &      RampIntFlux)
          NUMITR=0
          DO I=1,NP
             ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
          END DO
       ENDIF
+C...  Ghost nodes take their owner's weir pair wetting marks
+      CALL WEIR_PAIRS_SYNC_MARKS()
 
 C...... DW, periodic bcs
       CALL UPDATE_PERSLNODES() ;

@@ -3013,6 +3013,16 @@ toutf_TVW
 nspool_TVW
    Time step increment at which output will be written to the fort.77 file when the ADCIRC model time is between touts_TVW and toutf_TVW (in days since cold start).
 
+.. _boundaryControl:
+
+boundaryControl
+   Fortran namelist for flux boundary options: :ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>`. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
+
+.. _IMPLICIT_WEIR:
+
+IMPLICIT_WEIR
+   Optional logical value (:ref:`boundaryControl <boundaryControl>`), default .true.: solve the flux of each internal barrier node pair (IBTYPE 4 and 24) with both water levels at the new time level, instead of taking it from the levels of the previous time step. The flux and the levels it moves are then at the same time level, which removes the oscillation of the weir flux at large time steps and small head differences. With the lumped GWCE each pair solves for its flux after the GWCE division; with the consistent GWCE the pair's linearized flux goes into the GWCE matrix. Drowned flow is the lesser of the free and submerged formulas, there is no minimum head or equal-level tolerance, and water crosses only between wet nodes: a source that can wet one of the dry node's elements marks it wet, and the pair passes water from the next step. Barriers with cross-barrier pipes (IBTYPE 5 and 25) keep the previous-step flux. Set .false. for the previous-step flux on all internal barriers. It is turned off with the predictor-corrector GWCE, which it does not support.
+
 .. _TVW:
 
 TVW

@@ -484,7 +484,10 @@ contains
    subroutine internalBarrierSegment(K, I0, N, TimeLoc, pipes)
       use global, only: QN2
       use WEIR_FLUX, only: COMPUTE_INTERNAL_BOUNDARY_FLUX, &
-                           COMPUTE_CROSS_BARRIER_PIPE_FLUX
+                           COMPUTE_CROSS_BARRIER_PIPE_FLUX, &
+                           UPDATE_INTERNAL_BARRIER_CREST
+      use WEIR, only: BARINHT2
+      use WEIR_PAIRS, only: IMPLICIT_WEIR, WEIR_PAIR_CREST
       implicit none
 
       integer, intent(in) :: K, I0, N
@@ -495,7 +498,15 @@ contains
 
       do J = 1, 2*N
          I = I0 + J
-         call COMPUTE_INTERNAL_BOUNDARY_FLUX(I, J, K, TimeLoc, QN2(I))
+         if (IMPLICIT_WEIR .and. .not. pipes) then
+            ! IBTYPE 4/24 pairs are solved at the new time level in the GWCE
+            ! (WEIR_PAIRS), which writes their flux; here only the crest
+            call UPDATE_INTERNAL_BARRIER_CREST(I, TimeLoc)
+            QN2(I) = 0d0
+         else
+            call COMPUTE_INTERNAL_BOUNDARY_FLUX(I, J, K, TimeLoc, QN2(I))
+         end if
+         if (allocated(WEIR_PAIR_CREST)) WEIR_PAIR_CREST(I) = BARINHT2(I)
          if (pipes) then
             PIPE_FLUX = 0d0
             call COMPUTE_CROSS_BARRIER_PIPE_FLUX(I, PIPE_FLUX)
