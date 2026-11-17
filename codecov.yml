@@ -26,3 +26,13 @@ comment:
 
 ignore:
   - thirdparty/**/*
+  # Standalone utility programs that are no longer used
+  - util/adccmp.F
+  - util/adcircResultsComparison.F90
+  - util/build13.F
+  - util/buildstwave23.F
+  - util/hot2asc.F
+  - util/hstime.F
+  - util/inflate.F
+  - wind/owi22.F
+  - wind/p15.F
