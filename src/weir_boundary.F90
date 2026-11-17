@@ -2483,6 +2483,10 @@ contains
 
       LOG_SCOPE_TRACED("COMPUTE_CROSS_BARRIER_PIPE_FLUX", WEIR_BOUNDARY_TRACING)
 
+      ! No flow unless one of the cases below applies. FLUX is intent(OUT),
+      ! so a value the caller set before the call does not count as defined.
+      FLUX = 0.d0
+
       NNBB1 = NBV(IDX) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
       NNBB2 = IBCONN(IDX) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 
