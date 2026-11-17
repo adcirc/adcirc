@@ -569,6 +569,7 @@ workflows:
                         - adcirc_quarterannular-2d-parallel-hotstart
                         - adcirc_quarterannular-2d-parallel-writer
                         - adcirc_swan_apes_irene
+                        - adcirc_quarterannular-2d-hotstart-harmonic
       - run_test:
             name: test_netcdf-<< matrix.test_name >>
             context: adcirc-ci
@@ -602,6 +603,9 @@ workflows:
                         - adcirc_irene_cle15_lc12-parallel
                         - adcirc_irene_holland_legacy-parallel
                         - adcirc_basin-3d-parallel
+                        - adcirc_quarterannular-2d-parallel-netcdf-hotstart-harmonic
+                        - adcirc_basin-3d-parallel-hotstart
+                        - adcirc_basin-3d-hotstart
       - run_test:
             name: test_grib2-<< matrix.test_name >>
             context: adcirc-ci
@@ -638,6 +642,7 @@ workflows:
                         - adcirc_irene_cle15_lc12
                         - adcirc_irene_holland_legacy
                         - adcirc_irene_holland_new-parallel
+                        - adcirc_quarterannular-2d-xdmf
 
   # Not a required check: a failure here (for example, the gfortran build
   # crashing on a case) is visible on the pull request without blocking it
