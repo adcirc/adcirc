@@ -75,6 +75,11 @@ commands:
           that their workspace layers cannot overwrite one another.
         type: string
         default: "build"
+      build_type:
+        description: CMake build type
+        type: enum
+        enum: ["Release", "RelWithDebInfo"]
+        default: "Release"
     steps:
       - run:
           name: << parameters.description >>
@@ -98,7 +103,7 @@ commands:
             fi
             cmake -S . -B << parameters.build_dir >> -G Ninja \
               -DADCIRC_DEVELOPER_MODE=ON \
-              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_BUILD_TYPE=<< parameters.build_type >> \
               "${compiler_args[@]}" \
               -DBUILD_ADCIRC=ON \
               -DBUILD_PADCIRC=ON \
@@ -113,6 +118,42 @@ commands:
               -DBUILD_LIBADCIRC_SHARED=ON \
               << parameters.options >>
             cmake --build << parameters.build_dir >>
+
+  check_build:
+    description: Check that the attached workspace holds the build this test needs
+    parameters:
+      build_dir:
+        type: string
+    steps:
+      # A missing build should fail here, by name, rather than later inside the test runner
+      - run:
+          name: Check for executables in << parameters.build_dir >>
+          command: |
+            grep -m1 -E "model name|CPU part" /proc/cpuinfo || true
+            missing=0
+            for exe in adcirc padcirc adcprep; do
+              if [[ ! -x "/home/adcirc/project/<< parameters.build_dir >>/${exe}" ]]; then
+                echo "ERROR: ${exe} was not found in /home/adcirc/project/<< parameters.build_dir >>"
+                missing=1
+              fi
+            done
+            if [[ ${missing} -ne 0 ]]; then
+              ls -la /home/adcirc/project/<< parameters.build_dir >> || true
+            fi
+            exit ${missing}
+
+  get_test_data:
+    description: Download and unpack one test case from the test suite bucket
+    parameters:
+      test_name:
+        type: string
+    steps:
+      - run:
+          name: Get test data from AWS, << parameters.test_name >>
+          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: Unpack Tests
+          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
 
   legacy_build:
     description: Build ADCIRC with the legacy makefile in work/
@@ -297,28 +338,10 @@ jobs:
     steps:
       - attach_workspace:
           at: /home/adcirc/project
-      # A missing build should fail here, by name, rather than later inside the test runner
-      - run:
-          name: Check for executables in << parameters.build_dir >>
-          command: |
-            grep -m1 "model name" /proc/cpuinfo || true
-            missing=0
-            for exe in adcirc padcirc adcprep; do
-              if [[ ! -x "/home/adcirc/project/<< parameters.build_dir >>/${exe}" ]]; then
-                echo "ERROR: ${exe} was not found in /home/adcirc/project/<< parameters.build_dir >>"
-                missing=1
-              fi
-            done
-            if [[ ${missing} -ne 0 ]]; then
-              ls -la /home/adcirc/project/<< parameters.build_dir >> || true
-            fi
-            exit ${missing}
-      - run:
-          name: Get test data from AWS, <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
-      - run:
-          name: Unpack Tests
-          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
+      - check_build:
+          build_dir: << parameters.build_dir >>
+      - get_test_data:
+          test_name: << parameters.test_name >>
       - run:
           name: Run Test <<parameters.test_name>>
           command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/<<parameters.build_dir>> <<parameters.test_name>>
@@ -335,6 +358,164 @@ jobs:
             mkdir -p /tmp/artifacts
             find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
           when: always
+      - store_artifacts:
+          path: /tmp/artifacts
+
+  # ############################################################
+  # Coverage. ifx does not instrument Fortran for coverage, so
+  # coverage comes from a gfortran build on the arm executor.
+  # Its solutions are compared with the Intel control files and
+  # reported, but a mismatch is not a failure; the Intel test
+  # jobs above remain the check on the solution.
+  # ############################################################
+  build_cmake_coverage_gcc:
+    <<: *default_env_gcc
+    steps:
+      - checkout
+      - cmake_build:
+          description: Build ADCIRC with gfortran coverage instrumentation
+          compiler: gcc
+          build_dir: build-coverage
+          build_type: RelWithDebInfo
+          options: >-
+            -DENABLE_OUTPUT_NETCDF=ON
+            -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME
+            -DNETCDF_DIR=$NETCDFHOME
+            -DENABLE_OUTPUT_XDMF=ON
+            -DXDMFHOME=$XDMFHOME
+            -DENABLE_DATETIME=ON
+            -DENABLE_GRIB2=ON
+            -DCMAKE_Fortran_FLAGS=--coverage
+            -DCMAKE_C_FLAGS=--coverage
+            -DCMAKE_CXX_FLAGS=--coverage
+            -DCMAKE_EXE_LINKER_FLAGS=--coverage
+            -DCMAKE_SHARED_LINKER_FLAGS=--coverage
+      - persist_to_workspace:
+          root: /home/adcirc/project
+          paths:
+            - build-coverage
+
+  coverage_test:
+    <<: *default_env_gcc
+    parameters:
+      test_name:
+        description: "Name of test job to be run"
+        type: string
+    environment:
+      OMPI_MCA_rmaps_base_oversubscribe: "1"
+    steps:
+      # The sources are needed to turn the coverage counters into line coverage
+      - checkout
+      - attach_workspace:
+          at: /home/adcirc/project
+      - check_build:
+          build_dir: build-coverage
+      - get_test_data:
+          test_name: << parameters.test_name >>
+      - run:
+          name: Run << parameters.test_name >> for coverage (differences from the Intel controls are reported, not failed)
+          command: |
+            source /opt/spack-environment/activate.sh
+            mkdir -p /tmp/artifacts
+            cd /home/adcirc/adcirc-cg-testsuite
+            ./RunSingleTest.sh /home/adcirc/project/build-coverage << parameters.test_name >> \
+              --allow-mismatch \
+              --report /tmp/artifacts/<< parameters.test_name >>.comparison.json
+          no_output_timeout: 7200
+      - run:
+          name: Collect coverage for << parameters.test_name >>
+          command: |
+            source /opt/spack-environment/activate.sh
+            python3 -m pip install --quiet --target /tmp/tools gcovr==8.8
+            mkdir -p coverage
+            # Long runs push some line counts past gcovr's sanity threshold
+            PYTHONPATH=/tmp/tools python3 -m gcovr \
+              --root /home/adcirc/project \
+              --exclude 'thirdparty/' \
+              --exclude 'build-coverage/' \
+              --gcov-executable gcov \
+              --gcov-ignore-parse-errors=suspicious_hits.warn_once_per_file \
+              --json coverage/<< parameters.test_name >>.json \
+              build-coverage
+            gzip coverage/<< parameters.test_name >>.json
+            cp /tmp/artifacts/<< parameters.test_name >>.comparison.json coverage/
+      - persist_to_workspace:
+          root: /home/adcirc/project
+          paths:
+            - coverage/<< parameters.test_name >>.json.gz
+            - coverage/<< parameters.test_name >>.comparison.json
+      - run:
+          name: Store log artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - store_artifacts:
+          path: /tmp/artifacts
+
+  # Merging here and uploading once means Codecov never sees a partial report
+  coverage_report:
+    <<: *default_env_gcc
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /home/adcirc/project
+      - run:
+          name: Summarize differences from the Intel control solutions
+          command: |
+            mkdir -p /tmp/artifacts
+            python3 - coverage/*.comparison.json \<<'EOF' | tee /tmp/artifacts/comparison_summary.txt
+            import json
+            import sys
+
+            # Each report is the test runner's --report output: {test: {portion: status}}
+            differing = []
+            n_tests = 0
+            for path in sorted(sys.argv[1:]):
+                with open(path) as f:
+                    report = json.load(f)
+                for test, status in report.items():
+                    n_tests += 1
+                    for portion in ("coldstart", "hotstart"):
+                        if portion in status and not status[portion]["passed"]:
+                            files = ", ".join(status[portion]["failed_files"])
+                            differing.append(f"{test} ({portion}): {files}")
+            print(
+                f"{n_tests} coverage runs, {len(differing)} portions differ from the Intel control solutions. "
+                "This is expected for the gfortran build and is not a failure."
+            )
+            for d in differing:
+                print(f"  {d}")
+            EOF
+      - run:
+          name: Merge coverage
+          command: |
+            source /opt/spack-environment/activate.sh
+            python3 -m pip install --quiet --target /tmp/tools gcovr==8.8 codecov-cli==11.3.2
+            mkdir -p /tmp/artifacts/html
+            PYTHONPATH=/tmp/tools python3 -m gcovr \
+              --root /home/adcirc/project \
+              --json-add-tracefile 'coverage/*.json.gz' \
+              --cobertura coverage.xml \
+              --html-details /tmp/artifacts/html/index.html \
+              --print-summary
+      - run:
+          name: Upload coverage to Codecov
+          command: |
+            source /opt/spack-environment/activate.sh
+            if [[ -z "${CODECOV_TOKEN:-}" ]]; then
+              echo "CODECOV_TOKEN is not available (for example, on a pull request from a fork), so the report is not uploaded"
+              exit 0
+            fi
+            PYTHONPATH=/tmp/tools /tmp/tools/bin/codecovcli --verbose --disable-telem upload-process \
+              --git-service github \
+              --slug "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}" \
+              --disable-search \
+              --plugin noop \
+              --fail-on-error \
+              --file coverage.xml \
+              --name "circleci-${CIRCLE_WORKFLOW_ID}" \
+              --token "${CODECOV_TOKEN}"
       - store_artifacts:
           path: /tmp/artifacts
 
@@ -361,7 +542,7 @@ workflows:
                 - build_cmake_without_netcdf
             matrix:
                 parameters:
-                    test_name:
+                    test_name: &base_tests
                         - adcirc_quarterannular-2d
                         - adcirc_quarterannular-2d-parallel
                         - adcirc_quarterannular-2d-hotstart
@@ -375,7 +556,7 @@ workflows:
                 - build_cmake_with_netcdf
             matrix:
                 parameters:
-                    test_name:
+                    test_name: &netcdf_tests
                         - adcirc_quarterannular-2d-netcdf
                         - adcirc_quarterannular-2d-netcdf-hotstart
                         - adcirc_quarterannular-2d-parallel-netcdf
@@ -407,7 +588,7 @@ workflows:
                 - build_cmake_with_netcdf_and_xdmf_grib
             matrix:
                 parameters:
-                    test_name:
+                    test_name: &grib2_tests
                         - adcirc_alaska_ice-2d
                         - adcirc_apes
                         - adcirc_apes-parallel
@@ -435,3 +616,38 @@ workflows:
                         - adcirc_irene_cle15_lc12
                         - adcirc_irene_holland_legacy
                         - adcirc_irene_holland_new-parallel
+
+  # Not a required check: a failure here (for example, the gfortran build
+  # crashing on a case) is visible on the pull request without blocking it
+  coverage:
+    jobs:
+      - build_cmake_coverage_gcc
+      - coverage_test:
+          name: coverage-<< matrix.test_name >>
+          requires:
+            - build_cmake_coverage_gcc
+          matrix:
+            alias: coverage_tests_base
+            parameters:
+              test_name: *base_tests
+      - coverage_test:
+          name: coverage-<< matrix.test_name >>
+          requires:
+            - build_cmake_coverage_gcc
+          matrix:
+            alias: coverage_tests_netcdf
+            parameters:
+              test_name: *netcdf_tests
+      - coverage_test:
+          name: coverage-<< matrix.test_name >>
+          requires:
+            - build_cmake_coverage_gcc
+          matrix:
+            alias: coverage_tests_grib2
+            parameters:
+              test_name: *grib2_tests
+      - coverage_report:
+          requires:
+            - coverage_tests_base
+            - coverage_tests_netcdf
+            - coverage_tests_grib2
