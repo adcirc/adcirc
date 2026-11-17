@@ -65,6 +65,11 @@ module WEIR_PAIRS
    !   &boundaryControl IMPLICIT_WEIR = .false., take their flux from the
    !   previous step's levels (WEIR_FLUX)
    logical, public :: IMPLICIT_WEIR = .true.
+   !...With IMPLICIT_WEIR, the spilling side reads its level over the crest
+   !   (default) or, with &boundaryControl WEIR_TOTAL_HEAD = .true., its total
+   !   head: the level plus the velocity head of the node's velocity toward
+   !   the weir, from the momentum equations at time level n
+   logical, public :: WEIR_TOTAL_HEAD = .false.
 
    integer :: NPAIR = -1 !...-1: not set up yet
    logical :: ANY_PAIRS = .false. !...some subdomain has a pair
@@ -73,6 +78,7 @@ module WEIR_PAIRS
    real(8), allocatable :: PLEN(:) !...the pair's length l [m]
    integer, allocatable :: KAT(:) !...number of pairs at each node
    real(8), allocatable :: REACH(:) !...lowest level covering one of a node's elements
+   real(8), allocatable :: VHA(:), VHB(:) !...velocity head toward the weir on sides a, b [m]
    !...boundary entries whose forcing the pairs supply (skip in QFORCE)
    logical, allocatable, public :: WEIR_PAIR_ENTRY(:)
 
@@ -266,20 +272,47 @@ contains
    end function WEIR_OVERFLOW
 
    !-----------------------------------------------------------------------
-   !  PAIR_FLOW: flow per unit width from side a to side b at levels ea, eb
+   !  PAIR_FLOW: flow per unit width from side a to side b at levels ea, eb;
+   !  va, vb: each side's velocity head toward the weir. The spilling side
+   !  reads its total head, its level over the crest plus its velocity head;
+   !  the lower side keeps its level, since the velocity that leaves over the
+   !  crest is lost behind it. The velocity heads are fixed during a step, so
+   !  the flow still never falls as the spilling side's level rises.
    !-----------------------------------------------------------------------
-   real(8) pure function PAIR_FLOW(ea, eb, crest, csub, cfree, ramp, asrc, bsrc) result(q)
+   real(8) pure function PAIR_FLOW(ea, eb, crest, csub, cfree, ramp, asrc, bsrc, va, vb) result(q)
       implicit none
-      real(8), intent(IN) :: ea, eb, crest, csub, cfree, ramp
+      real(8), intent(IN) :: ea, eb, crest, csub, cfree, ramp, va, vb
       logical, intent(IN) :: asrc, bsrc
+      q = 0.d0
       if (ea - crest >= eb - crest) then
-         q = 0.d0
-         if (asrc) q = ramp*WEIR_OVERFLOW(ea - crest, eb - crest, csub, cfree)
+         if (asrc .and. ea > crest) q = ramp*WEIR_OVERFLOW(ea - crest + va, eb - crest, csub, cfree)
       else
-         q = 0.d0
-         if (bsrc) q = -ramp*WEIR_OVERFLOW(eb - crest, ea - crest, csub, cfree)
+         if (bsrc .and. eb > crest) q = -ramp*WEIR_OVERFLOW(eb - crest + vb, ea - crest, csub, cfree)
       end if
    end function PAIR_FLOW
+
+   !-----------------------------------------------------------------------
+   !  SET_VELOCITY_HEADS: each side's velocity head toward the weir, from
+   !  the node's velocity at time level n along the side's outward normal
+   !  (zero for a velocity away from the weir, or without WEIR_TOTAL_HEAD)
+   !-----------------------------------------------------------------------
+   subroutine SET_VELOCITY_HEADS()
+      use GLOBAL, only: UU1, VV1
+      use BOUNDARIES, only: NBV, CSII, SIII
+      implicit none
+      integer :: P
+      real(8) :: vn
+      if (.not. allocated(VHA)) allocate (VHA(NPAIR), VHB(NPAIR))
+      VHA = 0.d0
+      VHB = 0.d0
+      if (.not. WEIR_TOTAL_HEAD) return
+      do P = 1, NPAIR
+         vn = max(UU1(NBV(PA(P)))*CSII(PA(P)) + VV1(NBV(PA(P)))*SIII(PA(P)), 0.d0)
+         VHA(P) = vn*vn/(2.d0*G)
+         vn = max(UU1(NBV(PB(P)))*CSII(PB(P)) + VV1(NBV(PB(P)))*SIII(PB(P)), 0.d0)
+         VHB(P) = vn*vn/(2.d0*G)
+      end do
+   end subroutine SET_VELOCITY_HEADS
 
    !-----------------------------------------------------------------------
    !  CAN_SOURCE: a side may spill when its node and a neighbour along the
@@ -320,6 +353,7 @@ contains
       logical :: asrc, bsrc
 
       if (NPAIR <= 0) return
+      call SET_VELOCITY_HEADS()
       allocate (change(NP))
       change = 0.d0
       do P = 1, NPAIR
@@ -376,7 +410,7 @@ contains
       real(8) function resid(term)
          real(8), intent(IN) :: term
          resid = term + carried - cp*PAIR_FLOW(la - ra*term, lb + rb*term, crest, &
-                                               csub, cfree, RAMP, asrc, bsrc)
+                                               csub, cfree, RAMP, asrc, bsrc, VHA(P), VHB(P))
       end function resid
 
       !...the root of resid, as in Cocoa's solve_weir_pair
@@ -519,6 +553,7 @@ contains
       logical :: asrc, bsrc
 
       if (NPAIR <= 0) return
+      call SET_VELOCITY_HEADS()
       if (.not. allocated(ISOBC)) then
          allocate (ISOBC(NP))
          ISOBC = .false.
@@ -549,8 +584,10 @@ contains
          cp = 0.5d0/DT + 0.5d0*tau
          cm = 0.5d0/DT - 0.5d0*tau
          if (ea > crest .or. eb > crest) then
-            up = PAIR_FLOW(ea + 0.5d0*span, eb - 0.5d0*span, crest, csub, cfree, RAMP, asrc, bsrc)
-            dn = PAIR_FLOW(ea - 0.5d0*span, eb + 0.5d0*span, crest, csub, cfree, RAMP, asrc, bsrc)
+            up = PAIR_FLOW(ea + 0.5d0*span, eb - 0.5d0*span, crest, csub, cfree, RAMP, asrc, bsrc, &
+                           VHA(P), VHB(P))
+            dn = PAIR_FLOW(ea - 0.5d0*span, eb + 0.5d0*span, crest, csub, cfree, RAMP, asrc, bsrc, &
+                           VHA(P), VHB(P))
             s = (up - dn)/(2.d0*span)
             !...the line's flow at the difference at n
             q0 = 0.5d0*(up + dn) + s*((ETA1(NA) - ETA1(NB)) - (ea - eb))

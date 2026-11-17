@@ -3016,12 +3016,17 @@ nspool_TVW
 .. _boundaryControl:
 
 boundaryControl
-   Fortran namelist for flux boundary options: :ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>`. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
+   Fortran namelist for flux boundary options: :ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>` and :ref:`WEIR_TOTAL_HEAD <WEIR_TOTAL_HEAD>`. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
 
 .. _IMPLICIT_WEIR:
 
 IMPLICIT_WEIR
    Optional logical value (:ref:`boundaryControl <boundaryControl>`), default .true.: solve the flux of each internal barrier node pair (IBTYPE 4 and 24) with both water levels at the new time level, instead of taking it from the levels of the previous time step. The flux and the levels it moves are then at the same time level, which removes the oscillation of the weir flux at large time steps and small head differences. With the lumped GWCE each pair solves for its flux after the GWCE division; with the consistent GWCE the pair's linearized flux goes into the GWCE matrix. Drowned flow is the lesser of the free and submerged formulas, there is no minimum head or equal-level tolerance, and water crosses only between wet nodes: a source that can wet one of the dry node's elements marks it wet, and the pair passes water from the next step. Barriers with cross-barrier pipes (IBTYPE 5 and 25) keep the previous-step flux. Set .false. for the previous-step flux on all internal barriers. It is turned off with the predictor-corrector GWCE, which it does not support.
+
+.. _WEIR_TOTAL_HEAD:
+
+WEIR_TOTAL_HEAD
+   Optional logical value (:ref:`boundaryControl <boundaryControl>`), default .false.: with :ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>`, the spilling side of an internal barrier node pair (IBTYPE 4 and 24) reads its total head, its level above the crest plus the velocity head of the node's velocity toward the weir (the component along the barrier's outward normal, from the momentum equations at the previous time step). The lower side keeps its level, since the velocity that leaves over the crest is lost behind it. The velocity head is fixed during a time step, so the flux still never falls as the spilling side's level rises, and any crest height, including a crest at the bed, is allowed. With .false. the spilling side reads its level alone.
 
 .. _TVW:
 

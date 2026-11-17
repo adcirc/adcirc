@@ -349,6 +349,7 @@ C     VEW1D channel namelist 11/06/2023 sb
 C     Internal barrier weir namelist, passed through to the subdomains
       logical :: foundBoundaryControlNamelist = .false.
       logical :: IMPLICIT_WEIR = .true.
+      logical :: WEIR_TOTAL_HEAD = .false.
       logical :: activateVEW1DChannelWetPerimeter
       REAL(8)                 :: BARMIN64_SUBM=0.04D0   !...Minimum water depth above weir to consider submerged when the weir is already submerged
       REAL(8)                 :: BARMIN64_NOSUBM=0.04D0  !...Minimum water depth above weir to consider submerged when the weir is not submerged
