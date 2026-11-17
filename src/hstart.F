@@ -119,6 +119,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       INTEGER NCyc, NA, InputFileFmtVn
       INTEGER sd_node_number,fd_node_number
       INTEGER :: NNBB, NNBB1, NNBB2
+      INTEGER :: nrsRecords ! records in each radiation stress array in a binary hotstart file
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
@@ -315,24 +316,6 @@ C        jgf46.34 Added support for IBTYPE=52.
          ! jgf52.08.01: subroutine timestep() uses nodecode. Set it here.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
-
-         if(nrs.ne.0)then
-           CALL readAndMapToSubdomain2d(RSNX1, IHOT, IHOTSTP, moderbin)
-           CALL readAndMapToSubdomain2d(RSNY1, IHOT, IHOTSTP, moderbin)
-           CALL readAndMapToSubdomain2d(RSNX2, IHOT, IHOTSTP, moderbin)
-           CALL readAndMapToSubdomain2d(RSNY2, IHOT, IHOTSTP, moderbin)
-           if(nrs.eq.3)then
-              CALL readAndMapToSubdomain2d(SWAN_RSNX1, IHOT, IHOTSTP, moderbin)
-              CALL readAndMapToSubdomain2d(SWAN_RSNY1, IHOT, IHOTSTP, moderbin)
-              CALL readAndMapToSubdomain2d(SWAN_RSNX2, IHOT, IHOTSTP, moderbin)
-              CALL readAndMapToSubdomain2d(SWAN_RSNY2, IHOT, IHOTSTP, moderbin)
-           else
-              IHOTSTP=IHOTSTP+4*np_g
-           endif
-         else
-           IHOTSTP=IHOTSTP+8*np_g
-         endif
-
 C
          READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUE
@@ -537,6 +520,41 @@ C        jgf46.34 Added support for IBTYPE=52.
          !jgf52.08.01: Subroutine timestep() uses nodecode. Set it here.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
+C
+C        writeHotstart always writes the wave radiation stress block
+C        next: rsx1, rsy1, rsx2, rsy2, then the SWAN rsx1, rsy1, rsx2,
+C        rsy2, each a nodal array, with zeros in place of the arrays a
+C        run does not have. Read the ones this run uses and skip the
+C        rest, so that the records after the block are read from the
+C        right place. The arrays have one record per subdomain node in
+C        serial or in subdomain files, and one per fulldomain node in a
+C        fulldomain file read in parallel, as in readAndMapToSubdomain2D.
+         IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.))
+     &      THEN
+            nrsRecords = NP
+         ELSE
+            nrsRecords = NP_G
+         ENDIF
+         IF (NRS.ne.0) THEN
+            CALL readAndMapToSubdomain2D(RSNX1, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(RSNY1, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(RSNX2, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(RSNY2, IHOT, IHOTSTP, moderbin)
+         ELSE
+            IHOTSTP = IHOTSTP + 4*nrsRecords
+         ENDIF
+         IF (NRS.eq.3) THEN
+            CALL readAndMapToSubdomain2D(SWAN_RSNX1, IHOT, IHOTSTP,
+     &                                   moderbin)
+            CALL readAndMapToSubdomain2D(SWAN_RSNY1, IHOT, IHOTSTP,
+     &                                   moderbin)
+            CALL readAndMapToSubdomain2D(SWAN_RSNX2, IHOT, IHOTSTP,
+     &                                   moderbin)
+            CALL readAndMapToSubdomain2D(SWAN_RSNY2, IHOT, IHOTSTP,
+     &                                   moderbin)
+         ELSE
+            IHOTSTP = IHOTSTP + 4*nrsRecords
+         ENDIF
 C
          READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
