@@ -5282,7 +5282,11 @@ C...
                IHOTSTP = IHOTSTP+12
 C
                do i=1,nfreq+nf
+                  ! The constituent name is stored as two 8-character
+                  ! records, which readBinaryHAHotstart joins back together
                   FNAME=NAMEFR(I)
+                  FNAM8(1)=FNAME(1:8)
+                  FNAM8(2)=FNAME(9:16)
                   WRITE(hss % lun,REC=IHOTSTP+1) FNAM8(1)
                   WRITE(hss % lun,REC=IHOTSTP+2) FNAM8(2)
                   IHOTSTP = IHOTSTP + 2
