@@ -342,8 +342,7 @@ C...3D Global internal output variables.
 
 C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
-C     write_output.F/writeHotstart and writer.F/writeHotstart_through_HSwriter
-C     for writing fulldomain hotstart files.
+C     write_output.F/writeHotstart for writing fulldomain hotstart files.
       REAL(8), ALLOCATABLE, TARGET :: DUU_g(:)
       REAL(8), ALLOCATABLE, TARGET :: DUV_g(:)
       REAL(8), ALLOCATABLE, TARGET :: DVV_g(:)

@@ -46,8 +46,6 @@ module MESSENGER
    type(MPI_Comm) :: COMM_COMP ! COMMUNICATOR FOR COMPUTATION
    type(MPI_Group) :: GROUP_WORLD, GROUP_COMP !, GROUP_WRITER_ONLY
    type(MPI_Group), allocatable :: GROUP_WRITER(:) ! GROUPS FOR GLOBAL FILE WRITING
-   type(MPI_Group), allocatable :: GROUP_WRITEH(:) ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
-   type(MPI_Group), allocatable :: GROUP_HSLEEP(:) ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
    logical, allocatable :: RESNODE(:)
 
    integer, allocatable :: IPROC(:), NNODELOC(:), NNODSEND(:), &
@@ -70,7 +68,6 @@ module MESSENGER
    !jgf50.82: Create a flag for unrecoverable issue on a subdomain
    logical :: subdomainFatalError = .false. ! true if mpi_abort should be called
    logical :: writers_active = .false.
-   logical :: hs_writers_active = .false.
 
    public :: MSG_INIT, MSG_FINI, MSG_TABLE, MSG_START, UPDATEI, UPDATER, &
              MSG_RScalar_Reduce, MSG_BARRIER, MSG_RBCASTD, MSG_RBCAST, &
@@ -78,7 +75,7 @@ module MESSENGER
              WetDrySum, MapToSubdomainIntMpi, AllNodes, ps3dots, ps2dots, &
              msg_imax, updatec3d, updater_w_perbc, mapToSubdomainrealmpi, &
              updater3d, updatem4r, psdot, subdomainFatalError, tag, &
-             mpi_comm_adcirc, writers_active, hs_writers_active, resnode, &
+             mpi_comm_adcirc, writers_active, resnode, &
              msg_abort, neighproc, nnodrecv, irecvloc
 
 contains
@@ -100,8 +97,8 @@ contains
       use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_dup, &
                          MPI_Comm_size, MPI_Comm_rank, MPI_Group_incl, MPI_Comm_create, &
                          MPI_Comm_group, MPI_Init, MPI_Comm
-      use SIZES, only: MNALLPROC, MNPROC, MYPROC, MNWPROH, MNWPROC
-      use GLOBAL, only: COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, COMM
+      use SIZES, only: MNALLPROC, MNPROC, MYPROC, MNWPROC
+      use GLOBAL, only: COMM_WRITER, WRITER_ID, COMM
       use mod_logging, only: t_log_scope, init_log_scope, screenMessage, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: DEBUG
@@ -110,7 +107,6 @@ contains
       type(MPI_Comm), optional, intent(in) :: MPI_COMM_IN
       integer :: I
       integer, allocatable :: RANKS(:) ! array of mpi ranks for compute processors
-      integer :: IRANK_SLEEP(2) !st3 100711  for hsfile
 
       LOG_SCOPE_TRACED("msg_init", MESSENGER_TRACING)
 
@@ -128,8 +124,7 @@ contains
       call MPI_COMM_SIZE(MPI_COMM_ADCIRC, MNALLPROC, IERR) ! Get number of procs
       call MPI_COMM_RANK(MPI_COMM_ADCIRC, MYPROC, IERR) ! Get MPI rank
 
-      MNPROC = MNALLPROC - MNWPROC & ! MNALLPROC = MNPROC + MNWPROC
-               - MNWPROH !             + MNWPROH  !st3 100711 for hsfile
+      MNPROC = MNALLPROC - MNWPROC ! MNALLPROC = MNPROC + MNWPROC
 
       allocate (RANKS(MNPROC + 1))
 
@@ -167,36 +162,6 @@ contains
             end if
          end do
       end if
-      !st3 for hsfile 05.14.2010
-#ifdef ADCNETCDF
-      MNWPROH = 0 !jgfdebug20120215: why is this here?
-#endif
-#ifndef CMPI
-      MNWPROH = 0
-#endif
-      if (MNWPROH > 0) then
-         IRANK_SLEEP(1) = 0
-         allocate (GROUP_WRITEH(MNWPROH), COMM_WRITEH(MNWPROH))
-         allocate (GROUP_HSLEEP(MNWPROH), COMM_HSLEEP(MNWPROH))
-         do I = 1, MNWPROH
-            RANKS(MNPROC + 1) = MNPROC + MNWPROC - 1 + I
-
-            call MPI_GROUP_INCL(GROUP_WORLD, MNPROC + 1, RANKS, &
-                                GROUP_WRITEH(I), IERR)
-            call MPI_COMM_CREATE(MPI_COMM_ADCIRC, GROUP_WRITEH(I), &
-                                 COMM_WRITEH(I), IERR)
-
-            IRANK_SLEEP(2) = MNPROC + MNWPROC - 1 + I
-            call MPI_GROUP_INCL(GROUP_WORLD, 2, IRANK_SLEEP, &
-                                GROUP_HSLEEP(I), IERR)
-            call MPI_COMM_CREATE(MPI_COMM_ADCIRC, GROUP_HSLEEP(I), &
-                                 COMM_HSLEEP(I), IERR)
-
-            if (MYPROC == MNPROC + MNWPROC - 1 + I) then
-               WRITER_ID = I
-            end if
-         end do
-      end if
       deallocate (RANKS)
       COMM = COMM_COMP
 
@@ -211,11 +176,11 @@ contains
    !  vjp  8/29/1999
    !---------------------------------------------------------------------
    subroutine MSG_FINI(DO_MPI_FINALIZE)
-      use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_Barrier, MPI_Abort, MPI_Finalize, &
+      use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_Abort, MPI_Finalize, &
                          MPI_COMM_WORLD
 
-      use SIZES, only: MNWPROC, MYPROC, MNPROC, MNWPROH
-      use GLOBAL, only: SIG_TERM, COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, &
+      use SIZES, only: MNWPROC, MYPROC, MNPROC
+      use GLOBAL, only: SIG_TERM, COMM_WRITER, &
                         CPL2STWAVE, Flag_ElevError, Flag_VelError
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
@@ -231,18 +196,6 @@ contains
                   I
                call MPI_SEND(SIG_TERM, 1, MPI_INTEGER, MNPROC, &
                              TAG, COMM_WRITER(I))
-            end do
-         end if
-      end if
-
-      if (MNWPROH > 0 .and. hs_writers_active) then !st3 100711 for hsfile
-         if (MYPROC == 0) then
-            do I = 1, MNWPROH
-               write (16, *) 'PROC ', MYPROC, ' IS SENDING SIG_TERM TO HSWRITER', &
-                  I
-               call MPI_BARRIER(COMM_HSLEEP(I))
-               call MPI_SEND(SIG_TERM, 1, MPI_INTEGER, MNPROC, &
-                             TAG, COMM_WRITEH(I))
             end do
          end if
       end if

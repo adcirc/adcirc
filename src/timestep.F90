@@ -978,12 +978,8 @@ contains
 !> @param[in] TimeLoc Current simulation time (seconds)
 !-----------------------------------------------------------------------
    subroutine writeHotstartIfNeeded(IT, TimeLoc)
-      use sizes, only: MNWPROH
-      use global, only: NHSINC, NHSTAR, IHOT, C3D, NHOUTONCE
+      use global, only: NHSINC, NHSTAR, IHOT, NHOUTONCE
       use write_output, only: writeHotstart
-#ifdef CMPI
-      use hswriter, only: writeHotstart_through_hswriter
-#endif
 #ifdef CSWAN
       use couple2swan, only: WriteSwanHotStart
 #endif
@@ -996,20 +992,10 @@ contains
       ITEST = (IT/NHSINC)*NHSINC
 
       if ((abs(NHSTAR) > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
-         if (MNWPROH > 0) then
-            if (.not. C3D) then
-#ifdef CMPI
-               call writeHotstart_through_hswriter(TimeLoc, IT)
-#endif
-            else
-               write (6, *) 'HS writer does not support C3D'
-            end if
-         else
-            if (NHOUTONCE) then
-               NHSINC = huge(NHSINC)
-            end if
-            call writeHotstart(TimeLoc, IT)
+         if (NHOUTONCE) then
+            NHSINC = huge(NHSINC)
          end if
+         call writeHotstart(TimeLoc, IT)
 #ifdef CSWAN
          WriteSwanHotStart = .true.
 #endif
