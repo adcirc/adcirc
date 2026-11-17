@@ -207,6 +207,10 @@
       integer :: lineNum  ! line number being read from fort.15
       integer :: echoLine ! line number being echoed to screen
       !
+      ! readControlFile is called once for each XDMF output file, but the
+      ! control file only needs to be read (and its arrays allocated) once
+      logical :: controlFileRead = .false.
+      !
       !-----------------------------------
       contains !   C O N T A I N S
       !-----------------------------------
@@ -232,6 +236,9 @@
       integer :: k
       integer :: nabout_tmp
 
+      if (controlFileRead) then
+         return
+      endif
       ! initialization
       lineNum = 1
 
@@ -608,6 +615,7 @@ c     arc add nws13 190110
          call echoControlFile(6)
       endif
       close(15)
+      controlFileRead = .true.
       return
  10   write(scratchMessage,'(a,i0,a,i0,a)') 'Reading line ',lineNum,
      &    ' gave the following error code: ',ios,'.'
