@@ -12,13 +12,12 @@ coverage:
     patch: yes
     changes: no
 
+# Coverage is uploaded as a Cobertura report from gcovr. gfortran adds branches
+# that are not in the source (I/O error handling, allocate status checks, loop
+# guards), so most executed lines would otherwise count as partial, not covered.
 parsers:
-  gcov:
-    branch_detection:
-      conditional: yes
-      loop: yes
-      method: no
-      macro: no
+  cobertura:
+    partials_as_hits: true
 
 comment:
   layout: "header, diff"
