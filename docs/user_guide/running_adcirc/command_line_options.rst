@@ -29,9 +29,6 @@ ADCIRC has several command line options that control file locations, I/O behavio
 ``-Ws NUM_SPLIT_WRITERS``
    Same as -W option above, but a new file is created each time the data are written; the integer part of the simulation time is appended to the file name.
 
-``-H NUM_HOTSTART_WRITERS``
-   Same as -W option above, except that NUM_HOTSTART_WRITERS MPI processes will be dedicated to writing binary hotstart files. This option does not affect the writing of NetCDF hotstart files. The binary hotstart files that are written using this option are only suitable for 2DDI runs without harmonic analysis.
-
 Version 51 Additions
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -125,6 +122,6 @@ When running ADCIRC in parallel, it's important to understand the workflow:
 
 Performance considerations:
 
-- The ``-W``, ``-Ws``, and ``-H`` options can improve performance by dedicating specific processes to I/O operations
+- The ``-W`` and ``-Ws`` options can improve performance by dedicating specific processes to I/O operations
 - Using the ``-L`` option reduces memory requirements but requires post-processing to combine outputs
 - For large domains with many tidal constituents, the ``-M`` option can prevent memory exhaustion 

@@ -130,7 +130,8 @@ C******************************************************************************
      &   nabout, nscreen, ECHO, t_log_level, t_log_scope, init_log_scope
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
-      use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
+      use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS,
+     &   ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB,
      &   NSTA3DD, NSTA3DV, NSTA3DT, NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
@@ -159,6 +160,7 @@ C******************************************************************************
 #endif
 
       CHARACTER(*), OPTIONAL :: ROOTD
+      LOGICAL :: hotstartWritersRequested ! -H was given on the command line
       REAL(8) :: StaTimHS
       REAL(8) :: RefTimHS
       REAL(8) :: TimeLoc
@@ -212,10 +214,19 @@ C******************************************************************************
 
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
+      ! Dedicated hotstart writer processors (-H) are no longer
+      ! supported. MSG_INIT discards -H in builds with netCDF, so note
+      ! whether it was given here and stop once MPI is running.
+      hotstartWritersRequested = (mnwproh > 0)
       IF (PRESENT(COMM)) THEN
         CALL MSG_INIT(COMM)  ! Init MPI and get MPI-rank of this cpu
       ELSE
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
+      ENDIF
+      IF (hotstartWritersRequested) THEN
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="The -H option (dedicated hotstart writer "
+     &      //"processors) is no longer supported. Run without -H.")
       ENDIF
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       call openLogFile(localdir)  ! jgf50.65: open subdomain log files (fort.16)
