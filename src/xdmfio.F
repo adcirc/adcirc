@@ -1163,19 +1163,29 @@ C-----------------------------------------------------------------------
       real(8), intent(in) :: stay(:)
       character(len=80), intent(in) :: stationType
       INTEGER(8), intent(in) :: xdmfFortranObj ! XDMF object to receive data
-      integer :: informationID ! information index, used as ID to insert array
+      integer :: informationID ! returned by XdmfAddInformation (not used)
+      integer :: numInformation ! informations waiting for the next grid
       !
-      ! add the station locations as an array related to the station information object
+      ! Add the station locations as arrays in station information
+      ! objects. XdmfAddInformation returns an ID for reusing the
+      ! information later, but XdmfAddInformationArray takes the
+      ! information's position among those waiting to be written with
+      ! the next grid, which is the last one added.
+      ! Arguments are: fortran obj, information index, array name,
+      ! values, numValues, arrayType
       informationID = XdmfAddInformation(xdmfFortranObj,
-     &    'station longitude'//char(0),  
+     &    'station longitude'//char(0),
      &    trim(adjustl(stationType))//char(0))
-      ! arguments are: fortran obj, information index, values, numValues, arrayType
-      call XdmfAddInformationArray(xdmfFortranObj, informationID, stax, nsta, 
+      call XdmfRetrieveNumInformation(xdmfFortranObj, numInformation)
+      call XdmfAddInformationArray(xdmfFortranObj, numInformation-1,
+     &    'station longitude'//char(0), stax, nsta,
      &    XDMF_ARRAY_TYPE_FLOAT64)
       informationID = XdmfAddInformation(xdmfFortranObj,
-     &    'station latitude'//char(0),  
+     &    'station latitude'//char(0),
      &    trim(adjustl(stationType))//char(0))
-      call XdmfAddInformationArray(xdmfFortranObj, informationID, stay, nsta, 
+      call XdmfRetrieveNumInformation(xdmfFortranObj, numInformation)
+      call XdmfAddInformationArray(xdmfFortranObj, numInformation-1,
+     &    'station latitude'//char(0), stay, nsta,
      &    XDMF_ARRAY_TYPE_FLOAT64)
       !---------------------------------------------------------------------
       end subroutine writeStationsXDMF
