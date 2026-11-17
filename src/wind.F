@@ -73,7 +73,8 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
       real(8) :: wtime2 ! time associated with new met dataset
       real(8) :: wtime1i ! intermediate NWS13 interpolation timestep
       real(8) :: wtime2i ! intermediate NWS13 interpolation timestep
-      real(8) :: wtiminc ! time increment between met datasets (seconds)
+      real(8) :: wtiminc = 0.d0 ! time increment between met datasets (seconds);
+                                ! not read for every NWS, but always logged
       real(8) :: wtimed ! time in seconds associated with a dataset
       real(8) :: wreftim ! met reference time
 
