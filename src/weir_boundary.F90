@@ -1798,8 +1798,9 @@ contains
       BARRIER_INDEX, BOUNDARYNODE, BOUNDARY, TIMELOC, FLUX)
 
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, &
-                            NVELL, IBCONN, BARINHT
-      use GLOBAL, only: NIBNODECODE, TVW, NODECODE
+                            NVELL, IBCONN, BARINHT, CSII, SIII
+      use GLOBAL, only: NIBNODECODE, TVW, NODECODE, UU1, VV1
+      use WEIR_PAIRS, only: WEIR_TOTAL_HEAD
       implicit none
       integer, intent(IN), target :: BARRIER_INDEX
       integer, intent(IN), target :: BOUNDARY
@@ -1813,6 +1814,7 @@ contains
       integer, pointer :: I, J, K
       real(8) :: RBARWL1, RBARWL2
       real(8) :: RBARWL1F, RBARWL2F
+      real(8) :: RBARWE1, RBARWE2, VN
 
       LOG_SCOPE_TRACED("COMPUTE_INTERNAL_BOUNDARY_FLUX", WEIR_BOUNDARY_TRACING)
 
@@ -1885,8 +1887,22 @@ contains
       RBARWL1 = ETA2(NNBB1) - BARINHT2(I)
       RBARWL2 = ETA2(NNBB2) - BARINHT2(I)
 #endif
-      RBARWL1F = 2.d0*RBARWL1/3.d0
-      RBARWL2F = 2.d0*RBARWL2/3.d0
+      !..............With WEIR_TOTAL_HEAD, each side reads its total head: its
+      !              level above the crest plus the velocity head of its velocity
+      !              toward the weir at time level n (this entry's outward normal
+      !              on this side, its reverse on the other side). The levels
+      !              still decide the direction and whether a side can spill; the
+      !              receiving side's level is used as is in the formula.
+      RBARWE1 = RBARWL1
+      RBARWE2 = RBARWL2
+      if (WEIR_TOTAL_HEAD) then
+         VN = max(UU1(NNBB1)*CSII(I) + VV1(NNBB1)*SIII(I), 0.d0)
+         RBARWE1 = RBARWL1 + VN*VN/(2.d0*G)
+         VN = max(-(UU1(NNBB2)*CSII(I) + VV1(NNBB2)*SIII(I)), 0.d0)
+         RBARWE2 = RBARWL2 + VN*VN/(2.d0*G)
+      end if
+      RBARWL1F = 2.d0*RBARWE1/3.d0
+      RBARWL2F = 2.d0*RBARWE2/3.d0
       FLUX = 0.d0
 
       if ((RBARWL1 < 0.d0) .and. (RBARWL2 < 0.d0)) then
@@ -1913,7 +1929,7 @@ contains
                FLUX = 0.0d0
             else
                FLUX = -RampIntFlux*RBARWL2*BARINCFSB(I)* &
-                      (2.d0*G*(RBARWL1 - RBARWL2))**0.5d0
+                      (2.d0*G*(RBARWE1 - RBARWL2))**0.5d0
             end if
          else
             !..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
@@ -1942,7 +1958,7 @@ contains
                FLUX = 0.0d0
             else
                FLUX = RampIntFlux*RBARWL1*BARINCFSB(I)* &
-                      (2.0d0*G*(RBARWL2 - RBARWL1))**0.5d0
+                      (2.0d0*G*(RBARWE2 - RBARWL1))**0.5d0
                NIBNODECODE(NNBB1) = 1
             end if
          else
