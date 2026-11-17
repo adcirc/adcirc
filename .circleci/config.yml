@@ -29,14 +29,19 @@ parameters:
 # #############################
 # Executor Definitions
 # #############################
+# The working directory is set explicitly because the CMake build trees are
+# passed to the test jobs through the workspace and must be attached at the
+# same absolute path they were built in (the executables carry an RPATH).
 executors:
   intel_executor:
     docker:
       - image: << pipeline.parameters.ci-image >>
+    working_directory: /home/adcirc/project
   gcc_executor:
     docker:
       - image: << pipeline.parameters.ci-image >>
     resource_class: arm.medium
+    working_directory: /home/adcirc/project
 
 # #############################
 # Aliases for the environments
@@ -64,6 +69,12 @@ commands:
         description: Additional CMake options for this configuration
         type: string
         default: ""
+      build_dir:
+        description: >-
+          CMake build directory. Builds that feed test jobs each use their own directory so
+          that their workspace layers cannot overwrite one another.
+        type: string
+        default: "build"
     steps:
       - run:
           name: << parameters.description >>
@@ -85,7 +96,7 @@ commands:
                 -DCMAKE_Fortran_COMPILER=gfortran
               )
             fi
-            cmake -S . -B build -G Ninja \
+            cmake -S . -B << parameters.build_dir >> -G Ninja \
               -DADCIRC_DEVELOPER_MODE=ON \
               -DCMAKE_BUILD_TYPE=Release \
               "${compiler_args[@]}" \
@@ -101,7 +112,7 @@ commands:
               -DBUILD_LIBADCIRC_STATIC=ON \
               -DBUILD_LIBADCIRC_SHARED=ON \
               << parameters.options >>
-            cmake --build build
+            cmake --build << parameters.build_dir >>
 
   legacy_build:
     description: Build ADCIRC with the legacy makefile in work/
@@ -213,10 +224,11 @@ jobs:
       - cmake_build:
           description: Build ADCIRC without external libraries using CMake
           compiler: intel
-      - save_cache:
-          key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+          build_dir: build-base
+      - persist_to_workspace:
+          root: /home/adcirc/project
           paths:
-            - /home/adcirc/project
+            - build-base
 
   build_cmake_with_netcdf:
     <<: *default_env
@@ -229,10 +241,11 @@ jobs:
             -DENABLE_OUTPUT_NETCDF=ON
             -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME
             -DNETCDF_DIR=$NETCDFHOME
-      - save_cache:
-          key: adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+          build_dir: build-netcdf
+      - persist_to_workspace:
+          root: /home/adcirc/project
           paths:
-            - /home/adcirc/project
+            - build-netcdf
 
   build_cmake_with_netcdf_and_xdmf:
     <<: *default_env
@@ -264,23 +277,42 @@ jobs:
             -DXDMFHOME=$XDMFHOME
             -DENABLE_DATETIME=ON
             -DENABLE_GRIB2=ON
-      - save_cache:
-          key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+          build_dir: build-grib2
+      - persist_to_workspace:
+          root: /home/adcirc/project
           paths:
-            - /home/adcirc/project
+            - build-grib2
 
-  test_base:
+  run_test:
     <<: *default_env
     parameters:
       test_name:
         description: "Name of test job to be run"
         default: "adcirc_quarterannular-2d"
         type: string
+      build_dir:
+        description: CMake build directory, persisted to the workspace by the build job this test requires
+        type: enum
+        enum: ["build-base", "build-netcdf", "build-grib2"]
     steps:
-      - restore_cache:
-          name: Restore base build cache
-          keys:
-            - adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+      - attach_workspace:
+          at: /home/adcirc/project
+      # A missing build should fail here, by name, rather than later inside the test runner
+      - run:
+          name: Check for executables in << parameters.build_dir >>
+          command: |
+            grep -m1 "model name" /proc/cpuinfo || true
+            missing=0
+            for exe in adcirc padcirc adcprep; do
+              if [[ ! -x "/home/adcirc/project/<< parameters.build_dir >>/${exe}" ]]; then
+                echo "ERROR: ${exe} was not found in /home/adcirc/project/<< parameters.build_dir >>"
+                missing=1
+              fi
+            done
+            if [[ ${missing} -ne 0 ]]; then
+              ls -la /home/adcirc/project/<< parameters.build_dir >> || true
+            fi
+            exit ${missing}
       - run:
           name: Get test data from AWS, <<parameters.test_name>>
           command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
@@ -289,81 +321,7 @@ jobs:
           command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
       - run:
           name: Run Test <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
-          no_output_timeout: 7200
-      - run:
-          name: Store log artifacts
-          command: |
-            mkdir -p /tmp/artifacts
-            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-          when: always
-      - run:
-          name: Store graphics artifacts
-          command: |
-            mkdir -p /tmp/artifacts
-            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
-          when: always
-      - store_artifacts:
-          path: /tmp/artifacts
-
-  test_netcdf:
-    <<: *default_env
-    parameters:
-      test_name:
-        description: "Name of test job to be run"
-        default: "adcirc_quarterannular-2d"
-        type: string
-    steps:
-      - restore_cache:
-          name: Restore netcdf build cache
-          keys:
-            - adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-      - run:
-          name: Get test data from AWS, <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
-      - run:
-          name: Unpack Tests
-          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
-      - run:
-          name: <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
-          no_output_timeout: 7200
-      - run:
-          name: Store log artifacts
-          command: |
-            mkdir -p /tmp/artifacts
-            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-          when: always
-      - run:
-          name: Store graphics artifacts
-          command: |
-            mkdir -p /tmp/artifacts
-            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
-          when: always
-      - store_artifacts:
-          path: /tmp/artifacts
-
-  test_grib2:
-    <<: *default_env
-    parameters:
-      test_name:
-        description: "Name of test job to be run"
-        default: "adcirc_quarterannular-2d"
-        type: string
-    steps:
-      - restore_cache:
-          name: Restore grib2 build cache
-          keys:
-            - adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-      - run:
-          name: Get test data from AWS, <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
-      - run:
-          name: Unpack Tests
-          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
-      - run:
-          name: <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/<<parameters.build_dir>> <<parameters.test_name>>
           no_output_timeout: 7200
       - run:
           name: Store log artifacts
@@ -396,7 +354,9 @@ workflows:
       - build_cmake_without_netcdf
       - build_cmake_with_netcdf
       - build_cmake_with_netcdf_and_xdmf_grib
-      - test_base:
+      - run_test:
+            name: test_base-<< matrix.test_name >>
+            build_dir: build-base
             requires:
                 - build_cmake_without_netcdf
             matrix:
@@ -408,7 +368,9 @@ workflows:
                         - adcirc_quarterannular-2d-parallel-hotstart
                         - adcirc_quarterannular-2d-parallel-writer
                         - adcirc_swan_apes_irene
-      - test_netcdf:
+      - run_test:
+            name: test_netcdf-<< matrix.test_name >>
+            build_dir: build-netcdf
             requires:
                 - build_cmake_with_netcdf
             matrix:
@@ -438,7 +400,9 @@ workflows:
                         - adcirc_irene_cle15_lc12-parallel
                         - adcirc_irene_holland_legacy-parallel
                         - adcirc_basin-3d-parallel
-      - test_grib2:
+      - run_test:
+            name: test_grib2-<< matrix.test_name >>
+            build_dir: build-grib2
             requires:
                 - build_cmake_with_netcdf_and_xdmf_grib
             matrix:
