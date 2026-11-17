@@ -38,6 +38,12 @@ module ADC_CONSTANTS
 
    public
 
+   !---Exit codes---!
+   ! Defined here rather than in mod_terminate so that MESSENGER, which
+   ! mod_terminate depends on, can use them too
+   integer, parameter :: ADCIRC_EXIT_SUCCESS = 0 !< successful exit code
+   integer, parameter :: ADCIRC_EXIT_FAILURE = 1 !< failure exit code
+
    !---Physical Constants---!
 
    !...Default gravitational acceleration
