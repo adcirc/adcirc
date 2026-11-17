@@ -150,7 +150,26 @@ commands:
     steps:
       - run:
           name: Get test data from AWS, << parameters.test_name >>
-          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+          command: |
+            source /opt/spack-environment/activate.sh
+            export AWS_DEFAULT_REGION=us-east-1
+            if [[ -n "${AWS_ROLE_ARN:-}" ]]; then
+              # AWS_ROLE_ARN comes from the adcirc-ci context; the AWS CLI exchanges
+              # the job's OIDC token for short-lived credentials for that role
+              if [[ -z "${CIRCLE_OIDC_TOKEN_V2:-}" ]]; then
+                echo "ERROR: AWS_ROLE_ARN is set but this job has no OIDC token"
+                exit 1
+              fi
+              (umask 077 && printf '%s' "${CIRCLE_OIDC_TOKEN_V2}" > /tmp/oidc-token)
+              export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/oidc-token
+              auth=()
+            else
+              echo "AWS_ROLE_ARN is not set (no adcirc-ci context, e.g. a pull request from a fork); downloading without credentials"
+              auth=(--no-sign-request)
+            fi
+            aws s3 cp "${auth[@]}" \
+              s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz \
+              /home/adcirc/adcirc_testsuite.tar.gz
       - run:
           name: Unpack Tests
           command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
@@ -537,6 +556,7 @@ workflows:
       - build_cmake_with_netcdf_and_xdmf_grib
       - run_test:
             name: test_base-<< matrix.test_name >>
+            context: adcirc-ci
             build_dir: build-base
             requires:
                 - build_cmake_without_netcdf
@@ -551,6 +571,7 @@ workflows:
                         - adcirc_swan_apes_irene
       - run_test:
             name: test_netcdf-<< matrix.test_name >>
+            context: adcirc-ci
             build_dir: build-netcdf
             requires:
                 - build_cmake_with_netcdf
@@ -583,6 +604,7 @@ workflows:
                         - adcirc_basin-3d-parallel
       - run_test:
             name: test_grib2-<< matrix.test_name >>
+            context: adcirc-ci
             build_dir: build-grib2
             requires:
                 - build_cmake_with_netcdf_and_xdmf_grib
@@ -624,6 +646,7 @@ workflows:
       - build_cmake_coverage_gcc
       - coverage_test:
           name: coverage-<< matrix.test_name >>
+          context: adcirc-ci
           requires:
             - build_cmake_coverage_gcc
           matrix:
@@ -632,6 +655,7 @@ workflows:
               test_name: *base_tests
       - coverage_test:
           name: coverage-<< matrix.test_name >>
+          context: adcirc-ci
           requires:
             - build_cmake_coverage_gcc
           matrix:
@@ -640,6 +664,7 @@ workflows:
               test_name: *netcdf_tests
       - coverage_test:
           name: coverage-<< matrix.test_name >>
+          context: adcirc-ci
           requires:
             - build_cmake_coverage_gcc
           matrix:
@@ -647,6 +672,7 @@ workflows:
             parameters:
               test_name: *grib2_tests
       - coverage_report:
+          context: adcirc-ci
           requires:
             - coverage_tests_base
             - coverage_tests_netcdf
