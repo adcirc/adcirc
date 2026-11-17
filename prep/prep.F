@@ -2449,8 +2449,8 @@ C....    SB VEW1D channel control namelist
      &       ' /'
          endif
          if (foundBoundaryControlNamelist) then
-            write(15,'(a,l1,a)') '&boundaryControl IMPLICIT_WEIR=',
-     &       IMPLICIT_WEIR, ' /'
+            write(15,'(a,l1,a,l1,a)') '&boundaryControl IMPLICIT_WEIR=',
+     &       IMPLICIT_WEIR, ', WEIR_TOTAL_HEAD=', WEIR_TOTAL_HEAD, ' /'
          endif
 
 C...     wjp additions for WarnElev Namelist
@@ -7838,7 +7838,7 @@ C---------------------------------------------------------------------------
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
      &    foundVEW1DChannelControlNamelist, foundBoundaryControlNamelist,
-     &    IMPLICIT_WEIR, meshHasWeir, meshHasInternalWeir,
+     &    IMPLICIT_WEIR, WEIR_TOTAL_HEAD, meshHasWeir, meshHasInternalWeir,
      &    meshHasWeirWithPipes
       USE GLOBAL_3DVS, ONLY: I3DGB
       USE NODALATTRIBUTES, ONLY : outputTau0

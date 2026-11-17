@@ -586,7 +586,7 @@ C.....Control for VEW1D channels 11/06/2023 sb
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
-      NAMELIST /boundaryControl/ IMPLICIT_WEIR
+      NAMELIST /boundaryControl/ IMPLICIT_WEIR, WEIR_TOTAL_HEAD
 
       LOG_SCOPE_TRACED("read15", READ_GLOBAL_TRACING)
 c.....tcm v51.20.03 initialize external station location specifications

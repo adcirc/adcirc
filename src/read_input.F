@@ -133,7 +133,7 @@ Casey 251212: Adding time control.
      &   BARSLIM64_ELEM, BARSLIM64_EDGE
 
       USE WEIR, ONLY: FOUND_TVW_NML
-      USE WEIR_PAIRS, ONLY: IMPLICIT_WEIR
+      USE WEIR_PAIRS, ONLY: IMPLICIT_WEIR, WEIR_TOTAL_HEAD
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
@@ -257,7 +257,7 @@ C.... SB
      &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
 C     Flux boundaries: internal barrier weirs (IBTYPE 4/24)
-      NAMELIST /boundaryControl/ IMPLICIT_WEIR
+      NAMELIST /boundaryControl/ IMPLICIT_WEIR, WEIR_TOTAL_HEAD
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -814,8 +814,8 @@ C     Internal barrier weirs: flux at the new time level (WEIR_PAIRS)
       namelistSpecifier = 'boundaryControl'
       READ(UNIT=15,NML=boundaryControl,IOSTAT=ios,IOMSG=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
-      write(scratchMessage,'(a,l1)') "IMPLICIT_WEIR=",
-     &   IMPLICIT_WEIR
+      write(scratchMessage,'(a,l1,a,l1)') "IMPLICIT_WEIR=",
+     &   IMPLICIT_WEIR, " WEIR_TOTAL_HEAD=", WEIR_TOTAL_HEAD
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
