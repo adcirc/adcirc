@@ -2376,12 +2376,21 @@
                   DOTVEC = VL1X*VL2X+VL1Y*VL2Y
                   VECNORM = (SQRT(VL1X**2 + VL1Y**2))*
      &                      (SQRT(VL2X**2 + VL2Y**2))
-                  COSTHETA=DOTVEC/VECNORM
-                  IF(COSTHETA.GT.1.0d0) COSTHETA=1.0d0
-                  IF(COSTHETA.LT.-1.0d0) COSTHETA=-1.0d0
-                  THETA = RAD2DEG*ACOS(COSTHETA)
-                  CROSS = -VL1X*VL2Y+VL2X*VL1Y
-                  IF(CROSS.LT.0) THETA = 360.d0 - THETA
+                  IF (VECNORM.GT.0.d0) THEN
+                     COSTHETA=DOTVEC/VECNORM
+                     IF(COSTHETA.GT.1.0d0) COSTHETA=1.0d0
+                     IF(COSTHETA.LT.-1.0d0) COSTHETA=-1.0d0
+                     THETA = RAD2DEG*ACOS(COSTHETA)
+                     CROSS = -VL1X*VL2Y+VL2X*VL1Y
+                     IF(CROSS.LT.0) THETA = 360.d0 - THETA
+                  ELSE
+                     ! a neighbouring boundary node coincides with this
+                     ! one, so there is no angle (0/0): treat the boundary
+                     ! as straight here, which leaves its type unchanged
+                     COSTHETA = -1.0d0
+                     THETA = 180.d0
+                     CROSS = 0.d0
+                  ENDIF
                ENDIF
                IF (I.eq.1) THEN
                   ! jgf51.15: record the properties at the
