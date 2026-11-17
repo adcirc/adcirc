@@ -2946,8 +2946,10 @@ C     jgf49.30 Initialize to reasonable defaults.
                             ! ("fort.22" is default)
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               call screenMessage(INFO,scratchMessage)
                infile = trim(CMDLINEARG)
+               write(scratchMessage,'(3A)') "Reading the track from '",
+     &            trim(infile), "'."
+               call screenMessage(INFO,scratchMessage)
             CASE DEFAULT
                write(screenunit,*) "ERROR: The command line option '",
      &             CMDLINEARG(1:2),"' is not valid."
