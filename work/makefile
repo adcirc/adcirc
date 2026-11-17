@@ -811,7 +811,7 @@ $(O_DIR)gwce.o        :  gwce.F $(O_DIR)baroclinic.o $(O_DIR)itpackv.o $(O_DIR)n
 $(O_DIR)momentum2d.o  :  momentum2d.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)momentum3d.o  :  momentum3d.F90
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
-$(O_DIR)messenger.o   :  messenger.F90 $(O_DIR)sizes.o $(O_DIR)global.o
+$(O_DIR)messenger.o   :  messenger.F90 $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)constants.o
 
 WRITER_DEP := writer.F  $(O_DIR)terminate.o $(O_DIR)messenger.o
 ifeq ($(NETCDF),enable)

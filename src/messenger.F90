@@ -183,6 +183,7 @@ contains
       use GLOBAL, only: SIG_TERM, COMM_WRITER, &
                         CPL2STWAVE, Flag_ElevError, Flag_VelError
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
+      use ADC_CONSTANTS, only: ADCIRC_EXIT_FAILURE
       implicit none
       logical, optional, intent(in) :: DO_MPI_FINALIZE
       integer :: I
@@ -202,7 +203,9 @@ contains
 
       if (subdomainFatalError .eqv. .true.) then
          write (*, *) 'PROC ', MYPROC, ' IS ABORTING MPI_COMM_ADCIRC DUE TO FATAL ERROR'
-         call MPI_ABORT(MPI_COMM_ADCIRC, MYPROC)
+         ! The error code becomes mpirun's exit status, so it must be
+         ! nonzero; the rank number would be 0 on processor 0
+         call MPI_ABORT(MPI_COMM_ADCIRC, ADCIRC_EXIT_FAILURE)
       end if
 
       ! tcm v51.32  added a "go nuclear" option for killing
@@ -214,13 +217,13 @@ contains
          if (Flag_ElevError .eqv. .true.) then
             write (*, *) 'PROC ', MYPROC, &
                ' IS ABORTING MPI_COMM_WORLD DUE TO ELEVATION ERROR'
-            call mpi_abort(mpi_comm_world, myproc)
+            call mpi_abort(mpi_comm_world, ADCIRC_EXIT_FAILURE)
          end if
          ! DMW 202401 Check for velocity exceeding error level
          if (Flag_VelError .eqv. .true.) then
             write (*, *) 'PROC ', MYPROC, &
                ' IS ABORTING MPI_COMM_WORLD DUE TO VELOCITY ERROR'
-            call mpi_abort(mpi_comm_world, myproc)
+            call mpi_abort(mpi_comm_world, ADCIRC_EXIT_FAILURE)
          end if
       end if
 
@@ -1588,9 +1591,9 @@ contains
    subroutine MSG_ABORT()
       use mpi_f08, only: MPI_Abort
       use global, only: comm
+      use ADC_CONSTANTS, only: ADCIRC_EXIT_FAILURE
       implicit none
-      integer :: myerrcode
-      call MPI_Abort(comm, myerrcode)
+      call MPI_Abort(comm, ADCIRC_EXIT_FAILURE)
    end subroutine MSG_ABORT
 
 end module MESSENGER

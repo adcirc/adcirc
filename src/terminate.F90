@@ -27,10 +27,8 @@
 !> that all processes shut down cleanly and error messages are properly logged.
 !-----------------------------------------------------------------------
 module mod_terminate
+   use ADC_CONSTANTS, only: ADCIRC_EXIT_SUCCESS, ADCIRC_EXIT_FAILURE
    implicit none
-
-   integer, parameter :: ADCIRC_EXIT_SUCCESS = 0 !< successful exit code
-   integer, parameter :: ADCIRC_EXIT_FAILURE = 1 !< failure exit code
 
    private
 
