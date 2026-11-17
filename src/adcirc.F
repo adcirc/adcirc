@@ -536,8 +536,13 @@ C******************************************************************************
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
-      CALL solveHarmonicAnalysis(ITIME)
-      CALL writeHarmonicAnalysisOutput(ITIME)
+C...  Not on the writer ranks (MYPROC >= MNPROC): they leave ADCIRC_Init
+C...  before the input is read, so the harmonic analysis parameters are
+C...  not set there
+      IF (MYPROC.LT.MNPROC) THEN
+         CALL solveHarmonicAnalysis(ITIME)
+         CALL writeHarmonicAnalysisOutput(ITIME)
+      ENDIF
 
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL terminate(exit_code=ADCIRC_EXIT_SUCCESS,
