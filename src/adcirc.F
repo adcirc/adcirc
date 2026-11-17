@@ -115,7 +115,8 @@ C******************************************************************************
      &   FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
-     &   get_numwriters, mnstae, mnwproh, mnwproc, localdir
+     &   get_numwriters, mnstae, mnwproc, localdir,
+     &   hotstartWritersRequested
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2,
      &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
@@ -149,7 +150,6 @@ C******************************************************************************
       USE MESSENGER, ONLY : msg_init, msg_table, msg_start,
      &   allnodes
       USE WRITER, ONLY : writer_init, sendLabelInfoToWriters
-      USE HSWRITER, ONLY : hswriter_init
 #endif
       IMPLICIT NONE
 
@@ -160,7 +160,6 @@ C******************************************************************************
 #endif
 
       CHARACTER(*), OPTIONAL :: ROOTD
-      LOGICAL :: hotstartWritersRequested ! -H was given on the command line
       REAL(8) :: StaTimHS
       REAL(8) :: RefTimHS
       REAL(8) :: TimeLoc
@@ -214,15 +213,12 @@ C******************************************************************************
 
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
-      ! Dedicated hotstart writer processors (-H) are no longer
-      ! supported. MSG_INIT discards -H in builds with netCDF, so note
-      ! whether it was given here and stop once MPI is running.
-      hotstartWritersRequested = (mnwproh > 0)
       IF (PRESENT(COMM)) THEN
         CALL MSG_INIT(COMM)  ! Init MPI and get MPI-rank of this cpu
       ELSE
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
+      ! Dedicated hotstart writer processors (-H) are no longer supported
       IF (hotstartWritersRequested) THEN
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &      message="The -H option (dedicated hotstart writer "
@@ -231,8 +227,7 @@ C******************************************************************************
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       call openLogFile(localdir)  ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
-      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
-      if ( (mnwproh > 0.or.mnwproc > 0) .and. myProc >= mnproc) then
+      if ( mnwproc > 0 .and. myProc >= mnproc) then
          return
       endif
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
@@ -431,14 +426,13 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
-      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+      USE SIZES, ONLY : mnproc, mnwproc, myproc
       USE GLOBAL, ONLY : iTime, statim, dtdp,
      &   earlyterminate
       USE mod_logging, ONLY : allMessage,
      &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
-      USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
 
 #ifdef CSWAN
@@ -449,7 +443,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       USE WRITE_OUTPUT,ONLY: writeOutput2D
       USE mod_timestep, ONLY: TIMESTEP
 #ifdef CMPI      
-      USE MESSENGER, ONLY: writers_active, hs_writers_active
+      USE MESSENGER, ONLY: writers_active
 #endif      
       IMPLICIT NONE
 
@@ -463,24 +457,13 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
-      if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
-         if ( myproc < mnproc+mnwproc ) then   !st3
-            !call sendLabelInfoToWriters()
-            call logMessage(INFO,"Enter writer main.")
-            call writer_main()
-            return
-         else
-            call hswriter_main()
-            return
-         endif
-      elseif ( (mnwproc > 0 .or. mnwproh > 0) .and. myproc == 0 ) then
-         if(mnwproc > 0)then
-             call sendLabelInfoToWriters()
-             writers_active = .true.
-         endif
-         if(mnwproh > 0)then
-             hs_writers_active = .true.
-         endif
+      if ( mnwproc > 0 .and. myproc >= mnproc) then
+         call logMessage(INFO,"Enter writer main.")
+         call writer_main()
+         return
+      elseif ( mnwproc > 0 .and. myproc == 0 ) then
+         call sendLabelInfoToWriters()
+         writers_active = .true.
       endif
 #endif
 
@@ -520,7 +503,6 @@ C             to then call the SWAN time-stepping subroutine.
 ! used again if adcirc_run is called more than once.
 #ifdef CMPI
       IF (MYPROC == 0 .and. MNWPROC > 0) CALL WRITER_PAUSE()
-      IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
       RETURN
@@ -539,7 +521,7 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
-      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+      USE SIZES, ONLY : mnproc, mnwproc, myproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
 
       IMPLICIT NONE

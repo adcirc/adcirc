@@ -38,7 +38,7 @@ C
      &  MNTIF,MNBFR,MNFFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,MNHARF
       INTEGER :: MNPROC         ! Number of compute processors
       INTEGER :: MNWPROC        ! Number of writer processors
-      INTEGER :: MNWPROH        ! Number of Hwriter processors !st3 100711
+      LOGICAL :: hotstartWritersRequested = .false. ! -H (no longer supported) was given
       LOGICAL :: ISPLIT         ! .true. if splitting output for writer !st3 100708:
       INTEGER :: MNALLPROC      ! Number of all processors (= MNPROC + MNWPROC)
 C
@@ -223,11 +223,13 @@ Cobell 110518: Add compiler flag for local hot start.
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '",cmdlinearg(1:2),"."
                endif
-            case("-W","-H") !tcm v51.09 added test for -H (Hot start writers)
+            case("-W","-H")
                i = i + 1
                ! this is the number of writer processors, and will
                ! be parsed in a later call to GET_NUMWRITERS
-               !  ... could also be -Ws for round-robin writers
+               !  ... could also be -Ws for round-robin writers.
+               ! -H (hotstart writers) is no longer supported;
+               ! ADCIRC_Init stops with an error if it is given
             case("-M","-m")
                ! jgf51.21.11: Added options related to the mesh file
                select case(cmdlinearg(1:4))
@@ -435,16 +437,15 @@ C-----------------------------------------------------------------------
          end do
       end if
 !
-      MNWPROH = 0  !st3 100711 for hsfile
+      ! Dedicated hotstart writer processors (-H) are no longer
+      ! supported; note that the option was given so that ADCIRC_Init
+      ! can stop with an error once MPI is running
+      hotstartWritersRequested = .false.
       if (ARGCOUNT > 0) then
-         i = 0
-         do while (i < ARGCOUNT)
-            i = i + 1
+         do i = 1, ARGCOUNT
             call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-H") then
-               i = i + 1
-               call GET_COMMAND_ARGUMENT(i,cmdlinearg)
-               read(cmdlinearg,*) MNWPROH
+               hotstartWritersRequested = .true.
             endif
          end do
       end if

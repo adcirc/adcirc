@@ -813,8 +813,7 @@ $(O_DIR)momentum3d.o  :  momentum3d.F90
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 
-#!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
-WRITER_DEP := writer.F  $(O_DIR)terminate.o $(O_DIR)messenger.o $(O_DIR)globalio.o
+WRITER_DEP := writer.F  $(O_DIR)terminate.o $(O_DIR)messenger.o
 ifeq ($(NETCDF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)netcdfio.o
 endif

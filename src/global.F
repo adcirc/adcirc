@@ -138,9 +138,7 @@ C     global number of elevation, velocity, and meteorological stations
 C
 C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
-C     write_output.F/writeHotstart and
-C     writer.F/writeHotstart_through_HSwriter
-C     for writing fulldomain hotstart files.
+C     write_output.F/writeHotstart for writing fulldomain hotstart files.
       REAL(8), ALLOCATABLE, TARGET :: ETA1_g(:)
       REAL(8), ALLOCATABLE, TARGET :: ETA2_g(:)
       REAL(8), ALLOCATABLE, TARGET :: EtaDisc_g(:)
@@ -222,8 +220,6 @@ C     globalio and writer modules
       ! writer processor; their communicator ids are stored in the
       ! following array
       type(MPI_Comm), allocatable ::  comm_writer(:)
-      ! communicators for hotstart file writing !st3
-      type(MPI_Comm), allocatable ::  comm_writeh(:), comm_hsleep(:)
 #endif
       !
       ! = 0 if this is a compute proc; > 0 if this is a writer node
