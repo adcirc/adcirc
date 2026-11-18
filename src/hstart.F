@@ -81,7 +81,7 @@ C
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE mod_flux_boundaries, ONLY : hotstartNormalFlowBoundary
-      USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
+      USE MOD_RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : readNetCDFHotstart,

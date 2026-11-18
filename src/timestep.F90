@@ -730,7 +730,7 @@ contains
       use ADC_CONSTANTS, only: WaveStressGrad_Cap
       use mesh, only: NP
       use wind, only: RSGET
-      use rs2, only: RS2GET
+      use mod_rs2, only: RS2GET
 #ifdef CSWAN
       use global, only: NWS, wvnxout, wvnyout, RampMete, &
                         SWAN_RSNX1, SWAN_RSNX2, SWAN_RSNY1, SWAN_RSNY2
