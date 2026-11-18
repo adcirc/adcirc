@@ -1710,7 +1710,8 @@ module WEIR_FLUX
              COMPUTE_INTERNAL_BOUNDARY_FLUX, &
              COMPUTE_CROSS_BARRIER_PIPE_FLUX, &
              COMPUTE_INTERNAL_BOUNDARY64_FLUX, &
-             SET_SUBMERGED64_AT, UPDATE_INTERNAL_BARRIER_CREST
+             SET_SUBMERGED64_AT, UPDATE_INTERNAL_BARRIER_CREST, &
+             RESTART_VEW64_FLUXES
 
    !-----------------------------------------------------------------------
 contains
@@ -2753,5 +2754,125 @@ contains
 #endif
 
    !-----------------------------------------------------------------------
+   !-----------------------------------------------------------------------
+   !     S U B R O U T I N E
+   !       R E S T A R T _ V E W 6 4 _ F L U X E S
+   !-----------------------------------------------------------------------
+   !  Hot start: rebuild the over-wall fluxes of the IBTYPE=64 (VEW)
+   !  boundary entries, which are not stored in the hotstart file. Called
+   !  from HOTSTART before the first time step; on return QN1 and QN2 hold
+   !  the fluxes of the two time levels before the restart, as the time
+   !  step expects them before its QN0 <- QN1 <- QN2 shift.
+   !
+   !  The flux of a time level is computed from the water level of the
+   !  previous level. The hotstart file holds the last two levels
+   !  (ETA1 = n-1, ETA2 = n), so
+   !    QN2 (level n)   = flux(ETA1) * ramp(n), exact;
+   !    QN1 (level n-1) = flux of the level n-2 water level, which is not
+   !                      stored. It is extrapolated linearly from
+   !                      flux(ETA1) and flux(ETA2), or set to flux(ETA1)
+   !                      when either is zero or they differ in sign
+   !                      (e.g. across a change of submergence).
+   !  The fluxes are computed with the same routines as in the time step,
+   !  including the submergence flags; the wet/dry state of level n is used
+   !  for both levels.
+   !-----------------------------------------------------------------------
+   subroutine RESTART_VEW64_FLUXES(TIMELOC, RAMP_PREV, RAMP_CURR)
+      use GLOBAL, only: ETA1, QN1, QN2, NODECODE, NNODECODE
+      use BOUNDARIES, only: NBOU, NVELL, NVEL, ISSUBMERGED64
+      implicit none
+      real(8), intent(IN) :: TIMELOC !...time of the hot start
+      real(8), intent(IN) :: RAMP_PREV !...internal flux ramp at level n-1
+      real(8), intent(IN) :: RAMP_CURR !...internal flux ramp at level n
+      real(8), allocatable :: G1(:), G2(:), ETA2SAVE(:)
+      integer, allocatable :: NODECODESAVE(:)
+      real(8) :: RAMPSAVE, GX
+      logical :: TVWSAVE
+      integer :: I
+
+      LOG_SCOPE_TRACED("RESTART_VEW64_FLUXES", WEIR_BOUNDARY_TRACING)
+
+      allocate (G1(NVEL), G2(NVEL))
+      G1 = 0d0
+      G2 = 0d0
+
+      !...Unramped fluxes; no time-varying weir updates while rebuilding
+      RAMPSAVE = RAMPINTFLUX
+      RAMPINTFLUX = 1d0
+      TVWSAVE = INT_TVW
+      INT_TVW = .false.
+
+      !...Wet/dry state of the hot start: HOTSTART reads it into NNODECODE,
+      !   and NODECODE is set from it only in the first time step. The flux
+      !   routines test NODECODE, which here still holds its initial value,
+      !   so that dry nodes would pass weir flow.
+      NODECODESAVE = NODECODE
+      NODECODE = NNODECODE
+
+      !...Flux from the level n-1 water level
+      ETA2SAVE = ETA2
+      ETA2 = ETA1
+      ISSUBMERGED64 = 0
+      call FLUXES64(G1)
+      !...Flux from the level n water level
+      ETA2 = ETA2SAVE
+      call FLUXES64(G2)
+
+      RAMPINTFLUX = RAMPSAVE
+      INT_TVW = TVWSAVE
+      NODECODE = NODECODESAVE
+
+      do I = 1, NVEL
+         if (LBCODEI(I) /= 64) cycle
+         QN2(I) = RAMP_CURR*G1(I)
+         GX = G1(I)
+         if (G1(I)*G2(I) > 0d0) then
+            GX = 2d0*G1(I) - G2(I)
+            if ((GX >= 0d0) .neqv. (G1(I) >= 0d0)) GX = G1(I)
+         end if
+         QN1(I) = RAMP_PREV*GX
+      end do
+
+   contains
+
+      !...Submergence flags and fluxes of all IBTYPE=64 entries, as in TIMESTEP
+      subroutine FLUXES64(G)
+         real(8), intent(INOUT) :: G(:)
+         integer :: II, J, K
+         II = 0
+         do K = 1, NBOU
+            select case (LBCODEI(II + 1))
+            case (4, 24, 5, 25)
+               II = II + NVELL(K)*2
+            case (64)
+               do J = 1, NVELL(K)
+                  II = II + 1
+                  call SET_SUBMERGED64_AT(II, J, K, TIMELOC)
+               end do
+               II = II + NVELL(K)
+            case DEFAULT
+               II = II + NVELL(K)
+            end select
+         end do
+         II = 0
+         do K = 1, NBOU
+            select case (LBCODEI(II + 1))
+            case (64)
+               do J = 1, NVELL(K)*2
+                  II = II + 1
+                  call COMPUTE_INTERNAL_BOUNDARY64_FLUX(II, J, K, TIMELOC, G(II))
+               end do
+            case (4, 24, 5, 25)
+               II = II + NVELL(K)*2
+            case DEFAULT
+               II = II + NVELL(K)
+            end select
+         end do
+      end subroutine FLUXES64
+
+      !-----------------------------------------------------------------------
+   end subroutine RESTART_VEW64_FLUXES
+   !-----------------------------------------------------------------------
+
 end module WEIR_FLUX
 !-----------------------------------------------------------------------
