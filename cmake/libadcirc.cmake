@@ -37,7 +37,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_pairs.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F90

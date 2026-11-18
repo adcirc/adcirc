@@ -126,7 +126,7 @@ Casey 251212: Adding time control.
      &   useAdaptiveFilter,
      &   outputFort48,
      &   initialize_baroclinic3d_namelist_options
-      USE SUBDOMAIN, ONLY : subdomainOn
+      USE MOD_SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,

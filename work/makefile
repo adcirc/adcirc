@@ -354,7 +354,7 @@ WD_MSRC    =  wetdry.F90
 MOM_MSRC   =  momentum2d.F
 MOM3D_MSRC =  momentum3d.F90
 GWCE_MSRC  =  gwce.F
-SUBD_MSRC  =  subdomain.F
+SUBD_MSRC  =  subdomain.F90
 SUBP_MSRC  =  subprep.F
 CONT_MSRC  =  control.F
 MESH_MSRC  =  mesh.F
@@ -406,7 +406,7 @@ MOM_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MOM_MSRC) )
 MOM3D_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(MOM3D_MSRC) )
 GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
 3D_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(3D_MSRC) )
-SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
+SUBD_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
 XDMF_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(XDMF_MSRC) )
@@ -863,7 +863,7 @@ $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)hashtable.o   : hashtable.F90
 $(O_DIR)control.o     : control.F
-$(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o 
+$(O_DIR)subdomain.o   : subdomain.F90 $(O_DIR)mesh.o 
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
 $(O_DIR)sponge_layer.o : sponge_layer.F90 $(O_DIR)quadrature.o $(ADC_MOBJ)

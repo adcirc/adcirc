@@ -66,7 +66,7 @@ C
       USE GLOBAL_IO, only: header63, header64, header77, header73,
      &    header74, header93, header91, header61, header62, header71,
      &    header72, header81, writedomainheader, open_gbl_file, nddt2get
-      USE SUBDOMAIN, ONLY : subdomainOn, readFort015
+      USE MOD_SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
 

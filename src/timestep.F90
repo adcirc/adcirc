@@ -938,8 +938,8 @@ contains
    subroutine collectOutputStatistics(IT, TimeLoc, TIMEH)
       use global, only: inundationOutput
       use write_output, only: collectMinMaxData, collectInundationData
-      use subdomain, only: subdomainOn, NOutGS, &
-                           writeFort065, writeFort066, writeFort067
+      use mod_subdomain, only: subdomainOn, NOutGS, &
+                               writeFort065, writeFort066, writeFort067
       use HARM, only: updateHarmonicAnalysis
       implicit none
 

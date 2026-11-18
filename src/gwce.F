@@ -333,7 +333,7 @@ C... SB
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB,
+      USE MOD_SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB,
      &  checkChange, enforceEOB, enforceEIB, nobn, obn
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
       use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
@@ -3381,7 +3381,7 @@ C***********************************************************************
       use mod_sizes, only : mnei
       use global, only : etas
       use mesh, only : neitab
-      use subdomain, only : nobn, obn
+      use mod_subdomain, only : nobn, obn
       implicit none
       integer :: i,j,n,neighbor
       real(8) :: newGWCElv
