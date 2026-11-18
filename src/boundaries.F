@@ -210,7 +210,7 @@ C     ---------
       ! boundary segment
       !------------------------------------------------------------------
       subroutine allocateElevationBoundaryLengths()
-      use sizes, only : mnope
+      use mod_sizes, only : mnope
       implicit none
       allocate(nvdll(mnope)) ! number of nodes on each elevation boundary segment
       allocate(ibtypee(mnope)) ! type of each elevation boundary segment
@@ -231,7 +231,7 @@ C     ---------
       ! boundary segment
       !------------------------------------------------------------------
       subroutine allocateFluxBoundaryLengths()
-      use sizes, only : mnbou
+      use mod_sizes, only : mnbou
       implicit none     
       allocate(nvell(mnbou)) ! number of nodes on each flux boundary segment
       allocate(ibtype_orig(mnbou))
@@ -253,7 +253,7 @@ C     ---------
       ! Allocate space for elevation boundary-related variables
       !------------------------------------------------------------------
       subroutine allocateAdcircElevationBoundaryArrays()
-      use sizes, only : mnope, mneta
+      use mod_sizes, only : mnope, mneta
       implicit none
       allocate(nbdv(mnope,mneta))
       allocate(nbd(mneta))
@@ -274,7 +274,7 @@ C     ---------
       !     jgf51.21.11 Allocate space for flux boundary-related variables
       !------------------------------------------------------------------
       subroutine allocateAdcircFluxBoundaryArrays()
-      use sizes, only : mnbou, mnvel
+      use mod_sizes, only : mnbou, mnvel
       implicit none
       allocate ( me2gw(mnvel))
       allocate ( csii(mnvel),siii(mnvel))
@@ -328,7 +328,7 @@ C     ---------
       ! Allocate space for boundary-related variables
       !------------------------------------------------------------------
       subroutine allocateBoundaryArrays()
-      use sizes, only : mnope
+      use mod_sizes, only : mnope
       use mod_logging, only : nabout
       use mod_terminate, only: ADCIRC_EXIT_FAILURE, terminate
       implicit none
@@ -437,7 +437,7 @@ C     ------------------------------------------------------------------
 C     jgf51.21.11 Allocate space for elevation boundary-related variables
 C     ------------------------------------------------------------------
       subroutine allocateElevationBoundaryArrays()
-      use sizes, only : mneta, mnope
+      use mod_sizes, only : mneta, mnope
       implicit none
       allocate ( nbdv(mnope,mneta))
       allocate ( nvdll(mnope),nbd(mneta), ibtypee(mnope))
@@ -453,7 +453,7 @@ C     ------------------------------------------------------------------
 C     jgf51.21.11 Allocate space for flux boundary-related variables
 C     ------------------------------------------------------------------
       subroutine allocateFluxBoundaryArrays()
-      use sizes, only : mnvel, mnbou
+      use mod_sizes, only : mnvel, mnbou
       implicit none
       allocate ( nbv(mnvel),lbcodei(mnvel))
       allocate ( bndlen2o3(mnvel))
@@ -635,7 +635,7 @@ C     jgf51.21.17 Temporarily allocate space for flux boundary parameters
 C     that will not be needed after initialization.
 C     ------------------------------------------------------------------
       subroutine allocateFluxBoundaryArrayTemporaries()
-      use sizes, only : mnvel, mnbou
+      use mod_sizes, only : mnvel, mnbou
       implicit none
       allocate ( barlanhtr(mnbou,mnvel),barlancfspr(mnbou,mnvel) )
       allocate ( barinhtr(mnbou,mnvel),barincfsbr(mnbou,mnvel) )
@@ -658,7 +658,7 @@ C     jgf51.21.17 Free space required for flux boundary parameters after
 C     boundaries are initialized.
 C     ------------------------------------------------------------------
       subroutine freeFluxBoundaryArrayTemporaries()
-      use sizes, only : mnvel, mnbou
+      use mod_sizes, only : mnvel, mnbou
       implicit none
       deallocate ( barlanhtr, barlancfspr )
       deallocate ( barinhtr, barincfsbr )

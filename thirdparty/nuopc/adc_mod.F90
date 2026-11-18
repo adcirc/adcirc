@@ -18,7 +18,7 @@ module adc_mod
   use GLOBAL , only: IMAP_EL_LG,NODES_LG
   use GLOBAL , only: ETA2, UU2, VV2  ! Export water level and velocity fileds to wave model
   USE GLOBAL,  ONLY: RSNX2, RSNY2    ! Import wave 2D forces from wave model
-  use SIZES  , only: ROOTDIR
+  use MOD_SIZES  , only: ROOTDIR
 
   ! DW
   USE GLOBAL, only: CMP_VERSION_NUMBERS, FileFmtVersion

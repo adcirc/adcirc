@@ -124,7 +124,7 @@ end module WEIR
 !  CALCULATE THE ELEVATIONS THROUGHOUT THE SIMULATION
 !-----------------------------------------------------------------------
 module TIME_VARYING_WEIR_BOUNDARY
-   use SIZES, only: MYPROC, LOCALDIR, GLOBALDIR
+   use MOD_SIZES, only: MYPROC, LOCALDIR, GLOBALDIR
    use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
    use mod_logging, only: logMessage, allMessage, ScreenMessage, &
                           t_log_scope, init_log_scope, ERROR, INFO, ECHO, &
@@ -978,7 +978,7 @@ contains
 
       use GLOBAL, only: ITHS, DTDP, IHOT, tvw_file
       use mod_io, only: openFileForRead
-      use SIZES, only: INPUTDIR
+      use MOD_SIZES, only: INPUTDIR
       use BOUNDARIES, only: LBCODEI, NBV, IBCONN
 
       implicit none

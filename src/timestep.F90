@@ -1025,7 +1025,7 @@ contains
       use write_output, only: WriteWarnElev
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #if defined(CMPI) || defined(VELCHECK)
-      use sizes, only: MYPROC
+      use mod_sizes, only: MYPROC
       use global, only: nodes_lg
 #endif
 #ifdef VELCHECK

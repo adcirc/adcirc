@@ -360,7 +360,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine screenMessage(log_level, message)
       use iso_fortran_env, only: error_unit
-      use sizes, only: myproc
+      use mod_sizes, only: myproc
       implicit none
       type(t_log_level), intent(in) :: log_level
       character(*), intent(in) :: message

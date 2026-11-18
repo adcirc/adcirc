@@ -52,7 +52,7 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
-      USE SIZES, ONLY : inputDir, globalDir, mnproc
+      USE MOD_SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NFLUXIB64
@@ -1949,7 +1949,7 @@ c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
       USE GLOBAL_3DVS
-      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
+      USE MOD_SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
       USE BOUNDARIES, ONLY : NOPE, NETA, totalbcrivernodes, 
@@ -2682,7 +2682,7 @@ C     to a subdomain array.
 C     kmd: Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE MOD_SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
       use mod_logging, only: ERROR, t_log_scope, init_log_scope, allMessage,
@@ -2754,7 +2754,7 @@ C     to a subdomain array.
 C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE MOD_SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
       use mod_logging, only: t_log_scope, init_log_scope,
@@ -2828,7 +2828,7 @@ C     mapping).
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE MOD_SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NE_G, IMAP_EL_LG
       USE MESH, ONLY : NE
       use mod_logging, only: t_log_scope, init_log_scope,
@@ -2904,7 +2904,7 @@ C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE MOD_SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
       USE HARM, ONLY : binaryRead3D

@@ -38,7 +38,7 @@
       module mesh
 !     ------------------------------------------------------------------
       use hashtable
-      use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
+      use mod_sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
       use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR, operator(==),
      &   logMessage, screenMessage, allMessage, t_log_scope, init_log_scope

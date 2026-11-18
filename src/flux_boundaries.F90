@@ -175,7 +175,7 @@ contains
 !> cannot be opened.
 !-----------------------------------------------------------------------
    subroutine openNormalFlowFile()
-      use sizes, only: INPUTDIR
+      use mod_sizes, only: INPUTDIR
       use mod_io, only: openFileForRead
       implicit none
       integer :: errorIO

@@ -58,7 +58,7 @@ subroutine SwanReadADCGrid
     use SwanGriddata
 !Nicole 250517: Allow for use of SwanLocalControl
 !ADC    use NodalAttributes, ONLY: SwanLocalControl 
-!PUN    use SIZES
+!PUN    use MOD_SIZES
 !PUN    use MESSENGER
 !Casey 231217: Carrying forward changes from earlier version.
 !ADC    use HASHTABLE

@@ -912,7 +912,7 @@ C     ----------------------------------------------------------------
       subroutine processNodalAttr(NAttr, NumCol, mode, sdu, SDNumND,
      &   startProc, endProc, naType,AttrName)!tgaf13mod
       use pre_global
-      use sizes, only : ASCII, XDMF
+      use mod_sizes, only : ASCII, XDMF
       use nodalattributes, only : na
       implicit none
 C
@@ -1076,7 +1076,7 @@ C---------------------------------------------------------------------------
       use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
       use memory_usage
       use nodalattributes
-      use sizes, only : naFileName
+      use mod_sizes, only : naFileName
       implicit none
 
       integer(8) :: nbytes = 0
@@ -7468,7 +7468,7 @@ C---------------------------------------------------------------------------C
 CC    Addition by CF   8/2007
       SUBROUTINE PREP80()
       USE PRE_GLOBAL
-      USE SIZES, ONLY : MNHARF
+      USE MOD_SIZES, ONLY : MNHARF
       USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV
       IMPLICIT NONE
       INTEGER I,K
@@ -7808,7 +7808,7 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
-      use sizes, only : ASCII, XDMF, myproc
+      use mod_sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP, BCFLAG_TEMP
       USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION

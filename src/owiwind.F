@@ -89,7 +89,7 @@
       MODULE OWIWIND
 !-----------------------------------------------------------------------
 
-        USE SIZES,ONLY : MYPROC
+        USE MOD_SIZES,ONLY : MYPROC
         USE mod_io, only: openFileForRead
         use mod_logging, only: screenUnit, nscreen
         USE GLOBAL,ONLY : Flag_ElevError
@@ -167,7 +167,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12INIT(WVNX,WVNY,PRN,NP,PRdeflt)
 !-----------------------------------------------------------------------
-        USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+        USE MOD_SIZES, ONLY : MYPROC, GBLINPUTDIR
         IMPLICIT NONE
         REAL(8), intent(out) :: WVNX(:),WVNY(:),PRN(:)
         INTEGER,intent(in)    :: NP
@@ -268,7 +268,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt,HasData)
 !-----------------------------------------------------------------------
-        USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
+        USE MOD_SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
         USE GLOBAL,ONLY: NWS
         USE ADC_CONSTANTS, ONLY: RHOWAT0, G
         IMPLICIT NONE
@@ -817,7 +817,7 @@
 !-----------------------------------------------------------------------
       subroutine owi_setDynamicFilenames(this,iounit,nWindFields)
 !-----------------------------------------------------------------------
-            use sizes,only:gblinputdir
+            use mod_sizes,only:gblinputdir
             implicit none
             integer,intent(in)               :: iounit
             integer,intent(in)               :: nWindFields
@@ -879,7 +879,7 @@
 !-----------------------------------------------------------------------
       subroutine owi_setDefaultFilenames(this)
 !-----------------------------------------------------------------------
-            use sizes,only:gblinputdir
+            use mod_sizes,only:gblinputdir
             implicit none
             type(oceanweather),intent(inout) :: this(*)
 

@@ -33,7 +33,7 @@ C vjp 10/21/2006  modified logic for type2
 C****************************************************************************** 
 C 
       MODULE RS2
-      USE SIZES
+      USE MOD_SIZES
       use mod_logging, only: screenUnit, nscreen
       IMPLICIT NONE
 
@@ -70,7 +70,7 @@ C   SUBROUTINE RS2INIT
 C***********************************************************************
 
       subroutine rs2init(rsnx,rsny,np)
-      use sizes
+      use mod_sizes
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer,intent(in) :: np
@@ -118,7 +118,7 @@ c$$$C   SOBROUTINE RS2INIT_TYPE1
 c$$$C***********************************************************************
 c$$$
 c$$$      subroutine rs2init_type1(rsnx,rsny,np)
-c$$$      use sizes
+c$$$      use mod_sizes
 c$$$      use global,only : slam,sfea,rad2deg
 c$$$      implicit none
 c$$$      integer,intent(in) :: np
@@ -412,7 +412,7 @@ C   SOBROUTINE RS2INIT_TYPE2
 C***********************************************************************
 
       subroutine rs2init_type2(rsnx,rsny,np)
-      use sizes
+      use mod_sizes
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS,only : rad2deg
       use mesh, only : slam, sfea
@@ -757,7 +757,7 @@ c$$$C   SUBROUTINE RS2GET_TYPE1
 c$$$C***********************************************************************
 c$$$
 c$$$      subroutine rs2get_type1(rsnx,rsny,np)
-c$$$      use sizes
+c$$$      use mod_sizes
 c$$$#ifdef CMPI     
 c$$$      use messenger, only: msg_ibcast, msg_cbcast, msg_rbcast
 c$$$#endif 
@@ -941,7 +941,7 @@ C   SUBROUTINE RS2GET_TYPE2
 C***********************************************************************
 
       subroutine rs2get_type2(rsnx,rsny,np)
-      use sizes
+      use mod_sizes
 #ifdef CMPI
 Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.     
       use messenger, only: msg_ibcast, msg_cbcast, msg_rbcastd

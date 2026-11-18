@@ -51,7 +51,7 @@ subroutine SwanVTKPDataSets ( upvt, pstype, nvar, ivtyp, mxk, myk, vtkfile, upvd
     use swcomm3
     use m_parall
     use outp_data
-!PUN    use SIZES, only: MNPROC
+!PUN    use MOD_SIZES, only: MNPROC
 !
     implicit none
 !

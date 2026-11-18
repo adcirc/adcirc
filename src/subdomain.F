@@ -36,7 +36,7 @@ C    ========================================================================
 #include "logging_macros.h"
 
       module subdomain
-      use sizes, only : globaldir
+      use mod_sizes, only : globaldir
       use mod_logging, only : DEBUG, ECHO, INFO, WARNING, ERROR,
      &                         logMessage, allMessage, t_log_scope,
      &                         init_log_scope
@@ -86,7 +86,7 @@ C                  fort.066
 C    ========================================================================
 
 
-         Use sizes, only : myproc
+         Use mod_sizes, only : myproc
          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
          use global, only : nodes_lg
@@ -208,7 +208,7 @@ C     | This subroutine writes ETA2, x/y velocity and wet/dry states of
 C     | open ocean boundary nodes of subdomain grids to fort.065 file,
 C     | during a full run. This subroutine is called within timestep.F
 
-         Use SIZES, only : myproc
+         Use MOD_SIZES, only : myproc
          Use GLOBAL, only : dt, rnday, eta2, uu2, vv2, nodecode
 #ifdef CMPI
      &                     , nodes_lg
@@ -274,7 +274,7 @@ C     | This subroutine writes ETAS, x/y velocity and wet/dry states of
 C     | outer boundary nodes of subdomain grids to fort.066 file,
 C     | during a full run. This subroutine is called within timestep.F
 
-         Use SIZES, only : myproc
+         Use MOD_SIZES, only : myproc
          Use GLOBAL, only : dt, rnday, etas, uu2, vv2, nodecode
 #ifdef CMPI
      &                      , nodes_lg
@@ -340,7 +340,7 @@ C     | This subroutine writes ETAS of inner boundary nodes of subdomain
 C     | grids to fort.067 file during a full run. This subroutine is called
 C     | within timestep.F
 
-         Use sizes, only : myproc
+         Use mod_sizes, only : myproc
          Use global, only : dt, rnday, etas
 #ifdef CMPI
      &                      , nodes_lg
@@ -399,7 +399,7 @@ C     | within timestep.F
 C     | This subroutine opens fort.019 for a hot-started model and
 C     | finds the proper place in the b.c. file.
 
-         Use SIZES, only : myproc
+         Use MOD_SIZES, only : myproc
          Use GLOBAL, only : iths
          USE BOUNDARIES, ONLY : neta
          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -456,7 +456,7 @@ C     | finds the proper place in the b.c. file.
       SUBROUTINE openFort019C()
 C     | This subroutine opens fort.019 for a cold-started model
 
-         Use SIZES, only : myproc
+         Use MOD_SIZES, only : myproc
          USE BOUNDARIES, ONLY : neta
          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
@@ -563,7 +563,7 @@ C     | This subroutine reads in ETAS, x/y velocities and wet/dry states of
 C     | outer boundary nodes of the subdomain grid from fort.020 file during
 C     | a subdomain run. This subroutine is called within timestep.F.
 
-         Use SIZES, only : myproc
+         Use MOD_SIZES, only : myproc
 #ifdef CMPI
          Use MESSENGER 
 #endif
@@ -615,7 +615,7 @@ C     | This subroutine reads in ETAS of inner boundary nodes of the
 C     | subdomain grid from fort.021 file during a subdomain run.
 C     | This subroutine is called within timestep.F.
 
-         Use SIZES, only : myproc
+         Use MOD_SIZES, only : myproc
 #ifdef CMPI
          Use MESSENGER 
 #endif

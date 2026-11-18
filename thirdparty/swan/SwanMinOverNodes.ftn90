@@ -42,7 +42,7 @@ subroutine SwanMinOverNodes ( rval )
 !   Modules used
 !
     use ocpcomm4
-!PUN    use SIZES, only: MNPROC
+!PUN    use MOD_SIZES, only: MNPROC
 !PUN    use GLOBAL, only: COMM
 !PUN    use mpi_f08, only: MPI_ALLREDUCE, MPI_REAL4, MPI_MIN
 !

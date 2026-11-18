@@ -245,7 +245,7 @@ contains
     subroutine swn_outnc_colspc ( RTYPE, OQI, OQR, MIP, KGRPGL )
       use SwanGriddata, only: xcugrdgl, ycugrdgl, nverts
 !PUN      USE OCPCOMM2, ONLY: LENFNM, DIRCH2
-!PUN      USE SIZES, ONLY: GLOBALDIR, LOCALDIR
+!PUN      USE MOD_SIZES, ONLY: GLOBALDIR, LOCALDIR
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -489,7 +489,7 @@ contains
                               lspcaux)
       USE OCPCOMM2
       USE TIMECOMM, only: TINIC, TFINC, TIMCO
-!PUN      USE SIZES, ONLY: MYPROC
+!PUN      USE MOD_SIZES, ONLY: MYPROC
 !
 !
 !   --|-----------------------------------------------------------|--

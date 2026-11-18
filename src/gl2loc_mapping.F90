@@ -29,7 +29,7 @@ module GL2LOC_MAPPING
    !
    !     Written by: Coleman Blakely 11/2022
    !----------------------------------------------------------------------
-   use SIZES, only: MNPROC, MYPROC
+   use MOD_SIZES, only: MNPROC, MYPROC
    use MESH, only: NP ! local number of nodes
    use GLOBAL, only: nodes_lg, np_g, COMM
 

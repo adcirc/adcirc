@@ -60,7 +60,7 @@
 !!    use MESH   , only: np,ne,nm,slam,sfea
 !!    use GLOBAL , only: IMAP_EL_LG,NODES_LG
 !!    use GLOBAL , only: ETA2, UU2, VV2
-!!    use SIZES  , only: ROOTDIR
+!!    use MOD_SIZES  , only: ROOTDIR
 !! @endcode
 !!
 !! The ESMF_Mesh is set up in several steps inside [RealizeFieldsProvidingGrid]
@@ -198,7 +198,7 @@ module adc_cap
   use GLOBAL,  only: NWS, ITHS, NT, DTDP, ITIME
   use mod_logging, only: allMessage
 
-  use SIZES  , only: ROOTDIR
+  use MOD_SIZES  , only: ROOTDIR
   use couple2swan_modif, only: ADCIRC_SXX, ADCIRC_SXY, ADCIRC_SYY
   use couple2swan_modif, only: ComputeWaveDrivenForces, InterpoWeight
 

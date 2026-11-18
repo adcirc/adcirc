@@ -2566,7 +2566,7 @@ c     Space Physics, 20, 851-875, 1982.
 c
 c************************************************************************
       subroutine turb(nh,H,bsx_loc,bsy_loc,wsx,wsy,istart,Z0B1)
-      USE SIZES
+      USE MOD_SIZES
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       USE GLOBAL_3DVS
@@ -3259,7 +3259,7 @@ C***************************************************************************
 C
 C  kmd48.33bc changed to follow the global IO format
       SUBROUTINE HSTART3D_OUT(IT)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       USE GLOBAL_3DVS
 #ifdef CMPI
@@ -3901,7 +3901,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE ADC_CONSTANTS, ONLY: RHOWAT0, G
       USE MESH, ONLY : NP, DP
 !Casey 240512 Debug
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       IMPLICIT NONE
       INTEGER NH,N
       REAL(8) :: T_alpha=0.00017d0, S_beta=0.00076d0

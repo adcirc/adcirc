@@ -32,7 +32,7 @@ C******************************************************************************
 C
       SUBROUTINE COLDSTART()
 C
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
      &    en2, nddt, btime1, statim, btime2, btiminc, btime_end, qn1,
      &    qn0, nffr, nws,
@@ -693,7 +693,7 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE COLDSTART_3D()
-      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
+      USE MOD_SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE WRITE_OUTPUT, ONLY : initOutput3D
       USE GLOBAL_3DVS
       USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG,
@@ -1045,7 +1045,7 @@ C     the hotstart wet/dry state and water surface elevation ends up
 C     overwriting the values computed here. 
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
-      use sizes, only : inputdir
+      use mod_sizes, only : inputdir
       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv

@@ -162,7 +162,7 @@ contains
    !> cannot be opened.
    !-----------------------------------------------------------------------
    subroutine openLNMFile()
-      use sizes, only: INPUTDIR
+      use mod_sizes, only: INPUTDIR
       use mod_io, only: openFileForRead
       implicit none
       integer :: errorIO
@@ -459,7 +459,7 @@ contains
       real(8) :: DUMV1(1)
 #endif
 
-      !asey: Added the following local variable declarations.
+      ! Casey: Added the following local variable declarations.
       integer :: NCELE
 
       integer :: NEle !local value of NetTabEle

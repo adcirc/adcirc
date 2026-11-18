@@ -30,7 +30,7 @@
 #ifdef CSWAN
 ! Casey 090302: Include the following routines for coupling to unstructured SWAN.
       USE Couple2swan, ONLY: PADCSWAN_INIT, PADCSWAN_FINAL
-      USE SIZES, ONLY: MNPROC,MYPROC
+      USE MOD_SIZES, ONLY: MNPROC,MYPROC
 #endif
 
       IMPLICIT NONE

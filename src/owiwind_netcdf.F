@@ -219,7 +219,7 @@
       SUBROUTINE NWS13INIT(TimeLoc,W)
 !-----------------------------------------------------------------------
       USE netcdf
-      USE SIZES, ONLY: MYPROC
+      USE MOD_SIZES, ONLY: MYPROC
       USE MESH, ONLY: NP
 
       REAL(8),INTENT(IN) :: TimeLoc
@@ -421,7 +421,7 @@
       USE GLOBAL, ONLY: RNDAY
       USE MESH, ONLY: NP
       USE netcdf
-      USE SIZES, ONLY: MYPROC
+      USE MOD_SIZES, ONLY: MYPROC
       USE netcdf_error, only: check_err
       USE,INTRINSIC :: IEEE_ARITHMETIC
 

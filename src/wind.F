@@ -27,7 +27,7 @@ C                                                                      *
 C***********************************************************************
 C
        MODULE WIND
-       USE SIZES, ONLY : LOCALDIR
+       USE MOD_SIZES, ONLY : LOCALDIR
        USE mod_logging, ONLY : allMessage,
      &    screenMessage, logMessage,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, screenUnit, t_log_scope,
@@ -1766,7 +1766,7 @@ C----------------------------------------------------------------------
 C     Sets up meteorological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
-      use sizes, only : gblinputdir, inputdir
+      use mod_sizes, only : gblinputdir, inputdir
       USE ADC_CONSTANTS, only: g, mb2pa
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
@@ -2087,7 +2087,7 @@ C     Sets up meteorological i/o for a hotstart.
 C----------------------------------------------------------------------
       subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc, rampmete2)
-      use sizes, only : gblinputdir, inputdir
+      use mod_sizes, only : gblinputdir, inputdir
       USE ADC_CONSTANTS, only: g
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths,
@@ -3277,7 +3277,7 @@ C                NWLAT,NWLON                                           *
 C***********************************************************************
 
       SUBROUTINE NWS3GET()
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL, ONLY: timeconv
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
@@ -3376,7 +3376,7 @@ C   R.L. 3/15/03 accounted for PRN=0                                   *   !RAL0
 C***********************************************************************
 
       SUBROUTINE NWS4GET()
-      USE SIZES
+      USE MOD_SIZES
       USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : NP
       IMPLICIT NONE
@@ -3495,7 +3495,7 @@ C                order has been changed to U,V,P to be consistent with *
 C                other NWS input formats.                              *
 C***********************************************************************
       SUBROUTINE NWS6GET()
-      USE SIZES
+      USE MOD_SIZES
       USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
@@ -3902,7 +3902,7 @@ C***********************************************************************
 
       subroutine nws10get(ull,vll,pll,ill)
       USE ADC_CONSTANTS, only : mb2pa
-      use sizes, only : gblinputdir
+      use mod_sizes, only : gblinputdir
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : np, slam, sfea
       implicit none
@@ -4010,7 +4010,7 @@ C
 C      yf51.52.25: Wiki link: https://en.wikipedia.org/wiki/Gaussian_grid
 C***********************************************************************
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
-      USE SIZES
+      USE MOD_SIZES
       IMPLICIT NONE
       REAL(8) COLRAD(*),WGT(*),WGTCS(*),RCS2(*)
       INTEGER LGGHAF,L2,K,K1,ITER
@@ -4086,7 +4086,7 @@ C     yf51.52.25: The subroutine POLY calculates the polynomial used in
 C     Gaussian quadrature.
 C***********************************************************************
       SUBROUTINE POLY(N,RAD,P)
-      USE SIZES
+      USE MOD_SIZES
       IMPLICIT NONE
       INTEGER N,I
       REAL(8) RAD,P,X,Y1,Y2,Y3,G
@@ -4135,7 +4135,7 @@ C                271,181                                               *
 C***********************************************************************
 
       SUBROUTINE NWS11GET()
-      USE SIZES
+      USE MOD_SIZES
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : NP, SLAM, SFEA
@@ -4886,7 +4886,7 @@ C     ----------------------------------------------------------------
 C23456
       SUBROUTINE NWS67GET  (X,Y,SLAM,SFEA,WVNX,WVNY,PRESS,NP,ICS,
      &     RHOWAT0,G,TIMELOC,WTIMINC,WTIME1,WTIME2)
-      USE SIZES
+      USE MOD_SIZES
       IMPLICIT NONE
       REAL(8), PARAMETER :: Ambient_Pressure=101300.d0      !   Pascals!!
       REAL(8), PARAMETER :: Coriolis=7.287588493541447D-05  ! 1/sec
@@ -6237,7 +6237,7 @@ C     jgf50.38.05: This subroutine checks input data, allocates memory
 C     verifies that input files are all present, etc.
 C     ----------------------------------------------------------------
       subroutine NWS15INIT(timeloc)
-      use sizes, only : globaldir, mnp
+      use mod_sizes, only : globaldir, mnp
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use mod_io, only : openFileForRead
       use global, only : ihot, nws
@@ -6466,7 +6466,7 @@ C         f. sequential hwind snapshots will not be evenly spaced in time
 C         g. hwind data do not contain barometric pressure information
 C***********************************************************************
       subroutine NWS15GET(wvnx, wvny, press, timeloc)
-      use sizes, only : mnp
+      use mod_sizes, only : mnp
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, only : mb2pa, m2nm, nm2m
       use mesh, only : slam, sfea, np, dp
@@ -6945,7 +6945,7 @@ C          Lines 4-end -- cycleTime  rampValue  filename
 C
 
        subroutine init_gfdl(timeloc)
-       use sizes, only : globaldir
+       use mod_sizes, only : globaldir
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        use mod_io, only : openFileForRead
        use global, only : ihot, nws
@@ -7184,7 +7184,7 @@ C
        SUBROUTINE GET_GFDL(NADCPTS,ADC_U_WIND,ADC_V_WIND,ADC_PRESS,
      &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
      &                     MAX_INTERP_DIST)
-       USE SIZES
+       USE MOD_SIZES
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
@@ -7615,7 +7615,7 @@ C      dynamicWaterLevelCorrectionControl namelist.
 C
 C----------------------------------------------------------------------
       subroutine initDynamicWaterLevelCorrection(timesec)
-      use sizes, only : globaldir
+      use mod_sizes, only : globaldir
       use global, only : np_g
       use mod_logging, only: nabout, INFO, operator(>)
       use mesh, only : np
@@ -8058,7 +8058,7 @@ C----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER, ONLY: MSG_BARRIER
 #endif
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       USE GLOBAL, ONLY : NCICE
       implicit none
       logical :: Fexists
@@ -8141,7 +8141,7 @@ C     CPB 10/2023: This subroutine makes the .inv files for grib2
 C     meteorological forcing files. If we are not using grib2 then it
 C     just returns
 C----------------------------------------------------------------------
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
 #ifdef GRIB2API
       USE wgrib2api
 #endif
@@ -8219,7 +8219,7 @@ C     CPB 10/2023: This subroutine reads the fort.22 file for NWS14 to
 C     get netcdf variable names as well as starting indices for reading
 C     in the met data. If we are using grib2 it just returns
 C----------------------------------------------------------------------
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       USE GLOBAL, ONLY : NCICE
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
@@ -8528,7 +8528,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
       character(len=200),intent(in) :: var, fileN, invN
@@ -8592,7 +8592,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       implicit none
 
       character(len=*),intent(in):: fileN
@@ -8712,7 +8712,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE INIT_INSET_NC()
 
-       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+       USE MOD_SIZES, ONLY : MYPROC, GBLINPUTDIR
        USE GLOBAL, ONLY : InsetControlFile
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
 
@@ -8775,7 +8775,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+      USE MOD_SIZES, ONLY : MYPROC, GBLINPUTDIR
       USE mod_logging, ONLY: allMessage, ERROR
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
@@ -8971,7 +8971,7 @@ C-------------------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+      USE MOD_SIZES, ONLY : MYPROC, GBLINPUTDIR
 
      
       IMPLICIT NONE 
@@ -9067,7 +9067,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
       character(len=200),intent(in) :: var, fileN, invN
@@ -9134,7 +9134,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       implicit none
       INTEGER,INTENT(INOUT) :: ncid ! already opened ncid tag
       character(len=200),intent(in) :: fileN
@@ -9217,7 +9217,7 @@ C----------------------------------------------------------------------
 #ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
 #endif
-      USE SIZES, ONLY : MYPROC
+      USE MOD_SIZES, ONLY : MYPROC
       USE NETCDF_ERROR, ONLY: CHECK_ERR
       implicit none
       integer :: iret, iter
@@ -9340,7 +9340,7 @@ C.....END WJP (NWS = 14) ..............................................
 C--------------------------------------------------------------------- 
       SUBROUTINE CLOSE_MET_FILES()
         use global, only: NWS, NCICE
-        USE SIZES, ONLY : MYPROC
+        USE MOD_SIZES, ONLY : MYPROC
     
 #ifdef ADCNETCDF
         use netcdf

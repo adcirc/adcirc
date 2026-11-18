@@ -549,7 +549,7 @@
       USE OCPCOMM2                                                        40.41
       USE OCPCOMM3                                                        40.41
       USE OCPCOMM4                                                        40.41
-!PUN      USE SIZES, ONLY: LOCALDIR                                           40.95
+!PUN      USE MOD_SIZES, ONLY: LOCALDIR                                       40.95
 !
       IMPLICIT NONE
 !
@@ -1259,7 +1259,7 @@
       USE OCPCOMM3                                                        40.41
       USE OCPCOMM4                                                        40.41
       USE M_PARALL                                                        40.31
-!PUN      USE SIZES                                                           40.95
+!PUN      USE MOD_SIZES                                                       40.95
 !
       IMPLICIT NONE
 !

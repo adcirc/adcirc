@@ -1025,7 +1025,7 @@
       USE OUTP_DATA                                                       40.13
       USE M_PARALL                                                        40.31
 !NCF      USE swn_outnc                                                       41.52
-!PUN      USE SIZES                                                           40.95
+!PUN      USE MOD_SIZES                                                       40.95
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -5850,7 +5850,7 @@
       USE OUTP_DATA                                                       40.31
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
-!PUN      USE SIZES                                                           40.95
+!PUN      USE MOD_SIZES                                                       40.95
 !
 !
 !   --|-----------------------------------------------------------|--

@@ -26,7 +26,7 @@
 #include "logging_macros.h"
 
       module global_io
-      use SIZES
+      use MOD_SIZES
       use VERSION
       use GLOBAL
       use mod_logging, only: DEBUG, ERROR, INFO, WARNING,
@@ -89,7 +89,7 @@ C--------------------------------------------------------------------
       ! jgf48.03 Collects array data from each subdomain.
       !--------------------------------------------------------------
       subroutine collectFullDomainArray(descript, pack_cmd, unpack_cmd)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       type (OutputDataDescript_t) :: descript
@@ -185,7 +185,7 @@ C        or to the end of the full domain array, whichever is less
       !  to a buffer
       !--------------------------------------------------------------
       subroutine packOne(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -243,7 +243,7 @@ C        or to the end of the full domain array, whichever is less
       !  from a buffer
       !--------------------------------------------------------------
       subroutine unpackOne(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -282,7 +282,7 @@ C        or to the end of the full domain array, whichever is less
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine packTwo(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -321,7 +321,7 @@ C        or to the end of the full domain array, whichever is less
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine unpackTwo(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -348,7 +348,7 @@ C        or to the end of the full domain array, whichever is less
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine packMbyNP(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -384,7 +384,7 @@ C        or to the end of the full domain array, whichever is less
       ! numbers out of a buffer
       !--------------------------------------------------------------
       subroutine unpackMbyNP(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -413,7 +413,7 @@ C        or to the end of the full domain array, whichever is less
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine packNPbyM(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -449,7 +449,7 @@ C        or to the end of the full domain array, whichever is less
       ! numbers out of a buffer
       !--------------------------------------------------------------
       subroutine unpackNPbyM(descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -479,7 +479,7 @@ C        or to the end of the full domain array, whichever is less
       !--------------------------------------------------------------
       subroutine open_gbl_file(lun, filename, size_g, size_this,
      &                          write_header)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -511,7 +511,7 @@ C        or to the end of the full domain array, whichever is less
       !--------------------------------------------------------------
       subroutine open_minmax_file(lun, filename, size_g, size_this,
      &                          nrecs_this,write_header)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
 
@@ -542,7 +542,7 @@ C        or to the end of the full domain array, whichever is less
       ! Subroutine to write full format ASCII output files
       !--------------------------------------------------------------
       subroutine writeFullFormat(descript, TimeLoc, it, write_cmd)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       type (OutputDataDescript_t) :: descript
@@ -650,7 +650,7 @@ C        or to the end of the full domain array, whichever is less
       ! jgf51.21.24: Writes sparse ascii format.
       !--------------------------------------------------------------
       subroutine writeSparse(descript, TimeLoc, it, write_cmd)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       type (OutputDataDescript_t) :: descript
@@ -800,7 +800,7 @@ C        or to the end of the full domain array, whichever is less
       !   +to a buffer if we are running in parallel
       !--------------------------------------------------------------
       subroutine storeOne(lun, descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       USE MESH,ONLY:labels
       implicit none
@@ -895,7 +895,7 @@ C        or to the end of the full domain array, whichever is less
       !  +to a buffer if we are running in parallel
       !--------------------------------------------------------------
       subroutine storeTwo(lun, descript, istart, iend)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       USE MESH,ONLY:labels
       implicit none
@@ -961,7 +961,7 @@ C        or to the end of the full domain array, whichever is less
       ! Elevation for Elevation Recording station: fort.61
       !--------------------------------------------------------------
       subroutine header61(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -985,7 +985,7 @@ C        or to the end of the full domain array, whichever is less
       ! Velocity for Velocity Recording station: fort.62
       !--------------------------------------------------------------
       subroutine header62(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1009,7 +1009,7 @@ C        or to the end of the full domain array, whichever is less
       ! Elevation for all nodes: fort.63
       !--------------------------------------------------------------
       subroutine header63(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1032,7 +1032,7 @@ C        or to the end of the full domain array, whichever is less
       ! Maximum elevation for all nodes: fort.63
       !--------------------------------------------------------------
       subroutine header_max(lun, size_this,nrecs_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1057,7 +1057,7 @@ C        or to the end of the full domain array, whichever is less
       ! Velocity for all nodes: fort.64
       !--------------------------------------------------------------
       subroutine header64(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1081,7 +1081,7 @@ C        or to the end of the full domain array, whichever is less
       ! Pressure for Meteorological Recording station: fort.71
       !--------------------------------------------------------------
       subroutine header71(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1105,7 +1105,7 @@ C        or to the end of the full domain array, whichever is less
       ! Wind Velocity for Meteorological Recording stations : fort.72
       !--------------------------------------------------------------
       subroutine header72(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1129,7 +1129,7 @@ C        or to the end of the full domain array, whichever is less
       ! Atmospheric Pressure for all nodes: fort.73
       !--------------------------------------------------------------
       subroutine header73(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1153,7 +1153,7 @@ C        or to the end of the full domain array, whichever is less
       ! Wind Stress for all nodes: fort.74
       !--------------------------------------------------------------
       subroutine header74(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1177,7 +1177,7 @@ C        or to the end of the full domain array, whichever is less
       ! Weir elevation change for all nodes: fort.77
       !--------------------------------------------------------------
       subroutine header77(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1202,7 +1202,7 @@ C        or to the end of the full domain array, whichever is less
       ! tcm v49.64.01 -- added
       !--------------------------------------------------------------
       subroutine header91(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1227,7 +1227,7 @@ C        or to the end of the full domain array, whichever is less
       ! tcm v49.64.01 -- added
       !--------------------------------------------------------------
       subroutine header93(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1252,7 +1252,7 @@ C        or to the end of the full domain array, whichever is less
       ! Concentration Recording station: fort.81
       !--------------------------------------------------------------
       subroutine header81(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1276,7 +1276,7 @@ C        or to the end of the full domain array, whichever is less
       ! Concentration Field for all nodes: fort.83
       !--------------------------------------------------------------
       subroutine header83(lun, size_this)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
@@ -1305,7 +1305,7 @@ C        or to the end of the full domain array, whichever is less
       ! station files.
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
-      USE SIZES, only : globaldir, localdir, write_local_files, myproc
+      USE MOD_SIZES, only : globaldir, localdir, write_local_files, myproc
       USE GLOBAL, only : rundes, runid
       use mod_terminate, only: ADCIRC_EXIT_FAILURE, terminate
       use mesh, only : agrid
@@ -1394,7 +1394,7 @@ C
       !--------------------------------------------------------------
       subroutine writeDomainHeader(lun, filename, numNodes_g,
      &            numNodes, typeStr)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       use mod_logging, only: screenUnit
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -1659,7 +1659,7 @@ C        column 2.  This format is similar to those for NWS = 4
 C       
 C----------------------------------------------------------------------
       SUBROUTINE NDDT2GET(lun,RVAL,defval)
-      USE SIZES
+      USE MOD_SIZES
       IMPLICIT NONE
       INTEGER IJK
       INTEGER, intent(in) :: lun

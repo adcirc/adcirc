@@ -1660,7 +1660,7 @@ C
       ! metadata from the fort.15 file is triggered.
       !-----------------------------------------------------------------
       subroutine setFormatUsage(idum)
-      use sizes, only : NETCDF3, NETCDF4, XDMF
+      use mod_sizes, only : NETCDF3, NETCDF4, XDMF
       implicit none
       integer, intent(in) :: idum
 

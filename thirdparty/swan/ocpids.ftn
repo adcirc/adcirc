@@ -13,7 +13,7 @@
       USE OCPCOMM3                                                        40.41
       USE OCPCOMM4                                                        40.41
       USE M_PARALL                                                        40.31
-!PUN      USE SIZES                                                           40.95
+!PUN      USE MOD_SIZES                                                       40.95
 
 !
 !

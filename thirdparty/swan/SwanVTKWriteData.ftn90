@@ -51,7 +51,7 @@ subroutine SwanVTKWriteData ( uvtk, pstype, nvar, ivtyp, voqr, data, lenp, mxk, 
     use outp_data
     use SwanGriddata
     use SwanGridobjects
-!PUN    use SIZES, only: MYPROC
+!PUN    use MOD_SIZES, only: MYPROC
 !
     implicit none
 !

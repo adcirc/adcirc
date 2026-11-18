@@ -846,7 +846,7 @@ C...
 C...Allocate space for Arrays dimensioned by MNE and MNP
 C...
       SUBROUTINE ALLOC_MAIN1a()
-      USE SIZES, ONLY : MNP, MNE
+      USE MOD_SIZES, ONLY : MNP, MNE
       IMPLICIT NONE
 C  
       !jgfdebug TODO: rationalize initialization of these variables
@@ -951,7 +951,7 @@ C...
 C...Allocate space for Arrays dimensioned by MNOPE and MNETA
 C...
       SUBROUTINE ALLOC_MAIN2()
-      USE SIZES, ONLY : MNETA
+      USE MOD_SIZES, ONLY : MNETA
       IMPLICIT NONE
 C
       ALLOCATE ( ESBIN1(MNETA),ESBIN2(MNETA))
@@ -965,7 +965,7 @@ C...Allocate space for nonperiodic zero and nonzero normal flow
 C...boundary arrays including barriers
 C...
       SUBROUTINE ALLOC_MAIN3()
-      USE SIZES, ONLY : MNVEL
+      USE MOD_SIZES, ONLY : MNVEL
       IMPLICIT NONE
 C
       ALLOCATE ( QN0(MNVEL),QN1(MNVEL),QN2(MNVEL))
@@ -987,7 +987,7 @@ C...
 C...Allocate space for tidal potential terms
 C...
       SUBROUTINE ALLOC_MAIN4a()
-      USE SIZES, ONLY : MNTIF, MNP
+      USE MOD_SIZES, ONLY : MNTIF, MNP
       IMPLICIT NONE
 C
       ALLOCATE ( TPK(MNTIF),AMIGT(MNTIF),FFT(MNTIF) )
@@ -1006,7 +1006,7 @@ C...
 C...Allocate space for Earth load/self-attraction tide
 C...
       SUBROUTINE ALLOC_MAIN4b()
-      USE SIZES, ONLY : MNTIF, MNP
+      USE MOD_SIZES, ONLY : MNTIF, MNP
       IMPLICIT NONE
 C
       ALLOCATE ( SALTAMP(MNTIF,MNP),SALTPHA(MNTIF,MNP) )
@@ -1019,7 +1019,7 @@ C...
 C...Allocate space for Arrays dimensioned by MNBFR
 C...
       SUBROUTINE ALLOC_MAIN5()
-      USE SIZES, ONLY : MNBFR, MNETA
+      USE MOD_SIZES, ONLY : MNBFR, MNETA
       IMPLICIT NONE
 C
       ALLOCATE ( AMIG(MNBFR),PER(MNBFR))
@@ -1035,7 +1035,7 @@ C...
 C...Allocate space for periodic normal flow boundary conditions
 C...
       SUBROUTINE ALLOC_MAIN6()
-      USE SIZES, ONLY : MNFFR, MNVEL
+      USE MOD_SIZES, ONLY : MNFFR, MNVEL
       IMPLICIT NONE
 C
       ALLOCATE ( QNAM(MNFFR,MNVEL),QNPH(MNFFR,MNVEL))
@@ -1051,7 +1051,7 @@ C...
 C...Allocate space for arrays used for station elevation output
 C...
       SUBROUTINE ALLOC_MAIN7()
-      USE SIZES, ONLY : MNSTAE
+      USE MOD_SIZES, ONLY : MNSTAE
       IMPLICIT NONE
 C
       ALLOCATE ( NNE(MNSTAE),ET00(MNSTAE))
@@ -1069,7 +1069,7 @@ C...
 C...Allocate space for arrays used for station velocity output
 C...
       SUBROUTINE ALLOC_MAIN8()
-      USE SIZES, ONLY : MNSTAV
+      USE MOD_SIZES, ONLY : MNSTAV
       IMPLICIT NONE
 C
       ALLOCATE ( XEV(MNSTAV),YEV(MNSTAV),SLEV(MNSTAV),SFEV(MNSTAV))
@@ -1085,7 +1085,7 @@ C...
 C...Allocate space for arrays used for station concentration output
 C...
       SUBROUTINE ALLOC_MAIN9()
-      USE SIZES, ONLY : MNSTAC
+      USE MOD_SIZES, ONLY : MNSTAC
       IMPLICIT NONE
 C
       ALLOCATE ( XEC(MNSTAC),YEC(MNSTAC),SLEC(MNSTAC),SFEC(MNSTAC))
@@ -1101,7 +1101,7 @@ C...
 C...Allocate space for arrays used for station meteorological output
 C...
       SUBROUTINE ALLOC_MAIN10()
-      USE SIZES, ONLY : MNSTAM
+      USE MOD_SIZES, ONLY : MNSTAM
       IMPLICIT NONE
 C
       ALLOCATE ( XEM(MNSTAM),YEM(MNSTAM),SLEM(MNSTAM),SFEM(MNSTAM))
@@ -1120,7 +1120,7 @@ C...
 C...Allocate space for wind forcing
 C...
       SUBROUTINE ALLOC_MAIN12()
-      USE SIZES, ONLY : MNP
+      USE MOD_SIZES, ONLY : MNP
       IMPLICIT NONE
 C
       ALLOCATE ( WSX1(MNP),WSY1(MNP),PR1(MNP) )
@@ -1199,7 +1199,7 @@ C...
 C...Allocate space for TIME VARYING BATHYMETRY
 C...
       SUBROUTINE ALLOC_MAIN13()
-      USE SIZES, ONLY : MNP
+      USE MOD_SIZES, ONLY : MNP
       IMPLICIT NONE
       
       ALLOCATE ( DP1(MNP), DP2(MNP) )

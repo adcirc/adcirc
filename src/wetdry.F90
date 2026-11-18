@@ -119,7 +119,7 @@ contains
    !     Allocates arrays and initializes constants.
    !----------------------------------------------------------------------
    subroutine initializeWettingAndDrying()
-      use sizes, only: mne, mnp
+      use mod_sizes, only: mne, mnp
       use global, only: h0, nodecode, nnodecode
       use nodalattributes, only: loadSubgridBarrier
       implicit none

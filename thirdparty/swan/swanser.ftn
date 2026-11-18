@@ -6470,7 +6470,7 @@
 !TIMG      USE OCPCOMM4                                                        40.41
 !TIMG      USE TIMECOMM                                                        40.41
 !TIMG      USE M_PARALL                                                        40.31
-!TIMG!PUN      USE SIZES, ONLY: MNPROC, MYPROC                                     40.95
+!TIMG!PUN      USE MOD_SIZES, ONLY: MNPROC, MYPROC                                 40.95
 !TIMG
 !TIMG      IMPLICIT NONE
 !TIMG!

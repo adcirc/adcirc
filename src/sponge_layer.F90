@@ -105,7 +105,7 @@ contains
    ! - precomputed mass matrix and lumped-mass matrix
    !
    subroutine ALLOC_MAINSPG_LUMPED()
-      use SIZES, only: MNP
+      use MOD_SIZES, only: MNP
       implicit none
 
       allocate (MCOEFSPGD(MNP))
@@ -114,7 +114,7 @@ contains
    end subroutine ALLOC_MAINSPG_LUMPED
 
    subroutine ALLOC_MAINSPG()
-      use SIZES, only: MNP, MNEI
+      use MOD_SIZES, only: MNP, MNEI
       implicit none
 
       allocate (MCOEFSPG(MNP, MNEI))
@@ -290,7 +290,7 @@ contains
    end subroutine ComputeSpongeMsElmMat
 
    subroutine SpongeLayerRelatedPrep()
-      use SIZES, only: MNP
+      use MOD_SIZES, only: MNP
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
@@ -408,7 +408,7 @@ contains
    !  have the same format as fort.53 and fort.54, respectively.
    !
    subroutine READFORT53001()
-      use SIZES, only: INPUTDIR
+      use MOD_SIZES, only: INPUTDIR
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
@@ -492,7 +492,7 @@ contains
    end subroutine READFORT53001
 
    subroutine READFORT54001()
-      use SIZES, only: INPUTDIR
+      use MOD_SIZES, only: INPUTDIR
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
@@ -594,7 +594,7 @@ contains
    end subroutine READFORT54001
 
    subroutine READFORT2001(FIRST_CALL)
-      use SIZES, only: INPUTDIR
+      use MOD_SIZES, only: INPUTDIR
       implicit none
 
       integer :: FUNIT, IOS

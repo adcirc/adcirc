@@ -34,7 +34,7 @@
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
       USE SwanIEM, ONLY: ntf, dfiem, Ebig                                 41.85
-!PUN      USE SIZES, ONLY: MNPROC
+!PUN      USE MOD_SIZES, ONLY: MNPROC
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -1493,7 +1493,7 @@
       USE OUTP_DATA
       USE SwanGriddata                                                    40.80
       USE SwanGridobjects                                                 40.91
-!PUN      USE SIZES
+!PUN      USE MOD_SIZES
 !
       IMPLICIT NONE
 !

@@ -111,7 +111,7 @@ c***********************************************************************
 
       MODULE HARM
 
-      USE SIZES, ONLY : MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
+      USE MOD_SIZES, ONLY : MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
       USE mod_logging, ONLY : screenMessage, logMessage,
      &                        t_log_scope, init_log_scope,
@@ -357,7 +357,7 @@ C--------------------------------------------------------------------
 C     jgf50.97: Writes LHS matrix to a file for use in debugging.
 C--------------------------------------------------------------------
       SUBROUTINE writeHA(timesec, it)
-      USE SIZES, ONLY : globaldir, myproc
+      USE MOD_SIZES, ONLY : globaldir, myproc
       IMPLICIT NONE     
       REAL(8) :: timesec ! time in seconds since cold start
       INTEGER :: it      ! current adcirc time step number
@@ -491,7 +491,7 @@ C     Based on HACOLDS, written by rl.
 C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC, myProc,
+      USE MOD_SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC, myProc,
      &                   WRITE_LOCAL_HARM_FILES, 
      &                   WRITE_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NHSTAR
@@ -999,7 +999,7 @@ C     if necessary.
 C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE solveHarmonicAnalysis(ITIME)
-      USE SIZES, ONLY : LOCALDIR
+      USE MOD_SIZES, ONLY : LOCALDIR
       USE GLOBAL, ONLY : STATIM, REFTIM, DTDP
       USE MESH, ONLY : NP
       IMPLICIT NONE
@@ -1623,7 +1623,7 @@ C     file. Based on HAHOTS, written by rl.
 C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE readBinaryHAHotstart(lun, counter)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE MOD_SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NSTAE, NSTAE_G, NSTAV, NSTAV_G,
      &                   ITHS, IMAP_STAE_LG, NP_G, NODES_LG,
      &                   IMAP_STAV_LG
@@ -1859,7 +1859,7 @@ C     by comparing with parameters read from the fort.15.
 C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MYPROC
+      USE MOD_SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MYPROC
       USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV,
      &                   NP_G
       USE MESH, ONLY : NP

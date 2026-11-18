@@ -40,7 +40,7 @@ C-----------------------------------------------------------------------
       subroutine initOutputXDMF(descript)
       use global
       use mesh
-      use sizes,only:XDMF
+      use mod_sizes,only:XDMF
       implicit none
       include 'Xdmf.f'
       type(OutputDataDescript_t) :: descript
@@ -105,7 +105,7 @@ C-----------------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
       use global, only: OutputDataDescript_t, nt
       use mesh, only: NM, NE, agrid, dp, ics, np, x, y
-      use sizes,only: mnproc
+      use mod_sizes,only: mnproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 #ifdef ADCXDMF

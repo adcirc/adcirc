@@ -113,7 +113,7 @@ C******************************************************************************
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
      &   FileFmtRev
-      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
+      USE MOD_SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae, mnwproc, localdir,
      &   hotstartWritersRequested
@@ -426,7 +426,7 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
-      USE SIZES, ONLY : mnproc, mnwproc, myproc
+      USE MOD_SIZES, ONLY : mnproc, mnwproc, myproc
       USE GLOBAL, ONLY : iTime, statim, dtdp,
      &   earlyterminate
       USE mod_logging, ONLY : allMessage,
@@ -521,7 +521,7 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
-      USE SIZES, ONLY : mnproc, mnwproc, myproc
+      USE MOD_SIZES, ONLY : mnproc, mnwproc, myproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
 
       IMPLICIT NONE

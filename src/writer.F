@@ -27,7 +27,7 @@ C******************************************************************************
 C
       module writer
       use mpi_f08, only: MPI_DOUBLE_PRECISION, MPI_Comm
-      use sizes, only : mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
+      use mod_sizes, only : mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
      &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType,
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
@@ -129,7 +129,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE sendLabelInfoToWriters()
 C-----------------------------------------------------------------------
           use mpi_f08, only: MPI_Send, MPI_Recv, MPI_INTEGER, MPI_Status
-          use sizes,only: myproc, mnwproc, mnproc
+          use mod_sizes,only: myproc, mnwproc, mnproc
           use messenger,only: mpi_comm_adcirc
           use global,only: labels_g, np_g
           implicit none
@@ -237,7 +237,7 @@ C     jgf51.21.27: This subroutine is executed by all compute processors
 C     to send metadata and then output data to a writer processor. 
 C-----------------------------------------------------------------------
       subroutine sendDataToWriter(descript, TimeLoc, it, store_cmd)
-      use sizes, only : myproc
+      use mod_sizes, only : myproc
       use global
       use mod_logging, only: allmessage, debug,
      &     logmessage, t_log_scope, init_log_scope
@@ -494,7 +494,7 @@ C     actually write the data for all the buffers it may be
 C     holding. 
 C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
-      use sizes, only : myproc
+      use mod_sizes, only : myproc
       use global
       use mod_logging, only: allmessage, debug,
      &     logmessage, t_log_scope, init_log_scope
@@ -785,7 +785,7 @@ C     mesh file info to the writer processor so it can read the mesh
 C     and use it during the writing of XDMF output.  
 C-----------------------------------------------------------------------
       subroutine sendInitWriterXDMF(descript)
-      use sizes, only : myproc
+      use mod_sizes, only : myproc
       use global
       use mod_io, only: openFileForRead
       use mod_logging, only: allmessage, debug, info,
@@ -871,7 +871,7 @@ C-----------------------------------------------------------------------
       use mod_logging, only: allmessage, debug, info,
      &     logmessage, t_log_scope, init_log_scope
       use mesh, only : readMesh, x, y, slam, sfea
-      use sizes, only: MESHFILENAME,CONTROLFILENAME
+      use mod_sizes, only: MESHFILENAME,CONTROLFILENAME
       use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_CHARACTER, MPI_Status
 #ifdef ADCXDMF
       use xdmfio, only : meshInitialized
