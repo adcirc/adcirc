@@ -127,7 +127,7 @@ set(PADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/writer.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F

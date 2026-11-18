@@ -69,7 +69,7 @@ C
      &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec,
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
+      USE MOD_SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
 #ifdef CMPI
       USE GLOBAL, ONLY: COMM
@@ -869,7 +869,7 @@ C.... FIND THE PROPER PLACE IN THE APERIODIC ELEVATION SPECIFIED
 C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
 
        if(subdomainOn.and.enforceBN.eq.1) then ! NCSU Subdomain
-           call openFort019H(TimeLoc)          ! NCSU Subdomain
+           call openFort019H()          ! NCSU Subdomain
        endif                                   ! NCSU Subdomain
 
 C      IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN

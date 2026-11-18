@@ -165,7 +165,7 @@ contains
       use BOUNDARIES, only: IBCONN, ISSUBMERGED64, NFLUXIB64_GBL, &
                             LBCODEI
       use global_3dvs, only: islip, sigma, evtot, q, nfen, sal, temp
-      use subdomain, only: subdomainOn, enforceBN, enforceWDcb, enforceWDob
+      use mod_subdomain, only: subdomainOn, enforceBN, enforceWDcb, enforceWDob
       use subgrid, only: subgrid_level0, subgridVertList, gridDepthVertETA2, &
                          subgrid_level1, cmfVertETA2, cfVertETA2, wetDepthVertETA2, &
                          wetFracVertTab, gridDepthVertTab, numPhi

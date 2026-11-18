@@ -206,7 +206,7 @@ C----- END DW
      &     LoadCondensedNodes, CondensedNodes, NCondensedNodes,
      &     ListCondensedNodes, NListCondensedNodes,
      &     NNodesListCondensedNodes
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
+      USE MOD_SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
       USE SPONGELAYER
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter

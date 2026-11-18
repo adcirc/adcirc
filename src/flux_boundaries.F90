@@ -268,7 +268,7 @@ contains
                         NIBNODECODE
       use mesh, only: NP
       use boundaries, only: NBOU, NVELL, IBTYPE, NFLUXF, NFLUXIB
-      use subdomain, only: subdomainOn
+      use mod_subdomain, only: subdomainOn
       implicit none
 
       integer, intent(in) :: IT
@@ -559,8 +559,8 @@ contains
 !> @param[in] IT Current timestep number
 !-----------------------------------------------------------------------
    subroutine applySubdomainBCData(IT)
-      use subdomain, only: enforceBN, &
-                           readFort019, readFort020, readFort021
+      use mod_subdomain, only: enforceBN, &
+                               readFort019, readFort020, readFort021
       implicit none
 
       integer, intent(in) :: IT
