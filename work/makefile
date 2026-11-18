@@ -372,9 +372,9 @@ LOG_MSRC   =  logging.F90
 IO_MSRC    =  io.F90
 
 ifeq ($(NETCDF),enable)
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F
+WIND_MSRC  =  wind.F owiwind.F rs2.F90 owi_ice.F owiwind_netcdf.F
 else
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
+WIND_MSRC  =  wind.F owiwind.F rs2.F90 owi_ice.F
 endif
 
 SOLV_MSRC  =  itpackv.F
@@ -426,6 +426,7 @@ HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
 VW1D_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(VW1D_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
+WIND_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(WIND_MOBJ)  )
 NWS08_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NWS08_MSRC) )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 SG_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(SG_MSRC)  )
@@ -827,7 +828,7 @@ $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOB
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)owiwind_netcdf.o : owiwind_netcdf.F
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
-$(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)
+$(O_DIR)rs2.o         :  rs2.F90  $(VORT_MOBJ)
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
 $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o $(O_DIR)messenger.o
 else

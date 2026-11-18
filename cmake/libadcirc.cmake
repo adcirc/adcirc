@@ -32,7 +32,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F

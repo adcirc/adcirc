@@ -70,7 +70,7 @@ C
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
 
-      USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
+      USE MOD_RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
