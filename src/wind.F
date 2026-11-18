@@ -269,8 +269,21 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Wfile1, Pinv1, Winv1
       INTEGER :: PfileNCID, WfileNCID, CfileNCID, Wfile1NCID
-      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
-      character(len=200) :: Tdim, Londim, Latdim, Tformat
+
+      ! namelist variables for NWS14NC
+      character(len=200) :: Tdim='time'
+      character(len=200) :: Tvar='time'
+      character(len=200) :: Tformat='none'
+      character(len=200) :: Lonvar='longitude'
+      character(len=200) :: Latvar='latitude'
+      character(len=200) :: Londim='longitude'
+      character(len=200) :: Latdim='latitude'
+      character(len=200) :: Pvar='msl'
+      character(len=200) :: Uvar='u10'
+      character(len=200) :: Vvar='v10'
+      character(len=200) :: Cvar='none'
+      real(8) :: NWS14NC_WindMultiplier=1.0      ! all NWS14NC wind u,v multiplied by this
+      real(8) :: NWS14NC_PresMultiplier=1.0      ! all NWS14NC msl pressure multiplied by this
 
       CHARACTER(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
       CHARACTER(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
@@ -8101,10 +8114,10 @@ C----------------------------------------------------------------------
          Winv = 'dmy'
          Cinv = 'dmy'
          ! create dummy names for the grib2 variables
-         Pvar = 'dmy'
-         Uvar = 'dmy'
-         Vvar = 'dmy'
-         Cvar = 'dmy'
+         !Pvar = 'dmy'
+         !Uvar = 'dmy'
+         !Vvar = 'dmy'
+         !Cvar = 'dmy'
 
 #ifdef ADCNETCDF
          IF ( read_NWS14_NetCdf_using_core_0 ) THEN
@@ -8225,6 +8238,28 @@ C----------------------------------------------------------------------
       INTEGER,INTENT(IN) :: NWS
       logical :: Fexists
       integer :: ierr, PvarInd, NT_wind
+
+      INTEGER :: ios = 0                 ! i/o status of read operation
+
+      CHARACTER(len=20) :: Punits = 'Pa'
+
+      CHARACTER(len=1000) namelistSpecifier ! used in log messages
+ 
+      !NWS14NC_WindMultiplier & NWS14NC_PresMultiplier are defined in the module  above
+      NAMELIST /nws14control/ Tdim,    !  Time dimension name
+     &                        Tvar,    !  Time variable name
+     &                        Tformat, !  Format of time datestr
+     &                        Londim,  !  Lon dimension name
+     &                        Lonvar,  !  Lon var name
+     &                        Latdim,  !  Lat dimension name
+     &                        Latvar,  !  Lat var name
+     &                        Pvar,    !  Pressure var name
+     &                        Punits,  !  Pressure units
+     &                        Uvar,    !  U10 var name
+     &                        Vvar,    !  V10 Var name
+     &                        Cvar,    !  (maybe) Ice var name
+     &                        NWS14NC_WindMultiplier,      ! windMultiplier
+     &                        NWS14NC_PresMultiplier     ! presMultiplier
       LOG_SCOPE_TRACED("NWS14NC_READ_F22", WIND_TRACING)
 
       ! return if we are using grib2
@@ -8246,20 +8281,16 @@ C----------------------------------------------------------------------
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &      message='Unable to open fort.22.')
       ENDIF
-      read(22,*) Tdim    ! Time dimension name
-      read(22,*) Tvar    ! Time variable name
-      read(22,*) Tformat ! Format of time datestr
-      read(22,*) Londim  ! Lon dimension name
-      read(22,*) Lonvar  ! Lon var name
-      read(22,*) Latdim  ! Lat dimension name
-      read(22,*) Latvar  ! Lat var name
-      read(22,*) Pvar    ! Pressure var name
-      read(22,*) Uvar    ! U10 var name
-      read(22,*) Vvar    ! V10 Var name
-      if (NCICE.eq.14) then
-         read(22,*) Cvar ! Ice var name
-      endif
+
+      namelistSpecifier = 'nws14control'
+      rewind(22)
+      read(unit=22,nml=nws14control,iostat=ierr)
+      IF (ierr.NE.0) THEN
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Failed to read fort.22.') 
+      ENDIF
       close(22)
+
       PvarInd = index(Pvar,'HPa')
       if (PvarInd > 0) then
          rhoWat0g = rhoWat0g/100d0
@@ -8502,8 +8533,18 @@ C----------------------------------------------------------------------
       REAL,ALLOCATABLE,INTENT(OUT) :: data2(:,:)
       CHARACTER(LEN=200),INTENT(IN) :: invN, var
       INTEGER,INTENT(INOUT) :: ncid
+      real(8) :: fac
       IF (.NOT.grb2flag) THEN
          CALL READNWS14_netCDF(fileN, ncid, var, data2)
+         fac=1.d0
+         if (var.eq.Pvar)then
+            fac=NWS14NC_PresMultiplier
+         elseif (var.eq.Uvar .OR. var.eq.Vvar)then
+            fac=NWS14NC_WindMultiplier
+         endif
+         !print*,'var=',trim(var),'  fac=',fac
+         data2=data2*fac
+
       ELSEIF (grb2flag) THEN
          CALL READNWS14_grib2(fileN, invN, var, data2)
       ELSE
@@ -8599,7 +8640,8 @@ C----------------------------------------------------------------------
       real,allocatable,intent(out) :: data2(:,:)
       INTEGER,INTENT(INOUT) :: NC_ID
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY
-
+      integer :: rcode
+      real :: scale_factor, add_offset
       LOG_SCOPE_TRACED("READNWS14_netCDF", WIND_TRACING)
 
 #ifdef ADCNETCDF
@@ -8617,11 +8659,26 @@ C----------------------------------------------------------------------
         CALL BcastToLocal_Int(NY)
 #endif
         allocate(data2(NX,NY))
+
+        scale_factor=1.
+        add_offset=0.
+
         IF (MYPROC.EQ.0) THEN
            call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
+           rcode=nf90_inquire_attribute(nc_id, Temp_ID, "scale_factor")
+           if (rcode == nf90_noerr) then
+               rcode=NF90_GET_ATT(nc_id,Temp_ID,'scale_factor',scale_factor)
+           endif
+           rcode=nf90_inquire_attribute(nc_id, Temp_ID, "add_offset")
+           if (rcode == nf90_noerr) then
+               rcode=NF90_GET_ATT(nc_id,Temp_ID,'add_offset',add_offset)
+           endif
            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
      &                  start=[1, 1, NT],count=[NX, NY, 1]))
         ENDIF
+
+        data2=(data2*scale_factor)+add_offset
+
 #ifdef CMPI
         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
 #endif
