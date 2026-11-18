@@ -606,8 +606,8 @@ contains
                                   descript1, reterr)
 
 !     if we didn't need to create a file, update metadata and return
-!     !jgf52.08.22: Only update metadata if running in serial; in
-!     !parallel the metadata was updated by adcprep
+!jgf52.08.22: Only update metadata if running in serial; in
+!parallel the metadata was updated by adcprep
       if (sta%myFile%createFile .eqv. .false.) then
          if ((reterr .eqv. .false.) .and. (mnproc == 1)) then
             call updateMetaData(sta%ncid, sta%myFile)
@@ -637,7 +637,7 @@ contains
          sta%station_data_dims_3D(1) = sta%num_sta_dim_id
          sta%station_data_dims_3D(2) = sta%num_v_nodes_dim_id
          sta%station_data_dims_3D(3) = sta%myTime%timenc_dim_id
-!     !WJP 02.20.2018 Writing in constituent information for harmonic file
+!WJP 02.20.2018 Writing in constituent information for harmonic file
       elseif (any(stationLunsHA == descript1%lun)) then
          call defineHarmonicAnalysisParametersInNetcdfFile(descript1, stationdat=sta)
       end if
@@ -958,7 +958,7 @@ contains
          iret = nf90_def_var(sta%ncid, 'v-vel-phs', NF90_DOUBLE, &
                              sta%station_data_dims, sta%hg_v_station_data_id)
          call check_err(iret)
-!              ! u amp
+! u amp
          iret = nf90_put_att(sta%ncid, sta%ha_u_station_data_id, &
                              'long_name', &
                              'station tidal harmonic amplitude of east/west velocity')
@@ -975,7 +975,7 @@ contains
          iret = nf90_put_att(sta%ncid, sta%ha_u_station_data_id, &
                              'dry_Value', doubleval)
          call check_err(iret)
-!              ! u phs
+! u phs
          iret = nf90_put_att(sta%ncid, sta%hg_u_station_data_id, &
                              'long_name', &
                              'station tidal harmonic phase of east/west velocity')
@@ -992,7 +992,7 @@ contains
          iret = nf90_put_att(sta%ncid, sta%hg_u_station_data_id, &
                              'dry_Value', doubleval)
          call check_err(iret)
-!              ! v amp
+! v amp
          iret = nf90_put_att(sta%ncid, sta%ha_v_station_data_id, &
                              'long_name', &
                              'station tidal harmonic amplitude of north/south velocity')
@@ -1009,7 +1009,7 @@ contains
          iret = nf90_put_att(sta%ncid, sta%ha_v_station_data_id, &
                              'dry_Value', doubleval)
          call check_err(iret)
-!              ! v phs
+! v phs
          iret = nf90_put_att(sta%ncid, sta%hg_v_station_data_id, &
                              'long_name', &
                              'station tidal harmonic phase of north/south velocity')
@@ -1103,7 +1103,7 @@ contains
             iret = nf90_put_att(sta%ncid, sta%u_station_data_id, &
                                 'positive', 'right')
             call check_err(iret)
-!              ! v
+! v
             iret = nf90_put_att(sta%ncid, sta%v_station_data_id, &
                                 'long_name', &
                                 'station water column vertically averaged velocity ' &
@@ -1443,7 +1443,7 @@ contains
       iret = nf90_put_var(sta%ncid, sta%y_id, sta%y)
       call check_err(iret)
 
-!     !WJP 02.20.2018 Store const name(s)
+!WJP 02.20.2018 Store const name(s)
       if (any(stationLunsHA == descript1%lun)) then
          call addHarmonicAnalysisParametersToNetcdfFile(sta%ncid)
       end if
@@ -1533,7 +1533,7 @@ contains
       end if
       call defineMeshVariables(dat%ncid, dat%myMesh, dat%myFile)
 
-!     !WJP 02.20.2018 Writing in constituent information for harmonic file
+!WJP 02.20.2018 Writing in constituent information for harmonic file
       if (any(nodalLunsHA == descript1%lun)) then
          call defineHarmonicAnalysisParametersinNetcdfFile(descript1, nodaldat=dat)
       end if
@@ -3641,7 +3641,7 @@ contains
             iret = nf90_def_var_deflate(dat%ncid, dat%v_nodal_data_id, &
                                         1, 1, 2)
             call check_err(iret)
-!        !WJP 02.20.2018: added fort.53-54 harmonic outputs
+!WJP 02.20.2018: added fort.53-54 harmonic outputs
          case (53)
             iret = nf90_def_var_deflate(dat%ncid, dat%ha_nodal_data_id, &
                                         1, 1, 2)
@@ -3870,13 +3870,13 @@ contains
       case (68)
          myFile%filename = trim(globaldir)//'/fort.68.nc'
       case default
-!        ! trim(globaldir) has already been prepended to
-!        ! descript%file_name
+! trim(globaldir) has already been prepended to
+! descript%file_name
          myFile%filename = trim(descript%file_name)//'.nc'
       end select
-!     !jgfdebug
-!     !write(6,*) 'myFile%filename=',trim(myFile%filename),
-!     !&  ' descript%file_name=',trim(descript%file_name)
+!jgfdebug
+!write(6,*) 'myFile%filename=',trim(myFile%filename),
+!&  ' descript%file_name=',trim(descript%file_name)
 !
 !     jgf49.17.02: Simplified the criteria for creating a new netCDF
 !     output file: coldstart, overwrite upon hotstart, or output
@@ -7938,7 +7938,7 @@ contains
 !
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-!     ! create file name
+! create file name
       write (fext, '(i0)') lun
       hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
       call logMessage(INFO, 'Opening hot start file "' &
@@ -7986,10 +7986,10 @@ contains
       iret = nf90_get_var(hs%ncid, hs%myTime%timenc_id, &
                           hs%myTime%timenc, starti, counti)
       call check_err(iret)
-!     ! set timeLoc in hstart.F to the current time in the hotstart file
+! set timeLoc in hstart.F to the current time in the hotstart file
       timeLoc = hs%myTime%timenc(hs%myFile%record_counter)
-!     !
-!     ! get array variable ids
+!
+! get array variable ids
       iret = nf90_inq_varid(hs%ncid, "zeta1", hs%zeta1%nodal_data_id)
       call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "zeta2", hs%zeta2%nodal_data_id)
@@ -9585,7 +9585,7 @@ contains
          iret = nf90_def_var(ncid, 'nbdv', NF90_INT, &
                              myMesh%nbdvnc_dims(1), myMesh%nbdvnc_id)
          call check_err(iret)
-!        !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
+!jgf50.44: Turn on compression if this is a netcdf4 formatted file.
 #ifdef NETCDF_CAN_DEFLATE
          if (myFile%ncformat == ior(NF90_CLASSIC_MODEL, NF90_NETCDF4)) then
             iret = nf90_def_var_deflate(ncid, myMesh%nvdllnc_id, &
@@ -9643,7 +9643,7 @@ contains
             end if
          end if
 
-!        !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
+!jgf50.44: Turn on compression if this is a netcdf4 formatted file.
 #ifdef NETCDF_CAN_DEFLATE
          if (myFile%ncformat == ior(NF90_CLASSIC_MODEL, NF90_NETCDF4)) then
             iret = nf90_def_var_deflate(ncid, myMesh%nvellnc_id, &

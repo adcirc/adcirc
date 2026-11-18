@@ -47,7 +47,7 @@ module SPONGELAYER
 
    private
 
-   !c For AbsLayerType == 1
+   ! For AbsLayerType == 1
    real(8), allocatable :: pert_eta_abslayer(:), pert_vel_abslayer(:)
 
    real(8), allocatable :: eta2_abslayer(:), eta1_abslayer(:), &
@@ -76,7 +76,7 @@ module SPONGELAYER
    real(8), allocatable :: MCOEFSPGD(:) !c lumped mass matrix
 
    integer, parameter :: sponge_dis_mthd = 1 !c 1 -- solve GWCE c!
-   !c 0 -- Operator Spliling
+   ! 0 -- Operator Spliling
    logical, parameter :: adjsigval = .false.
    logical :: NO_MET_IN_SPONGE = .false.
    logical :: NO_BPG_IN_SPONGE = .false.
@@ -249,7 +249,7 @@ contains
 
       integer, intent(in) :: pc
 
-      !c local variables c!
+      ! local variables
       integer :: II, IE, idx(3)
       real(8) :: sigmaval(3)
 
@@ -306,9 +306,9 @@ contains
       if (NumNodesAbsLayer(1) > 0) then
 
          !IF (  GWCE_spg_alt ) THEN
-         !   !c GWCE_spg_alt == .TRUE.
-         !   !c   Use a more accurate integration for the
-         !   !c   sponge_layer term
+         ! GWCE_spg_alt == .TRUE.
+         !   Use a more accurate integration for the
+         !   sponge_layer term
          !   CGWCE_New = .FALSE.
          !   CGWCE_New_SPG_ALT_SOL = .TRUE.
          !END IF
@@ -619,7 +619,7 @@ contains
          ArbEta0 = 0.d0
          ArbUU0 = 0.d0
          ArbVV0 = 0.d0
-         !          ! reading in new value
+         ! reading in new value
          do KK = 1, NPTMP
             read (FUNIT, *) ArbEta0(KK), ArbUU0(KK), ArbVV0(KK)
          end do
@@ -826,9 +826,9 @@ contains
    !$$$      END SUBROUTINE LAYERSOLTEST1
    !$$$
 
-   !     !
-   !     ! Propagting a Gaussin
-   !     !
+   !
+   ! Propagting a Gaussin
+   !
    subroutine LAYERSOLTEST1(TimeLoc, RampVal)
       implicit none
 
@@ -852,7 +852,7 @@ contains
       CVEL = sqrt(G*bb)
       CVV = sqrt(G/bb)
 
-      !c
+      !
       PI = acos(-1.d0)
 
       LS = XC - CVEL*TimeLoc

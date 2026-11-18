@@ -769,7 +769,7 @@ contains
             end do
          end do
 
-!        !...Open the global output files
+!...Open the global output files
          do IW = 1, NumSwanOutput
             if (.not. SWAN_OutputAgg(IW)) cycle
             UnitNumber = 300 + IW
@@ -889,9 +889,9 @@ contains
             if (IW == 5) then
                SwanOut2(IP) = dble(SWAN_VOQ(IP, SWAN_VOQR(IVTYPE) + 1))
             end if
-!           ! jgf51.21.27: Move this here so it can be used to write
-!           ! data in various formats below.
-!           ! SwanDescript % alternate_value =  DBLE(OVEXCV(IVTYPE))
+! jgf51.21.27: Move this here so it can be used to write
+! data in various formats below.
+! SwanDescript % alternate_value =  DBLE(OVEXCV(IVTYPE))
 
             if (IW /= 5) then
 !Casey 110518: Ensure that dry nodes are written with default values.
@@ -934,7 +934,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine PADCSWAN_INIT
 
-!     !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+!USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       use GLOBAL, only: DT, &
                         ETA2, UU2, VV2, &
                         NCICE, &
@@ -1074,11 +1074,11 @@ contains
       if (index(RunStartDateTime, "-") > 0) then
          SwanTimeStep = 0
       else
-!        ! I will mimic code from thirdparty/swan/swanpre1.ftn
-!        ! Convert datetime to real time since reference.
+! I will mimic code from thirdparty/swan/swanpre1.ftn
+! Convert datetime to real time since reference.
 !Nicole 251218: fixed hardcoded date to datetime from namelist
          call DTRETI(RunStartDateTime, 1, AdcircStartTime)
-!        ! Initialize the starting time step.
+! Initialize the starting time step.
          SwanTimeStep = nint((AdcircStartTime - SWAN_TINIC)/SWAN_DT)
       end if
 
@@ -1211,10 +1211,10 @@ contains
       end do
       call Manning2Madsen
 
-!     !jgf50.28: Removed DO ... when SWAN coupling was under development,
-!     ! this was a loop so that SWAN could do multiple time steps per coupling
-!     ! interval, but it became clear that there was not a need for that and
-!     ! that new information should be used at the start of each SWAN step.
+!jgf50.28: Removed DO ... when SWAN coupling was under development,
+! this was a loop so that SWAN could do multiple time steps per coupling
+! interval, but it became clear that there was not a need for that and
+! that new information should be used at the start of each SWAN step.
 
 !Casey 090729: Average values over the time step.
       InterpoWeight = 0.5d0

@@ -61,7 +61,7 @@ C
      &    agrid 
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NPEBC
       USE HARM
-      USE WETDRY, ONLY : initializeWettingAndDrying
+      USE MOD_WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
       USE GLOBAL_IO, only: header63, header64, header77, header73,
      &    header74, header93, header91, header61, header62, header71,

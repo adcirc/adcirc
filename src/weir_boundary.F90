@@ -244,17 +244,17 @@ contains
 
       if ((NFLUXIB == 1) .or. (NFLUXIBP == 1) .or. (NFLUXB == 1)) then
 
-         !                   !...Allocate the new weir arrays at both time levels
+         !...Allocate the new weir arrays at both time levels
          call ALLOCATE_WEIRS()
 
-         !                   !...Parse the time varying weir file on the local processor
+         !...Parse the time varying weir file on the local processor
          if (found_tvw_nml) then
             call PARSE_TIME_VARYING_WEIR_INFO()
          end if
 
       end if
 
-      !               !...Set the minimum water depth above weir to appply weir formula along vertical element walls
+      !...Set the minimum water depth above weir to appply weir formula along vertical element walls
       BARMIN64 = 1.2d0*H0 ! This is equivalent to HOFF in wetdry.F
       BARMIN64_NOSUBM = 1.2d0*H0
       BARMIN64_SUBM = 1.2d0*H0
@@ -605,9 +605,9 @@ contains
 
       !...............COMPUTE THE NEW BOUNDARY HEIGHT
       if (present(BARHT_START)) then
-         !                   !...Schedule style boundaries specify
-         !                   !   their own initial elevation, so dont use
-         !                   !   the elevation in the fort.14 weirs
+         !...Schedule style boundaries specify
+         !   their own initial elevation, so dont use
+         !   the elevation in the fort.14 weirs
          BAR_DZ = BARHT_START - BARHT_FINAL(MYIDX)
          BAR_START = BARHT_START
       else
@@ -640,12 +640,12 @@ contains
       !               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL NODE
       DEPTH = max(-DP(NBV(MYIDX)), -DP(IBCONN(MYIDX)))
       if (BAR_HEIGHT < DEPTH) then
-         !                   !...WE'RE TOO LOW, SHUT DOWN BARRIER, SET TO MINIMUM
+         !...WE'RE TOO LOW, SHUT DOWN BARRIER, SET TO MINIMUM
          if (BAR_VARYTYPE(MYIDX) == 3) then
             BAR_HEIGHT = DEPTH
          else
             if (BARHT_FINAL(MYIDX) >= DEPTH) then
-               !                           !...SET TO USER SPECIFIED MIN
+               !...SET TO USER SPECIFIED MIN
                BAR_HEIGHT = BARHT_FINAL(MYIDX)
             else
 #ifdef CMPI
@@ -819,7 +819,7 @@ contains
          select case (int(BAR_SCHEDULE(MYIDX)% &
                           SECTION(MYSEC)%BARHT_FINAL))
          case (-99990)
-            !                           !...Set to fort.14 nodal elevation
+            !...Set to fort.14 nodal elevation
             select case (LBCODEI(MYIDX))
             case (3, 13, 23)
                BARHT_FINAL(MYIDX) = -DP(NNBB1)
@@ -829,7 +829,7 @@ contains
                   min(-DP(NNBB1), -DP(NNBB2))
             end select
          case (-99991)
-            !                           !...Add BARHT_DELTA to present height
+            !...Add BARHT_DELTA to present height
             select case (LBCODEI(MYIDX))
             case (3, 13, 23)
                BARHT_FINAL(MYIDX) = &
@@ -844,7 +844,7 @@ contains
                   BARHT_DELTA
             end select
          case (-99992)
-            !                           !...Subtract BARHT_DELTA from present height
+            !...Subtract BARHT_DELTA from present height
             select case (LBCODEI(MYIDX))
             case (3, 13, 23)
                BARHT_FINAL(MYIDX) = &
@@ -859,7 +859,7 @@ contains
                   BARHT_DELTA
             end select
          case (-99993)
-            !                           !...Set to weir elevation in fort.14
+            !...Set to weir elevation in fort.14
             select case (LBCODEI(MYIDX))
             case (3, 13, 23)
                BARHT_FINAL(MYIDX) = BARLANHT(MYIDX)
@@ -2030,9 +2030,9 @@ contains
       NNBB2 = IBCONN(I) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
       FLOWDIR = 0 ! DIRECTION OF FLOW
 
-      !               ! Check if the node ids on both sides of the barrier are valid
-      !               ! Either of them can be invalid ocasionally but not always
-      !               ! when the barrier is splitted for paralell computation
+      ! Check if the node ids on both sides of the barrier are valid
+      ! Either of them can be invalid ocasionally but not always
+      ! when the barrier is splitted for paralell computation
       if ((NNBB1 <= 0) .or. (NNBB2 <= 0)) then
          ISSUBMERGED64(I) = 0
          if (NNBB2 > 0) then
@@ -2138,9 +2138,9 @@ contains
          end if
       end if
 
-      !               ! Consider submerged if the water depth over the weir is greater than a threshold
-      !               ! and the averaged elemental water surface slope on the higher ground side is less
-      !               ! than a threshold
+      ! Consider submerged if the water depth over the weir is greater than a threshold
+      ! and the averaged elemental water surface slope on the higher ground side is less
+      ! than a threshold
       if (((ISSUBMP == 0 .and. RBARWLL >= BARMIN64_NOSUBM) .or. &
            (ISSUBMP == 1 .and. RBARWLL >= BARMIN64_SUBM)) .and. &
           (ETASLP <= BARSLIM64_ELEM)) then
@@ -2260,9 +2260,9 @@ contains
       NNBB2WN = 0 ! COUNT NUMBER OF WET NEIGHBORS
       FLOWDIR = 0 ! DIRECTION OF FLOW
 
-      !               ! Check if the node ids on both sides of the barrier are valid
-      !               ! Either of them can be invalid ocasionally but not always
-      !               ! when the barrier is splitted for paralell computation
+      ! Check if the node ids on both sides of the barrier are valid
+      ! Either of them can be invalid ocasionally but not always
+      ! when the barrier is splitted for paralell computation
       if ((NNBB1 <= 0) .or. (NNBB2 <= 0) .or. (I2 <= 0)) then
          FLUX = 0.d0
          return
@@ -2474,8 +2474,8 @@ contains
             else
                FLUX = RampIntFlux*RBARWL1*BARINCFSB(I)* &
                       (2.0d0*G*(RBARWL2 - RBARWL1))**0.5d0
-               !                       ! WRITE(*,*) "Receiving flux, subcritical"
-               !                       ! NIBNODECODE(NNBB1)=1
+               ! WRITE(*,*) "Receiving flux, subcritical"
+               ! NIBNODECODE(NNBB1)=1
             end if
          else
             !..................INWARD SUPERCRITICAL FLOW -> CASE 6
@@ -2485,8 +2485,8 @@ contains
             else
                FLUX = RampIntFlux*BARINCFSP(I)*RBARWL2F* &
                       (RBARWL2F*G)**0.5d0
-               !                       ! WRITE(*,*) "Receiving flux, supercritical"
-               !                       ! NIBNODECODE(NNBB1)=1
+               ! WRITE(*,*) "Receiving flux, supercritical"
+               ! NIBNODECODE(NNBB1)=1
             end if
          end if
       else

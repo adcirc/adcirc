@@ -134,7 +134,7 @@ set(PADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/baroclinic.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_pairs.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum2d.F

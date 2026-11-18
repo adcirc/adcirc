@@ -883,7 +883,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine applyWettingAndDrying(IT)
       use subgrid, only: subgrid_level0, getVertLookup
-      use wetdry, only: computeWettingAndDrying
+      use mod_wetdry, only: computeWettingAndDrying
 #ifndef ADCNETCDF
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #endif
