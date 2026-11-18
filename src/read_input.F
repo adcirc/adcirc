@@ -151,7 +151,7 @@ Casey 251212: Adding time control.
      &   dynamicWaterLevelCorrectionMultiplier,
      &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
-      USE WETDRY, ONLY : noffActive, velmin
+      USE MOD_WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
      &   invertedBarometerOnElevationBoundary

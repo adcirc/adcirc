@@ -350,7 +350,7 @@ $(O_DIR):
 
 ################# Module Source, Object, & Mod Files ######################
 HASH_MSRC  =  hashtable.F90
-WD_MSRC    =  wetdry.F
+WD_MSRC    =  wetdry.F90
 MOM_MSRC   =  momentum2d.F
 MOM3D_MSRC =  momentum3d.F90
 GWCE_MSRC  =  gwce.F
@@ -401,7 +401,7 @@ TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 
 ITTIDE_MSRC = internaltide.F90
 
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
-WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
+WD_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(WD_MSRC) )
 MOM_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MOM_MSRC) )
 MOM3D_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(MOM3D_MSRC) )
 GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
@@ -450,7 +450,7 @@ NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
-ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F baroclinic.F90 flux_boundaries.F90 transport_2d.F90 timestep.F90 vsmy.F transport_3d.F
+ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F90 read_input.F cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F90 baroclinic.F90 flux_boundaries.F90 transport_2d.F90 timestep.F90 vsmy.F transport_3d.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -810,7 +810,7 @@ $(O_DIR)io.o          :  io.F90 $(O_DIR)logging.o $(O_DIR)terminate.o
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)weir_pairs.o $(O_DIR)baroclinic.o $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum2d.o
 $(O_DIR)momentum2d.o  :  momentum2d.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)momentum3d.o  :  momentum3d.F90
-$(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
+$(O_DIR)wetdry.o      :  wetdry.F90 $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F90 $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)constants.o
 
 WRITER_DEP := writer.F  $(O_DIR)terminate.o $(O_DIR)messenger.o

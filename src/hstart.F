@@ -77,7 +77,7 @@ C
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
-      USE WETDRY, ONLY : initializeWettingAndDrying
+      USE MOD_WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE mod_flux_boundaries, ONLY : hotstartNormalFlowBoundary

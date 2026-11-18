@@ -50,7 +50,7 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_pairs.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum2d.F
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep.F
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/interp.F
