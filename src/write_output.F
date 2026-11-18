@@ -347,7 +347,7 @@ C----------------------------------------------------------------------
 C     jgf51.21.24: Initialize 2D output data structures.
 C----------------------------------------------------------------------
       SUBROUTINE initOutput2D(timeloc)
-      USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+      USE MOD_SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF,
      &                  numFormats, write_local_files, localdir,
      &                  controlFileName, MNP
@@ -1751,7 +1751,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
       SUBROUTINE REAL_FIELD_ALLOCATE( OUTFLAG, VECVAR, NDIM, VALINIT )
-        USE SIZES, ONLY: OFF
+        USE MOD_SIZES, ONLY: OFF
         IMPLICIT NONE
         INTEGER :: OUTFLAG, NDIM
         REAL (8), allocatable:: VECVAR(:)
@@ -1768,7 +1768,7 @@ C----------------------------------------------------------------------
       END SUBROUTINE REAL_FIELD_ALLOCATE
 
       SUBROUTINE INT_FIELD_ALLOCATE( OUTFLAG, IVECVAR, NDIM, VALINIT )
-        USE SIZES, ONLY: OFF
+        USE MOD_SIZES, ONLY: OFF
         IMPLICIT NONE
         INTEGER:: OUTFLAG, NDIM
         INTEGER, allocatable:: IVECVAR(:)
@@ -1817,7 +1817,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       SUBROUTINE writeOutput2D(IT,TimeLoc)
-      USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+      USE MOD_SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF
       USE GLOBAL, only: nt, noutge, noutgv, noutgw, nws, nrs,
      &   inundationOutput
@@ -2178,7 +2178,7 @@ C     jgf49.44: Subroutine to write harmonic analysis output files
 C     in serial or in parallel using globalio.
 C----------------------------------------------------------------------
       SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
-      USE SIZES, ONLY : MNHARF, LOCALDIR, GLOBALDIR,
+      USE MOD_SIZES, ONLY : MNHARF, LOCALDIR, GLOBALDIR,
      &                  WRITE_LOCAL_FILES, MNPROC, MYPROC, MNP,
      &                  WRITE_LOCAL_HARM_FILES
 C RJW added MNPROC and MYPROC
@@ -2730,7 +2730,7 @@ C     format.
 C     WJP 02.20.2018 Updated to support netcdf
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
-      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
+      USE MOD_SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
@@ -2845,7 +2845,7 @@ C     output for a 3D run.
 C----------------------------------------------------------------------
       SUBROUTINE initOutput3D(lun, specifier, nset, nPerSet, nPerSet_g,
      &                        tsPeriod, outputShape, recNum)
-      USE SIZES, ONLY : LOCALDIR, GLOBALDIR, MNPROC,
+      USE MOD_SIZES, ONLY : LOCALDIR, GLOBALDIR, MNPROC,
      &   WRITE_LOCAL_FILES, NBYTE, Myproc
 C RJW added myproc
 C MYPROC,
@@ -2986,7 +2986,7 @@ C     jgf48.11 Moved from vsmy.F to write_output.F.
 C     jgf49.43 Rewrote for globalio.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutput3D(TimeLoc,IT)
-      USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
+      USE MOD_SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
       USE GLOBAL, ONLY : BCFLAG_TEMP,
@@ -4279,7 +4279,7 @@ C     comprehensive information found in the OutputDataDescript_t.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutArray(TimeLoc, it, descript, pack_cmd,
      &                         unpack_cmd)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL, ONLY: OutputDataDescript_t
       use mod_logging, only: allMessage,
      &  t_log_scope, DEBUG, INFO, ERROR
@@ -4380,7 +4380,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeOutArrayMinMax(lun, TimeLoc, it, nrecs_this,
      &                                descript, pack_cmd, unpack_cmd)
 
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL, ONLY: OutputDataDescript_t, NP_G, labels_g
       use mod_logging, only: t_log_scope, init_log_scope, allMessage,
      &  logMessage, DEBUG, INFO,
@@ -4517,7 +4517,7 @@ C     write hotstart files.
 C-----------------------------------------------------------------------
       SUBROUTINE writeHotstart(TimeLoc, IT)
 
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       use mod_logging, only: t_log_scope, init_log_scope, allMessage,
      &  logMessage, DEBUG, INFO, screenUnit
@@ -5687,7 +5687,7 @@ C     limit of WarnElevDumpLimit.
 C
 C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL
       use mod_logging, only: t_log_scope, init_log_scope, allMessage,
      &  DEBUG
@@ -5796,7 +5796,7 @@ C SWAN OUTPUT VARIABLES USED IN WRITE_OUTPUT.F
 C-----------------------------------------------------------------------
 #ifdef CSWAN
       SUBROUTINE initSwanOutput()
-          USE SIZES, ONLY : MNPROC, OFF, ASCII, NETCDF3,
+          USE MOD_SIZES, ONLY : MNPROC, OFF, ASCII, NETCDF3,
      &                       NETCDF4, XDMF, MYPROC
           USE GLOBAL
           USE MESH
@@ -6213,7 +6213,7 @@ C     process (coldstart and hotstart), rather than waiting for the first
 C     call to writeOutput2D().
 C-----------------------------------------------------------------------
       subroutine initInundationOutput()
-      use sizes, only : mnp, globaldir, localdir, write_local_files,
+      use mod_sizes, only : mnp, globaldir, localdir, write_local_files,
      &    OFF, ASCII, NETCDF3, NETCDF4, XDMF, mnproc, myproc, numFormats
       use global, only : nnodecode, np_g, OutputDataDescript_t, noutge,
      &    nodes_lg
@@ -6342,7 +6342,7 @@ C-----------------------------------------------------------------------
 C     jgf52.08.01: Collect data used for inundation output.
 C-----------------------------------------------------------------------
       subroutine collectInundationData(timeloc, it)
-      use sizes, only : mnp
+      use mod_sizes, only : mnp
       use global, only : nodecode, dtdp, eta1, eta2, nt, inunThresh
       use mesh, only : dp, np
       implicit none

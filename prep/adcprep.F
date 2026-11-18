@@ -114,7 +114,7 @@ C
       PROGRAM ADCPREP
       use mod_logging, only: screenUnit
       USE ADC_CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
-      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
+      USE MOD_SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
      &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
@@ -396,7 +396,7 @@ C---------------------------------------------------------------------------
 C
       SUBROUTINE PREPINPUT()
       USE PRE_GLOBAL
-      use sizes, only : naType, meshType, controlType, ASCII, XDMF,
+      use mod_sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
       use mod_logging, only : logMessage, t_log_scope,
      &   init_log_scope, allMessage, INFO, DEBUG

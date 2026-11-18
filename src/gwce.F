@@ -137,7 +137,7 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
       subroutine initGWCE()
-      use sizes, only : mnp, mneta, mnei
+      use mod_sizes, only : mnp, mneta, mnei
       use global, only : dt, ilump
       USE ADC_CONSTANTS, only: g
       use mesh, only : np, NeiTab, NNeigh
@@ -206,7 +206,7 @@ C     Two mutually exclusive possibilities are (1)
 C     the conventional GWCE or (2) the predictor-corrector GWCE.
 !----------------------------------------------------------------------
       subroutine solveGWCE(it, ITIME_BGN, timeloc, timeh)
-      use sizes, only : mnp
+      use mod_sizes, only : mnp
       use global, only : CGWCE_New, CPRECOR, ETA2, QX2, QY2, UU2, VV2
 #ifdef CMPI
       use global, only: dumy1, dumy2
@@ -281,7 +281,7 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
-      USE SIZES, ONLY : myproc
+      USE MOD_SIZES, ONLY : myproc
       USE GLOBAL, ONLY : ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
@@ -301,7 +301,7 @@ C
      &    , dumy1, dumy2, rnp_global
 #endif
       USE ADC_CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
-      USE SIZES, ONLY: MNP, MNEI
+      USE MOD_SIZES, ONLY: MNP, MNEI
       USE mod_baroclinic, ONLY: LNM_BC
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
@@ -2190,7 +2190,7 @@ C*******************************************************************************
 
       SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
 C
-      USE SIZES
+      USE MOD_SIZES
       USE GLOBAL, ONLY : ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
@@ -3146,7 +3146,7 @@ C         subroutine.
 C     jgf53.dev: Moved to GWCE module. 
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
-      USE SIZES, ONLY : mnproc, myproc
+      USE MOD_SIZES, ONLY : mnproc, myproc
       use global, only : eta2,nodecode,NOFF,ESLCOUNT,
      &      nodes_lg, IFSFM
       use mod_logging, only : t_log_scope, init_log_scope, screenUnit,
@@ -3378,7 +3378,7 @@ C***********************************************************************
 !     to be module-private to gwce)
 !----------------------------------------------------------------------
       SUBROUTINE enforceGWCELVob()
-      use sizes, only : mnei
+      use mod_sizes, only : mnei
       use global, only : etas
       use mesh, only : neitab
       use subdomain, only : nobn, obn

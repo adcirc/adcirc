@@ -57,7 +57,7 @@
 !                                            files. Added in fort.51-54.nc
 !=================================================================
 module NETCDFIO
-   use SIZES, only: OFF, ASCII, SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
+   use MOD_SIZES, only: OFF, ASCII, SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
    use NETCDF_ERROR, only: CHECK_ERR
    use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
                           screenMessage, logMessage, allMessage, t_log_scope, init_log_scope
@@ -561,7 +561,7 @@ contains
 !     station.
 !-----------------------------------------------------------------------
    subroutine initStationFile(sta, descript1, reterr)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use ADC_CONSTANTS, only: RAD2DEG
       use GLOBAL, only: SNAMLEN, OutputDataDescript_t, &
                         NWS, STATNAME, STATNAMEV, &
@@ -1462,7 +1462,7 @@ contains
 !     full domain data.
 !-----------------------------------------------------------------------
    subroutine initNodalDataFile(dat, descript1, reterr)
-      use SIZES, only: MNWPROC, MNPROC, MYPROC
+      use MOD_SIZES, only: MNWPROC, MNPROC, MYPROC
       use GLOBAL, only: OutputDataDescript_t, NWS, C3D, IDEN, NE_G, NP_G
       use GLOBAL_3DVS, only: NFEN
       use MESH, only: ICS
@@ -3842,7 +3842,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine createNetCDFOutputFile(ncid, myFile, myTime, &
                                      descript, ret_error, static_time_length)
-      use SIZES, only: globaldir
+      use MOD_SIZES, only: globaldir
       use GLOBAL, only: OutputDataDescript_t, IHOT
       use mod_logging, only: allMessage
 #ifdef CMPI
@@ -4284,7 +4284,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine writeStationData(sta, lun, descript1, timesec, &
                                descript2, descript3, descript4)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t, IDEN
       implicit none
 
@@ -4603,7 +4603,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine writeNodalData(dat, lun, descript1, timesec, &
                              descript2, descript3, descript4)
-      use SIZES, only: MNPROC, MYPROC
+      use MOD_SIZES, only: MNPROC, MYPROC
       use GLOBAL, only: OutputDataDescript_t, NODECODE, IDEN
 
       implicit none
@@ -5805,7 +5805,7 @@ contains
 !     jgf49.35 Sets up netCDF variables for hotstarting harmonic analysis.
 !-----------------------------------------------------------------------
    subroutine initNetCDFHotstartHarmonic(lun, GLOELVDescript, STAELVDescript, STAULVDescript, err)
-      use SIZES, only: MNHARF
+      use MOD_SIZES, only: MNHARF
       use HARM, only: NHASE, NHASV, NHAGE, NHAGV
       use GLOBAL, only: OutputDataDescript_t
       implicit none
@@ -6409,7 +6409,7 @@ contains
 !     jgf49.49.02 Sets up netCDF variables for hotstarting 3D.
 !-----------------------------------------------------------------------
    subroutine initNetCDFHotstart3D(lun, netcdf_format)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t, IDEN
       use GLOBAL_3DVS, only: NFEN
       implicit none
@@ -6805,7 +6805,7 @@ contains
                                   NodeCodeDescript, NOFFDescript, H1_HS_Descript, &
                                   H2_HS_Descript, RS1Descript, RS2Descript, SWANRS1Descript, &
                                   SWANRS2Descript, timesec, it)
-      use SIZES, only: globaldir, mnproc
+      use MOD_SIZES, only: globaldir, mnproc
       use GLOBAL, only: OutputDataDescript_t, im, nscoue, imhs, &
                         nscouv, nscouc, nscoum, &
                         nscouge, nscougv, nscougc, nscougw, nrs
@@ -7141,7 +7141,7 @@ contains
                                           GLOELVDescript, STAELVDescript, &
                                           GLOULVDescript, GLOVLVDescript, &
                                           STAULVDescript, STAVLVDescript)
-      use SIZES, only: MNHARF, MNPROC
+      use MOD_SIZES, only: MNHARF, MNPROC
       use GLOBAL, only: OutputDataDescript_t, NSTAE_G, NSTAV_G
       use HARM, only: nz, nf, mm, nhase, nhasv, nhage, nhagv, icall, &
                       nfreq, timeud, itud, namefr, hafreq, haff, &
@@ -7416,7 +7416,7 @@ contains
                                                         ELAVDescript, ELVADescript, &
                                                         XVELAVDescript, YVELAVDescript, &
                                                         XVELVADescript, YVELVADescript)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t
       use HARM, only: nhage, nhagv, ntsteps
       implicit none
@@ -7556,7 +7556,7 @@ contains
    subroutine writeNetCDFHotstart3D(lun, DUUDescript, &
                                     DUVDescript, DVVDescript, UUDescript, VVDescript, &
                                     BSXDescript, BSYDescript)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t
       use GLOBAL_3DVS, only: n3dsd, i3dsdrec, n3dsv, i3dsvrec, &
                              n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec, &
@@ -7733,7 +7733,7 @@ contains
 !     of rank 2.
 !-----------------------------------------------------------------------
    subroutine writeNetCDFHotstart3DVar(lun, descript)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t
       implicit none
 
@@ -7902,7 +7902,7 @@ contains
 !     jgf49.17.02 Reads data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstart(lun, timeLoc)
-      use SIZES, only: globaldir, mnproc
+      use MOD_SIZES, only: globaldir, mnproc
       use GLOBAL, only: OutputDataDescript_t, imhs, iths, nscoue, &
                         nscouv, nscouc, nscoum, nscouge, nscougv, nscougc, &
                         nscougw, ETA1, ETA2, EtaDisc, &
@@ -8227,7 +8227,7 @@ contains
 !     limitation.
 !-----------------------------------------------------------------------
    subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
-      use sizes, only: mnproc, myproc
+      use mod_sizes, only: mnproc, myproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use global, only: OutputDataDescript_t, nfover
       use mod_logging, only: allMessage, logMessage
@@ -8745,7 +8745,7 @@ contains
 !     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonic(lun)
-      use SIZES, only: mnproc
+      use MOD_SIZES, only: mnproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t, &
                         IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
@@ -9062,7 +9062,7 @@ contains
 !     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonicMeansVariances(lun)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t
       use HARM, only: ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA, &
@@ -9186,7 +9186,7 @@ contains
 !     jgf49.48.03 Reads 3D data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstart3D(lun)
-      use SIZES, only: MNPROC
+      use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t, IDEN, &
                         duu1, duv1, dvv1, uu2, vv2, bsx1, bsy1
       use GLOBAL_3DVS, only: q, nfen, sigt, sal, temp, wz, q20, &
@@ -10499,7 +10499,7 @@ contains
       nfen_p, iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p, &
       ievc_p, evmin_p, evcon_p, alp1_p, alp2_p, alp3_p, igc_p, nlsd_p, &
       nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p, RUNID_p)
-      use SIZES, only: myproc
+      use MOD_SIZES, only: myproc
       use MESH, only: X, Y, SLAM, SFEA, NM, DP, ICS, &
                       SLAM0, SFEA0, AGRID
       use BOUNDARIES, only: NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, &

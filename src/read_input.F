@@ -37,7 +37,7 @@ C     READS INPUT FILES
 C
 C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
-      USE SIZES          
+      USE MOD_SIZES          
       USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
      &   noutge, use_tvw, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
@@ -4936,7 +4936,7 @@ c******************************************************************************
 c******************************************************************************
       SUBROUTINE RecomputeFDXEFDYEAtCondensedNodes()
 c******************************************************************************
-      USE SIZES
+      USE MOD_SIZES
       USE Mesh,ONLY : NE,NM,X,Y,FDXE,FDYE,AREAS
       USE NodalAttributes, ONLY : LoadCondensedNodes
       IMPLICIT NONE
@@ -5075,7 +5075,7 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE READ_INPUT_3D(StaTime,NT)
-      USE SIZES
+      USE MOD_SIZES
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 C    kmd48.33bc - added the variables from Global
       USE GLOBAL, ONLY: RES_BC_FLAG, BCSTATIM,
@@ -6084,7 +6084,7 @@ C-----------------------------------------------------------------------
 
       SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
-      use sizes, only : MyProc
+      use mod_sizes, only : MyProc
       use global, only : NFOver, srchdp, tree,
      &   kdresults
       use mod_logging, only : DEBUG, screenMessage, allMessage,
@@ -6219,7 +6219,7 @@ C
 C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
-      USE SIZES, ONLY : MyProc
+      USE MOD_SIZES, ONLY : MyProc
       USE GLOBAL, ONLY: NFOver
       USE mod_logging, ONLY: screenMessage, allMessage, DEBUG,
      &   t_log_scope, init_log_scope, screenUnit, nscreen
@@ -6364,7 +6364,7 @@ C-----------------------------------------------------------------------
         USE GLOBAL, ONLY: SALTAMP, SALTPHA, NTIP, NTIF, DEG2RAD,
      &      tipotag, nodes_lg, np_global
         USE MESH, ONLY: NP, node_dict
-        USE SIZES, ONLY: INPUTDIR, GBLINPUTDIR, MYPROC
+        USE MOD_SIZES, ONLY: INPUTDIR, GBLINPUTDIR, MYPROC
         USE HASHTABLE, ONLY: find
         USE mod_terminate, ONLY: terminate, ADCIRC_EXIT_FAILURE
         USE mod_logging, ONLY: allMessage, ERROR

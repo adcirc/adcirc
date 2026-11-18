@@ -500,7 +500,7 @@ C     vjp  3/28/98
 C---------------------------------------------------------------------
       SUBROUTINE READ15()
       USE PRE_GLOBAL
-      USE SIZES, ONLY : MNHARF
+      USE MOD_SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
       USE GLOBAL, ONLY : parse, hss, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, deg2rad

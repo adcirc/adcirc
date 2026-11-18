@@ -52,7 +52,7 @@ subroutine SwanReadfort18
 !PUN    use ocpcomm2
 !PUN    use ocpcomm4
 !PUN    use SwanGriddata, only: nvertsg, ncellsg, ivertg
-!PUN    use SIZES
+!PUN    use MOD_SIZES
 !PUN    use GLOBAL, only: NSTAE, NSTAV, NSTAM, NSTAC
 !PUN!
 !PUN    implicit none

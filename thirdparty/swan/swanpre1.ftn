@@ -6089,7 +6089,7 @@
       USE TIMECOMM                                                        40.41
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
-!PUN      USE SIZES                                                           40.95
+!PUN      USE MOD_SIZES                                                       40.95
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -6685,7 +6685,7 @@
       USE SWCOMM4                                                         40.41
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
-!PUN      USE SIZES                                                           40.95
+!PUN      USE MOD_SIZES                                                       40.95
 !ADC      USE Couple2Swan, ONLY: SwanHotStartUnit                             41.20
 !
 !

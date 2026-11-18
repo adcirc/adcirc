@@ -31,7 +31,7 @@ C******************************************************************************
 C 
       MODULE OWI_ICE
 C
-      USE SIZES,ONLY : MYPROC
+      USE MOD_SIZES,ONLY : MYPROC
       use mod_logging, only: screenUnit, nscreen
       IMPLICIT NONE
       character(100) :: title
@@ -84,7 +84,7 @@ C***********************************************************************
 
       SUBROUTINE NCICE1_INIT(Ciceval,NP)
 
-      USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+      USE MOD_SIZES, ONLY : MYPROC, GBLINPUTDIR
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       IMPLICIT NONE
@@ -211,7 +211,7 @@ C   SOBROUTINE NCICE1_GET
 C***********************************************************************
 
       SUBROUTINE NCICE1_GET(Ciceval,NP)
-      USE SIZES,ONLY : MYPROC,MNPROC
+      USE MOD_SIZES,ONLY : MYPROC,MNPROC
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       IMPLICIT NONE

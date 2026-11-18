@@ -590,7 +590,7 @@
       USE SWCOMM1                                                         40.41
       USE OUTP_DATA
       USE M_PARALL                                                        40.51
-!PUN      USE SIZES, ONLY: MYPROC
+!PUN      USE MOD_SIZES, ONLY: MYPROC
 !
       IMPLICIT NONE
 !
@@ -738,7 +738,7 @@
       USE OCPCOMM4
       USE M_PARALL
       USE OUTP_DATA
-!PUN      USE SIZES
+!PUN      USE MOD_SIZES
 !PUN      USE MESSENGER
 !
       IMPLICIT NONE
@@ -1199,7 +1199,7 @@
 !NCF      USE swn_outnc, only: swn_outnc_openblockfile,
 !NCF     &                     swn_outnc_appendblock,
 !NCF     &                     swn_outnc_close_on_end
-!PUN      USE SIZES, ONLY: MYPROC, MNPROC
+!PUN      USE MOD_SIZES, ONLY: MYPROC, MNPROC
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -1741,7 +1741,7 @@
       USE OUTP_DATA                                                       40.13
       USE M_PARALL                                                        40.31
 !NCF      USE swn_outnc, only: swn_outnc_spec                                 41.40
-!PUN      USE SIZES, ONLY: MYPROC, MNPROC
+!PUN      USE MOD_SIZES, ONLY: MYPROC, MNPROC
 !PUN      use SwanGriddata, only: ivertg
 !
 !

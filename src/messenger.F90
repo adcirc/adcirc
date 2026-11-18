@@ -97,7 +97,7 @@ contains
       use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_dup, &
                          MPI_Comm_size, MPI_Comm_rank, MPI_Group_incl, MPI_Comm_create, &
                          MPI_Comm_group, MPI_Init, MPI_Comm
-      use SIZES, only: MNALLPROC, MNPROC, MYPROC, MNWPROC
+      use MOD_SIZES, only: MNALLPROC, MNPROC, MYPROC, MNWPROC
       use GLOBAL, only: COMM_WRITER, WRITER_ID, COMM
       use mod_logging, only: t_log_scope, init_log_scope, screenMessage, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -179,7 +179,7 @@ contains
       use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_Abort, MPI_Finalize, &
                          MPI_COMM_WORLD
 
-      use SIZES, only: MNWPROC, MYPROC, MNPROC
+      use MOD_SIZES, only: MNWPROC, MYPROC, MNPROC
       use GLOBAL, only: SIG_TERM, COMM_WRITER, &
                         CPL2STWAVE, Flag_ElevError, Flag_VelError
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
@@ -261,7 +261,7 @@ contains
    subroutine MSG_TABLE(NSTA3DD_IN, NSTA3DV_IN, NSTA3DT_IN, &
                         NSTA3DD_G_OUT, NSTA3DV_G_OUT, NSTA3DT_G_OUT, &
                         IMAP_STA3DD_LG_OUT, IMAP_STA3DV_LG_OUT, IMAP_STA3DT_LG_OUT)
-      use SIZES, only: MNE, MNP, INPUTDIR, MYPROC
+      use MOD_SIZES, only: MNE, MNP, INPUTDIR, MYPROC
       use GLOBAL, only: IMAP_EL_LG, NODES_LG, FileFmtVersion, NP_G, NE_G, &
                         NSTAE, NSTAV, NSTAM, NSTAC, NSTAE_G, NSTAV_G, NSTAM_G, NSTAC_G, &
                         C3D, CMP_VERSION_NUMBERS, IMAP_STAE_LG, IMAP_STAV_LG, &
@@ -465,7 +465,7 @@ contains
    !  vjp  10/01/2006
    !---------------------------------------------------------------------
    subroutine MSG_START()
-      use SIZES, only: MNP, MNFEN
+      use MOD_SIZES, only: MNP, MNFEN
       use GLOBAL, only: C3D
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
@@ -773,7 +773,7 @@ contains
    !---------------------------------------------------------------------
    subroutine UPDATEM4R(M4R)
       use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_PRECISION
-      use SIZES, only: MNP
+      use MOD_SIZES, only: MNP
       use GLOBAL, only: COMM
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -909,7 +909,7 @@ contains
    !---------------------------------------------------------------------
    subroutine UPDATER3D(VEC)
       use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_PRECISION
-      use SIZES, only: MNP, MNFEN
+      use MOD_SIZES, only: MNP, MNFEN
       use GLOBAL, only: COMM
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -975,7 +975,7 @@ contains
    !---------------------------------------------------------------------
    subroutine UPDATEC3D(VEC)
       use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_COMPLEX
-      use SIZES, only: MNP, MNFEN
+      use MOD_SIZES, only: MNP, MNFEN
       use GLOBAL, only: COMM
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1192,7 +1192,7 @@ contains
    !---------------------------------------------------------------------
    subroutine ALLNODES(TOTNODES)
       use mpi_f08, only: MPI_Allreduce, MPI_INTEGER, MPI_SUM
-      use SIZES, only: MNP
+      use MOD_SIZES, only: MNP
       use GLOBAL, only: COMM
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
@@ -1224,7 +1224,7 @@ contains
       ! reading the same file at the same time
       !---------------------------------------------------------------------
       use mpi_f08, only: MPI_Bcast, MPI_DOUBLE_PRECISION
-      use SIZES, only: MYPROC
+      use MOD_SIZES, only: MYPROC
       use GLOBAL, only: COMM
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1261,7 +1261,7 @@ contains
       ! reading the same file at the same time
       !---------------------------------------------------------------------
       use mpi_f08, only: MPI_Bcast, MPI_INTEGER
-      use SIZES, only: MYPROC
+      use MOD_SIZES, only: MYPROC
       use GLOBAL, only: COMM
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none

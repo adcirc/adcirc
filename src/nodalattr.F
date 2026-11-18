@@ -109,7 +109,7 @@ C-----------------------------------------------------------------------
 #include "logging_macros.h"
 
       MODULE NodalAttributes
-      USE SIZES
+      USE MOD_SIZES
       use mod_logging, only: allMessage, logMessage, DEBUG, ECHO, INFO,
      &                       WARNING, ERROR, t_log_scope, init_log_scope
 
@@ -2247,7 +2247,7 @@ C     11/06/2023 sb
 C
 C     ----------------------------------------------------------------
       SUBROUTINE initVEW1DChannelWetPerimeter()
-      USE SIZES          
+      USE MOD_SIZES          
       USE MESH, ONLY: NP, X, Y, DP, LBArray_Pointer
       USE BOUNDARIES,ONLY : LBCODEI,NBV,IBCONN
       IMPLICIT NONE
@@ -2508,7 +2508,7 @@ C     ----------------------------------------------------------------
      &     IFNLFA, NP, TK, NFEN, Z0B, KP)
 Casey 140701: Prevent the depths from becoming negative in the bottom roughness calculations.
       USE GLOBAL, ONLY: H0
-      USE SIZES
+      USE MOD_SIZES
 ! arash May 31 2016
 CSeun 260619: KP is passed from timestep.F to avoid requiring
 C             global_3dvs.mod when compiling nodalattr.F in legacy builds.
@@ -3168,7 +3168,7 @@ C     Parepare list of condensed nodes
 C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
-      USE SIZES,ONLY : MNVEL
+      USE MOD_SIZES,ONLY : MNVEL
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
       IMPLICIT NONE

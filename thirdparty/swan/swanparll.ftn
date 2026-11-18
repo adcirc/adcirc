@@ -3874,7 +3874,7 @@
       USE OUTP_DATA
       USE M_PARALL                                                        40.31
 !PUN      USE SwanGriddata, ONLY: nvertsg                                     41.36
-!PUN      USE SIZES                                                           41.36
+!PUN      USE MOD_SIZES                                                       41.36
 !
       IMPLICIT NONE
 !
@@ -4305,7 +4305,7 @@
       USE SWCOMM4                                                         40.41
       USE OUTP_DATA
       USE M_PARALL                                                        40.31
-!PUN      USE SIZES, ONLY: GLOBALDIR, LOCALDIR                                41.36
+!PUN      USE MOD_SIZES, ONLY: GLOBALDIR, LOCALDIR                            41.36
 !
       IMPLICIT NONE
 !
@@ -4659,7 +4659,7 @@
       USE OUTP_DATA
       USE M_PARALL                                                        40.31
 !NCF      USE swn_outnc, ONLY: swn_outnc_colspc                               41.40
-!PUN      USE SIZES, ONLY: GLOBALDIR, LOCALDIR                                41.36
+!PUN      USE MOD_SIZES, ONLY: GLOBALDIR, LOCALDIR                            41.36
 !PUN      USE SwanGriddata, ONLY: xcugrdgl, ycugrdgl
 !
       IMPLICIT NONE
@@ -5051,7 +5051,7 @@
       USE SWCOMM4, ONLY: KSPHER                                           41.62
       USE OUTP_DATA
       USE M_PARALL
-!PUN      USE SIZES, ONLY: GLOBALDIR, LOCALDIR                                41.36
+!PUN      USE MOD_SIZES, ONLY: GLOBALDIR, LOCALDIR                            41.36
 !PUN!NCF      USE SwanGridData, ONLY: XCUGRDGL, YCUGRDGL                          41.40
 !NCF      USE swn_outnc                                                       41.40
 !

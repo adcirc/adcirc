@@ -47,7 +47,7 @@ subroutine SwanGridFace ( nfaces, ncells, nverts, xcugrd, ycugrd, kvertf )
 !
     use ocpcomm4
     use SwanGridobjects
-!ADC    USE SIZES, ONLY: MYPROC
+!ADC    USE MOD_SIZES, ONLY: MYPROC
 !
     implicit none
 !

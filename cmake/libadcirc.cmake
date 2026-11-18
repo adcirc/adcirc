@@ -14,7 +14,7 @@
 #
 # ######################################################################################################################
 set(LIBADC_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90

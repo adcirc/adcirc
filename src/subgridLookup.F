@@ -351,7 +351,7 @@
 
       subroutine getVertLookup
 
-      use sizes, only : mne, mnp
+      use mod_sizes, only : mne, mnp
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
      &   , NNeigh, NeiTab
       use global, only : H0

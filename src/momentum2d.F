@@ -100,7 +100,7 @@ C******************************************************************************
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
       subroutine init2DMomentumEq()
-      use sizes, only : mnp
+      use mod_sizes, only : mnp
       use global, only : dt
       USE ADC_CONSTANTS, only: g
       implicit none

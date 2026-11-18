@@ -24,7 +24,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
-      USE SIZES,  ONLY: MNEI
+      USE MOD_SIZES,  ONLY: MNEI
       USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          allMessage, logMessage, t_log_scope, init_log_scope
       USE GLOBAL, ONLY : NB, NM, MLD, SigTS,
@@ -80,7 +80,7 @@ C-----------------------------------------------------------------------
 C...  Allocate space for Arrays dimensioned by MNP
 C... 
       SUBROUTINE ALLOC_BC3D_to_2D()
-      use sizes, only : mnp, mne
+      use mod_sizes, only : mnp, mne
       IMPLICIT NONE
 C  
       allocate ( VIDBCPDXOH_F(2,MNP),VIDBCPDYOH_F(2,MNP))
@@ -480,7 +480,7 @@ C-----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
       use mesh, only : np,sfea,slam 
-      use sizes, only : mnproc,myproc, localdir
+      use mod_sizes, only : mnproc,myproc, localdir
       use global, only : nodes_lg, np_g
 #ifdef CMPI
       USE GL2LOC_MAPPING, ONLY : MAPTOLOCAL_REAL

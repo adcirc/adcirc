@@ -635,7 +635,7 @@ contains
                           KGRPNT, &
                           SPCDIR, &
                           SPCSIG
-      use SIZES, only: GLOBALDIR
+      use MOD_SIZES, only: GLOBALDIR
       use SwanGriddata, only: nverts, &
                               xcugrd, &
                               ycugrd

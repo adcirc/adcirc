@@ -362,7 +362,7 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  version.F sizes.F constants.F90 global.F
+ADC_MSRC   =  version.F sizes.F90 constants.F90 global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
@@ -788,7 +788,7 @@ $(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)sizes.o       :  sizes.F
+$(O_DIR)sizes.o       :  sizes.F90
 $(O_DIR)constants.o   :  constants.F90 $(O_DIR)sizes.o
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o $(O_DIR)logging.o
 $(O_DIR)internaltide.o : internaltide.F90 $(O_DIR)sizes.o $(O_DIR)global.o

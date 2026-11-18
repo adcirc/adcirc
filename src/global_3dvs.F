@@ -33,7 +33,7 @@ C
 C...
 C...BRING IN NECESSARY VARIABLES FROM GLOBAL
 C...
-      USE SIZES,
+      USE MOD_SIZES,
      &     ONLY: NBYTE,
      &     MNP,
      &     MNE,

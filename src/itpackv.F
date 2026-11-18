@@ -48,7 +48,7 @@ c
 #ifdef CMPI
       USE MESSENGER                !   MPI interface for padcirc
 #else
-      USE SIZES
+      USE MOD_SIZES
 #endif
 
       PRIVATE
@@ -2519,7 +2519,7 @@ c
       end  subroutine
 
       subroutine zbrent (n,tri,eps,nsig,a,b,maxfn,ier)
-      USE SIZES
+      USE MOD_SIZES
       implicit none
       integer n,ier,nsig,maxfn,ib3,ib4,ic
       real(8) a,b,c,d,e,eps,p,q,r,s,t,fa,fb,fc,tol,rm,rone,temp

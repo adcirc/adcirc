@@ -60,7 +60,7 @@ subroutine SwanVertlist ( compda )
     use SwanGriddata
     use SwanGridobjects
     use SwanCompdata
-!PUN    use SIZES, only: MNPROC
+!PUN    use MOD_SIZES, only: MNPROC
 !
     implicit none
 !

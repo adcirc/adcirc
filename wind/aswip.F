@@ -1097,7 +1097,7 @@ C
 C-----------------------------------------------------------------------
       module diagnosticOutput
 
-      use sizes, only : globaldir, mnp
+      use mod_sizes, only : globaldir, mnp
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
      &  prbckgrnd, m2nm
       use mod_io, only: openFileForRead
@@ -1381,7 +1381,7 @@ C
       ! S U B R O U T I N E   F U L L   C I R C L E   R M A X E S
       !-------------------------------------------------------------
       subroutine fullCircleRmaxes()
-      use sizes, only : gblinputdir
+      use mod_sizes, only : gblinputdir
       use wind, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
@@ -1584,7 +1584,7 @@ C
       ! S U B R O U T I N E    R A D I A L   V   A N D   P
       !-------------------------------------------------------------
       subroutine radialVandP()
-      use sizes, only : gblinputdir
+      use mod_sizes, only : gblinputdir
       use wind, only : angleNow, draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       use mesh, only: np
@@ -2076,7 +2076,7 @@ C
       ! Added NWS=12 option       Jie 10/2013
       !-------------------------------------------------------------
       subroutine spatialuvp()
-      use sizes, only : gblinputdir
+      use mod_sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
@@ -2446,7 +2446,7 @@ C
       ! Added NWS=12 option       Jie 10/2013
       !-------------------------------------------------------------
       subroutine nodaluvp()
-      use sizes, only : gblinputdir
+      use mod_sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
@@ -2802,7 +2802,7 @@ C-----------------------------------------------------------------------
       use asymmetricVortexProcessing
       use diagnosticOutput
       use VERSION, ONLY: ADC_VERSION, ADC_HASH
-      use sizes, only : myproc, localdir
+      use mod_sizes, only : myproc, localdir
       use mod_logging, only: nabout, nscreen, t_log_scope, init_log_scope
       implicit none
 C

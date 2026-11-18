@@ -53,7 +53,7 @@ subroutine SwanPunCollect ( blkndc )
 !PUN    use swcomm2, only: XOFFS, YOFFS
 !PUN    use m_parall, only: IAMMASTER
 !PUN    use SwanGriddata, only: ivertg, nverts, nvertsg, xcugrd, ycugrd, xcugrdgl, ycugrdgl
-!PUN    use SIZES, only: MYPROC, MNPROC
+!PUN    use MOD_SIZES, only: MYPROC, MNPROC
 !PUN    use GLOBAL, only: COMM
 !PUN!
 !PUN    implicit none

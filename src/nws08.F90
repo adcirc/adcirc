@@ -882,7 +882,7 @@ contains
 !> ATCF Best Track/Objective Aid/Wind Radii Format
 !----------------------------------------------------------------
    subroutine readBestTrackData()
-      use SIZES, only: GBLINPUTDIR
+      use MOD_SIZES, only: GBLINPUTDIR
       use GLOBAL, only: RNDAY, timeconv
       use mod_io, only: openFileForRead
       use VORTEX, only: uvtrans
