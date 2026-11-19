@@ -364,7 +364,7 @@ PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
 ADC_MSRC   =  version.F sizes.F90 constants.F90 global.F
 POST_MSRC  =  post_global.F
-HARM_MSRC  =  harm.F
+HARM_MSRC  =  harmonic_analysis.F90
 VORT_MSRC  =  vortex.F
 VW1D_MSRC  =  vew1d.F90
 TERM_MSRC  =  terminate.F90
@@ -422,7 +422,7 @@ PGLO_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PGLO_MSRC) )
 SOLV_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SOLV_MSRC) )
 ADC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(ADC_MSRC)  )
 ADC_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(ADC_MOBJ)  )
-HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
+HARM_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(HARM_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
 VW1D_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(VW1D_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
@@ -823,7 +823,7 @@ ifeq ($(XDMF),enable)
 endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
-$(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
+$(O_DIR)harmonic_analysis.o        :  harmonic_analysis.F90 $(O_DIR)mesh.o
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(O_DIR)owiwind.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o $(O_DIR)owiwind_netcdf.o $(NWS08_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)owiwind_netcdf.o : owiwind_netcdf.F

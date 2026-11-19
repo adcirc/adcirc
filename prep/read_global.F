@@ -507,7 +507,7 @@ C---------------------------------------------------------------------
       USE MOD_LOGGING, ONLY : allMessage, t_log_scope,
      &                   init_log_scope, logMessage, screenMessage,
      &                   ERROR, DEBUG, INFO, screenUnit
-      USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
+      USE MOD_HARMONIC_ANALYSIS, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
       USE PREP_WEIR

@@ -74,7 +74,7 @@ C
 #ifdef CMPI
       USE GLOBAL, ONLY: COMM
 #endif      
-      USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
+      USE MOD_HARMONIC_ANALYSIS, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
       USE MOD_WETDRY, ONLY : initializeWettingAndDrying
@@ -2907,7 +2907,7 @@ C-----------------------------------------------------------------------
       USE MOD_SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
-      USE HARM, ONLY : binaryRead3D
+      USE MOD_HARMONIC_ANALYSIS, ONLY : binaryRead3D
       use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE

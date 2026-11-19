@@ -140,7 +140,7 @@ C******************************************************************************
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM2D, ONLY : init2DMomentumEq
-      USE HARM, ONLY : allocateFullDomainHAIOArrays,
+      USE MOD_HARMONIC_ANALYSIS, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
@@ -516,7 +516,7 @@ C******************************************************************************
       USE GLOBAL, ONLY : iTime
       USE mod_logging, ONLY : allMessage,
      &   DEBUG, t_log_scope, init_log_scope
-      USE HARM, ONLY : solveHarmonicAnalysis
+      USE MOD_HARMONIC_ANALYSIS, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini

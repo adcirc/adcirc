@@ -2194,7 +2194,7 @@ C removed from global  myProc, MNPROC,
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, collectFullDomainArray,
      &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
-      USE HARM, ONLY :
+      USE MOD_HARMONIC_ANALYSIS, ONLY :
      &    emag, phasede, umag, vmag, phasedu, phasedv, emagt, phaseden,
      &    umagt, vmagt, phasedut, phasedvt, elav_g, elva_g,
      &    xvelav_g, xvelva_g, yvelav_g, yvelva_g,
@@ -2732,7 +2732,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
       USE MOD_SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
-      USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
+      USE MOD_HARMONIC_ANALYSIS, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
       USE GLOBAL, ONLY : OutputDataDescript_t, labels_g
       use mod_logging, only: screenMessage, t_log_scope, init_log_scope,
@@ -4521,7 +4521,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       use mod_logging, only: t_log_scope, init_log_scope, allMessage,
      &  logMessage, DEBUG, INFO, screenUnit
-      USE HARM
+      USE MOD_HARMONIC_ANALYSIS
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
      &    collectFullDomainArray
