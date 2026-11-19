@@ -740,6 +740,22 @@
       use mod_logging, only : nabout
       use boundaries
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+#ifdef ADCXDMF
+      use mod_xdmf_api, only: xdmf_array_type_float64,
+     &   xdmf_array_type_int32, xdmf_grid_type_unstructured, xdmfinit,
+     &   xdmfopendomaingrid, xdmfopenset, xdmfread,
+     &   xdmfretrieveattributename, xdmfretrieveattributevalues,
+     &   xdmfretrievedomaingridname, xdmfretrievegeometrynumpoints,
+     &   xdmfretrievegeometrysize, xdmfretrievegeometrytype,
+     &   xdmfretrievegeometryvalues, xdmfretrievegeometryvaluetype,
+     &   xdmfretrieveinformation, xdmfretrievenumattributes,
+     &   xdmfretrievenuminformation, xdmfretrievenumsets,
+     &   xdmfretrievesetnumproperties, xdmfretrievesetproperty,
+     &   xdmfretrievesetsize, xdmfretrievesetvalues,
+     &   xdmfretrievesetvaluetype, xdmfretrievetopologynumelements,
+     &   xdmfretrievetopologysize, xdmfretrievetopologytype,
+     &   xdmfretrievetopologyvalues, xdmfretrievetopologyvaluetype
+#endif
       implicit none
 
 #ifndef ADCXDMF
@@ -747,7 +763,6 @@
       call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='This ADCIRC executable was not compiled '
      & // 'with XDMF support.')
 #else
-      include 'Xdmf.f'
       INTEGER(8) :: xdmfFortranObj
       integer, allocatable :: xdmf_nm(:,:)   ! 0-offset connectivity array
       integer, allocatable :: setSize(:)
@@ -3457,8 +3472,10 @@ Csb...
       !----------------------------------------------------------------------
       subroutine getAttributeCharacteristicsXDMF(xdmfFortranObj, attributeIndex)
 #ifdef ADCXDMF
+      use mod_xdmf_api, only: xdmfretrieveattributecenter,
+     &   xdmfretrieveattributesize, xdmfretrieveattributetype,
+     &   xdmfretrieveattributevaluetype
       implicit none
-      include 'Xdmf.f'
 #endif
       INTEGER(8), intent(in) :: xdmfFortranObj
       integer, intent(in) :: attributeIndex

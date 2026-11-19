@@ -400,7 +400,7 @@ C----------------------------------------------------------------------
      &                      readAndMapToSubdomainMaxMinNetCDF
 #endif
 #ifdef ADCXDMF
-      USE XDMFIO, ONLY : initOutputXDMF, writeControlXDMF
+      USE MOD_XDMFIO, ONLY : initOutputXDMF, writeControlXDMF
       USE CONTROL, ONLY : readControlFile
 #ifdef CMPI
       USE WRITER, ONLY : sendInitWriterXDMF
@@ -4290,7 +4290,7 @@ C-----------------------------------------------------------------------
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
 #endif
 #ifdef ADCXDMF
-      USE XDMFIO, ONLY : writeOutArrayXDMF
+      USE MOD_XDMFIO, ONLY : writeOutArrayXDMF
 #endif
       IMPLICIT NONE
 C     args

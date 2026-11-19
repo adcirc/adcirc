@@ -390,7 +390,7 @@ NWS08_MSRC = nws08.F90
 COUP_MSRC  =  couple2swan.F90
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
 KDTREE_MSRC = kdtree2.F
-XDMF_MSRC = xdmfio.F
+XDMF_MSRC = xdmf_api.F90 xdmfio.F90
 # DW sponge layer
 SPG_MSRC = quadrature.F90 sponge_layer.F90 weir_pairs.F90
 # WJP 3D baroclinic coupling
@@ -409,7 +409,7 @@ GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
-XDMF_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(XDMF_MSRC) )
+XDMF_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(XDMF_MSRC) )
 WRIT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WRIT_MSRC) )
 MESH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MESH_MSRC) )
 TERM_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(TERM_MSRC) )
@@ -860,7 +860,13 @@ ifeq ($(XDMF),enable)
 endif
 $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 # jgf51.21.28: made xdmf support routines into a module
-$(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
+$(O_DIR)xdmf_api.o    : xdmf_api.F90
+ifeq ($(XDMF),enable)
+# mesh.F and nodalattr.F import the XDMF API from mod_xdmf_api
+$(O_DIR)mesh.o        : $(O_DIR)xdmf_api.o
+$(O_DIR)nodalattr.o   : $(O_DIR)xdmf_api.o
+endif
+$(O_DIR)xdmfio.o      : xdmfio.F90 $(O_DIR)xdmf_api.o $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)hashtable.o   : hashtable.F90
 $(O_DIR)control.o     : control.F
 $(O_DIR)subdomain.o   : subdomain.F90 $(O_DIR)mesh.o 

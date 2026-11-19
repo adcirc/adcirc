@@ -573,6 +573,14 @@ C     ----------------------------------------------------------------
       SUBROUTINE readNodalAttrXDMF()
       USE MESH, ONLY : replaceNullsWithSpaces
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+#ifdef ADCXDMF
+      use mod_xdmf_api, only: xdmf_array_type_float64,
+     &   xdmf_attribute_type_matrix, xdmf_attribute_type_scalar,
+     &   xdmf_grid_type_unstructured, xdmfinit, xdmfopendomaingrid,
+     &   xdmfread, xdmfretrieveattributename,
+     &   xdmfretrieveattributevalues, xdmfretrieveinformation,
+     &   xdmfretrievenumattributes, xdmfretrievenuminformation
+#endif
       IMPLICIT NONE
       character(1024) :: scratchMessage
 #ifndef ADCXDMF
@@ -581,7 +589,6 @@ C     ----------------------------------------------------------------
      &          //'was specified. This ADCIRC executable was not '
      &          //'compiled with XDMF support.')
 #else
-      include 'Xdmf.f'
       INTEGER(8) :: xdmfFortranObj ! object that receives the data
       !
       integer :: startIndex

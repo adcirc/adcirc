@@ -69,6 +69,10 @@ if(NETCDF_WORKING)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
 
+if(XDMF_WORKING)
+  set(ADCPREP_SOURCES ${ADCPREP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmf_api.F90)
+endif()
+
 add_executable(adcprep ${ADCPREP_SOURCES})
 
 # Configure compiler flags and link libraries

@@ -551,7 +551,7 @@ C-----------------------------------------------------------------------
       use NETCDFIO, only : initNetCDFOutputFile, writeOutArrayNetCDF
 #endif
 #ifdef ADCXDMF
-      use XDMFIO, only : initOutputXDMF, writeOutArrayXDMF, writeControlXDMF
+      use mod_xdmfio, only : initOutputXDMF, writeOutArrayXDMF, writeControlXDMF
 #endif
       implicit none
       integer :: ierr
@@ -874,7 +874,7 @@ C-----------------------------------------------------------------------
       use mod_sizes, only: MESHFILENAME,CONTROLFILENAME
       use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_CHARACTER, MPI_Status
 #ifdef ADCXDMF
-      use xdmfio, only : meshInitialized
+      use mod_xdmfio, only : meshInitialized
       use control, only : readControlFile
 #endif
       implicit none
