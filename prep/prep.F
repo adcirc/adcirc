@@ -1790,7 +1790,7 @@ C---------------------------------------------------------------------------C
       USE PRE_GLOBAL
       use memory_usage
       USE PREP_WEIR
-      USE HARM, ONLY : NAMEFR
+      USE MOD_HARMONIC_ANALYSIS, ONLY : NAMEFR
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
       use nodalattributes, only : outputTau0
       IMPLICIT NONE
@@ -7469,7 +7469,7 @@ CC    Addition by CF   8/2007
       SUBROUTINE PREP80()
       USE PRE_GLOBAL
       USE MOD_SIZES, ONLY : MNHARF
-      USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV
+      USE MOD_HARMONIC_ANALYSIS, ONLY : NHASE, NHASV, NHAGE, NHAGV
       IMPLICIT NONE
       INTEGER I,K
 C
@@ -7810,7 +7810,7 @@ C---------------------------------------------------------------------------
 #ifdef ADCNETCDF
       use mod_sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP, BCFLAG_TEMP
-      USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
+      USE MOD_HARMONIC_ANALYSIS, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,

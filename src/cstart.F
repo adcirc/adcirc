@@ -60,7 +60,7 @@ C
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, DP, NM, MJU, AID4,
      &    agrid 
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NPEBC
-      USE HARM
+      USE MOD_HARMONIC_ANALYSIS
       USE MOD_WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
       USE GLOBAL_IO, only: header63, header64, header77, header73,

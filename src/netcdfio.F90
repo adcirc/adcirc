@@ -3817,7 +3817,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine addHarmonicAnalysisParametersToNetcdfFile(ncid)
       use GLOBAL, only: OutputDataDescript_t
-      use HARM, only: NAMEFR, HAFREQ, HAFF, HAFACE
+      use MOD_HARMONIC_ANALYSIS, only: NAMEFR, HAFREQ, HAFF, HAFACE
       implicit none
       integer, intent(IN) :: ncid
       integer :: dmy
@@ -5806,7 +5806,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine initNetCDFHotstartHarmonic(lun, GLOELVDescript, STAELVDescript, STAULVDescript, err)
       use MOD_SIZES, only: MNHARF
-      use HARM, only: NHASE, NHASV, NHAGE, NHAGV
+      use MOD_HARMONIC_ANALYSIS, only: NHASE, NHASV, NHAGE, NHAGV
       use GLOBAL, only: OutputDataDescript_t
       implicit none
 
@@ -6176,7 +6176,7 @@ contains
 !     means and variances calculations.
 !-----------------------------------------------------------------------
    subroutine initNetCDFHotstartHarmonicMeansVariances(lun, ELAVDescript, reterror)
-      use HARM, only: NHAGE, NHAGV
+      use MOD_HARMONIC_ANALYSIS, only: NHAGE, NHAGV
       use GLOBAL, only: OutputDataDescript_t
       implicit none
 
@@ -7143,9 +7143,9 @@ contains
                                           STAULVDescript, STAVLVDescript)
       use MOD_SIZES, only: MNHARF, MNPROC
       use GLOBAL, only: OutputDataDescript_t, NSTAE_G, NSTAV_G
-      use HARM, only: nz, nf, mm, nhase, nhasv, nhage, nhagv, icall, &
-                      nfreq, timeud, itud, namefr, hafreq, haff, &
-                      haface, ha, icha
+      use MOD_HARMONIC_ANALYSIS, only: nz, nf, mm, nhase, nhasv, nhage, nhagv, icall, &
+                                       nfreq, timeud, itud, namefr, hafreq, haff, &
+                                       haface, ha, icha
       implicit none
 
       integer, intent(in) :: lun
@@ -7418,7 +7418,7 @@ contains
                                                         XVELVADescript, YVELVADescript)
       use MOD_SIZES, only: MNPROC
       use GLOBAL, only: OutputDataDescript_t
-      use HARM, only: nhage, nhagv, ntsteps
+      use MOD_HARMONIC_ANALYSIS, only: nhage, nhagv, ntsteps
       implicit none
 
       integer, intent(in) :: lun
@@ -8745,15 +8745,15 @@ contains
 !     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonic(lun)
-      use MOD_SIZES, only: mnproc
+      use MOD_SIZES, only: mnproc, MNHARF
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t, &
                         IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
-      use HARM, only: GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV, &
-                      NHASE, NHASV, NHAGE, NHAGV, MNHARF, ICHA, INZ, &
-                      INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV, &
-                      INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD, &
-                      ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
+      use MOD_HARMONIC_ANALYSIS, only: GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV, &
+                                       NHASE, NHASV, NHAGE, NHAGV, ICHA, INZ, &
+                                       INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV, &
+                                       INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD, &
+                                       ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
 
       implicit none
 
@@ -9065,8 +9065,8 @@ contains
       use MOD_SIZES, only: MNPROC
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t
-      use HARM, only: ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA, &
-                      NTSTEPS, NHAGE, NHAGV
+      use MOD_HARMONIC_ANALYSIS, only: ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA, &
+                                       NTSTEPS, NHAGE, NHAGV
 
       implicit none
 

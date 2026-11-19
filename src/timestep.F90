@@ -940,7 +940,7 @@ contains
       use write_output, only: collectMinMaxData, collectInundationData
       use mod_subdomain, only: subdomainOn, NOutGS, &
                                writeFort065, writeFort066, writeFort067
-      use HARM, only: updateHarmonicAnalysis
+      use MOD_HARMONIC_ANALYSIS, only: updateHarmonicAnalysis
       implicit none
 
       integer, intent(in) :: IT

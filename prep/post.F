@@ -3457,7 +3457,7 @@ C  jgf Updated for v45.06 09/07/2005                                        C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
-      USE HARM, ONLY : FNAM8, HAFREQ, HAFF, HAFACE, HA, STAELV, STAULV,
+      USE MOD_HARMONIC_ANALYSIS, ONLY : FNAM8, HAFREQ, HAFF, HAFACE, HA, STAELV, STAULV,
      &                  STAVLV, GLOELV, GLOULV, GLOVLV, ELAV, ELVA, 
      &                  CHARMV, ICHA, IHARIND, ITHAS, MM, XELAV, YELAV,
      &                  XELVA, YELVA, ICALL, ITMV, ITUD, NF, NFREQ, NZ,

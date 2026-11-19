@@ -45,7 +45,7 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep_weir.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/harmonic_analysis.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/read_global.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_pairs.F90

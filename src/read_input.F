@@ -100,7 +100,7 @@ Casey 251212: Adding time control.
      &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega,WaveStressGrad_Cap
+     &                     rad2deg,omega,WaveStressGrad_Cap, pi
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -128,7 +128,7 @@ Casey 251212: Adding time control.
      &   initialize_baroclinic3d_namelist_options
       USE MOD_SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
-      USE HARM
+      USE MOD_HARMONIC_ANALYSIS
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &   BARSLIM64_ELEM, BARSLIM64_EDGE
 
