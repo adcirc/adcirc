@@ -44,6 +44,10 @@ if(NETCDF_WORKING)
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
 
+if(XDMF_WORKING)
+  set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmf_api.F90)
+endif()
+
 add_executable(aswip ${ASWIP_SOURCES})
 
 # Configure compiler flags and link libraries
