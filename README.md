@@ -3,6 +3,7 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.2.1?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://adcirc.github.io/adcirc/)
+[![codecov](https://codecov.io/gh/adcirc/adcirc/graph/badge.svg?token=6Zd90sQh3o)](https://codecov.io/gh/adcirc/adcirc)
 
 
 ADCIRC is a system of computer programs for solving time-dependent, free surface circulation and transport problems in
