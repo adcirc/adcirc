@@ -451,7 +451,7 @@ NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
-ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F90 read_input.F cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F90 baroclinic.F90 flux_boundaries.F90 transport_2d.F90 timestep.F90 vsmy.F transport_3d.F
+ADC_SRC    =  adcirc.F90 weir_boundary.F90 wetdry.F90 read_input.F cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F90 baroclinic.F90 flux_boundaries.F90 transport_2d.F90 timestep.F90 vsmy.F transport_3d.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -889,11 +889,11 @@ $(O_DIR)flux_boundaries.o : flux_boundaries.F90 $(O_DIR)weir_pairs.o $(ADC_MOBJ)
 $(O_DIR)transport_2d.o : transport_2d.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(MESH_MOBJ) $(NA_MOBJ)
 $(O_DIR)timestep.o    : timestep.F90 $(O_DIR)baroclinic.o $(O_DIR)flux_boundaries.o $(O_DIR)transport_2d.o $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(O_DIR)momentum3d.o $(O_DIR)wetdry.o $(WRIT_MOBJ) $(WIND_MOBJ) $(SPG_MOBJ) $(SG_MOBJ) $(TIDE_MOBJ) $(NA_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(COUP_MOBJ)
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
+$(O_DIR)adcirc.o      : adcirc.F90 $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
+$(O_DIR)adcirc.o      : adcirc.F90 $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
 endif
-$(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
+$(O_DIR)driver.o      : driver.F90 $(O_DIR)adcirc.o
 
 # wind file generation
 

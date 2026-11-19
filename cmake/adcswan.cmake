@@ -145,7 +145,7 @@ set(ADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
 set(ADCSWAN_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
