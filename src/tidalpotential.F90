@@ -36,7 +36,7 @@ module mod_tidepotential
    use mod_astronomic, only: MassRatioSunEarth, MassRatioMoonEarth, EarthRadiusAU, EarthRadiuskm
    use mod_moon_sun_coors, only: t_moon_sun
    use mod_ephemerides, only: t_ephemerides
-
+   use mod_datetime, only: t_datetime
    implicit none
    !
    !  UseFullTIPFormula = T/F (default F)
@@ -72,7 +72,7 @@ module mod_tidepotential
       private
       logical :: m_UseFullTIPFormula = .false.
       integer :: m_TIPOrder = 2
-      character(LEN=24) :: m_TIPStartDate = 'Basedate'
+      type(t_datetime) :: m_TIPStartDate
       integer :: m_MoonSunPositionComputeMethod = ComputeMethod_JM
       logical :: m_UniformResMoonSunTimeData = .false.
       logical :: m_IncludeNutation = .true.
@@ -136,6 +136,8 @@ contains
                                         in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                         in_IncludeNutation, in_k2value, in_h2value)
       use mod_logging, only: allMessage, WARNING
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_date_parsing, only: parse_datetime_lenient
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
@@ -155,7 +157,14 @@ contains
       if (.not. self%m_UseFullTIPFormula) return
 
       self%m_TIPOrder = in_TIPOrder
-      self%m_TIPStartDate = in_TIPStartDate
+      self%m_TIPStartDate = parse_datetime_lenient(in_TIPStartDate)
+      ! An unparseable start date would silently give a garbage Julian day
+      ! and therefore a wrong tidal potential
+      if (.not. self%m_TIPStartDate%valid()) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message='Invalid TIPStartDate "'//trim(adjustl(in_TIPStartDate))// &
+                        '" for the full tidal potential (expected e.g. yyyy-MM-dd HH:mm:ss).')
+      end if
       self%m_IncludeNutation = in_IncludeNutation
       self%m_k2value = in_k2value
       self%m_h2value = in_h2value
@@ -460,39 +469,14 @@ contains
    end function AINTPOWER
 
    subroutine INIT_FULL_TIP(self, NP)
-      use ADC_CONSTANTS, only: sec2day, hour2day, min2day
-      use mod_astronomic, only: JULIANDAY
       use mesh, only: SFEA
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
       integer, intent(IN) :: NP
 
-      real(8) :: DDD
-      integer :: YYYY, MM, DD, HH, MMM, SS
-
-      character(LEN=80) :: tmparr
-      character, parameter :: delimter(2) = ['-', ':']
-
-      ! Extract date from base_date
-      tmparr = adjustl(self%m_TIPStartDate)
-
-      ! Default J2000 epoch !
-      YYYY = 2000
-      MM = 1
-      DD = 1
-
-      HH = 0
-      MMM = 0
-      SS = 0
-
-      call extractvalues(YYYY, MM, DD, delimter(1))
-      call extractvalues(HH, MMM, SS, delimter(2))
-
-      DDD = dble(DD) + dble(HH)*hour2day + dble(MMM)*min2day + dble(SS)*sec2day
-
       ! Get  correspond Julian days !
-      self%m_JDE_BEG = JULIANDAY(DDD, MM, YYYY)
+      self%m_JDE_BEG = self%m_TIPStartDate%julian_day()
       self%m_JDE_CURRENT = self%m_JDE_BEG
 
       if (self%m_MoonSunPositionComputeMethod == ComputeMethod_JM) then
@@ -536,51 +520,6 @@ contains
 
          return
       end subroutine ALLOCATEWORKARR
-
-      subroutine extractvalues(a1, a2, a3, delimc)
-         implicit none
-
-         character, intent(in)  :: delimc
-         integer, intent(inout) :: a1, a2, a3
-
-         integer :: arg(3)
-
-         logical :: earlystop
-         integer :: ii, cpos(3), ivec(3)
-
-         earlystop = .false.
-         arg = [a1, a2, a3]; 
-         ivec = 0
-         cpos(1) = 1
-         do ii = 1, 3
-            if (len(trim(tmparr(cpos(1):))) == 0) exit
-
-            cpos(2) = index(tmparr, delimc)
-
-            if (cpos(2) == 0) then
-               cpos(2) = index(tmparr, ' ')
-
-               earlystop = .true.
-            end if
-
-            if (cpos(2) > 0) then
-               read (tmparr(cpos(1):cpos(2) - 1), *) ivec(ii)
-
-               tmparr = adjustl(tmparr(cpos(2) + 1:))
-            else
-               if (len(trim(tmparr(cpos(1):))) > 0) then
-                  read (tmparr(cpos(1):), *) ivec(ii)
-               end if
-            end if
-
-            arg(ii) = ivec(ii)
-            if (earlystop) exit
-         end do
-
-         a1 = arg(1); 
-         a2 = arg(2); 
-         a3 = arg(3); 
-      end subroutine extractvalues
 
    end subroutine INIT_FULL_TIP
 

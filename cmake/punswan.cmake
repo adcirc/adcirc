@@ -121,6 +121,8 @@ adcirc_swan_configure_parallel()
 # Configure message library object
 adcirc_set_module_directory(templib_punmsglib)
 target_link_libraries(templib_punmsglib PRIVATE adcirc::compiler_flags adcirc::option_flags adcirc::mpi)
+target_include_directories(templib_punmsglib PRIVATE ${CMAKE_BINARY_DIR}/mod)
+add_dependencies(templib_punmsglib fdate)
 
 # Configure SWAN object library
 adcirc_set_module_directory(templib_punswan1)
@@ -147,7 +149,10 @@ target_include_directories(punswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFile
 
 target_link_libraries(templib_punswan1 PRIVATE templib_punmsglib)
 target_sources(punswan PRIVATE $<TARGET_OBJECTS:adcirc::mkdir>)
-target_link_libraries(punswan PRIVATE templib_punmsglib templib_punswan1 adcirc::mpi)
+target_link_libraries(punswan PRIVATE templib_punmsglib templib_punswan1 adcirc::mpi fdate::fdate)
+
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(punswan PROPERTIES LINKER_LANGUAGE Fortran)
 
 install(TARGETS punswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

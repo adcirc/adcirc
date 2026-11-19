@@ -335,7 +335,6 @@ jobs:
             -DNETCDF_DIR=$NETCDFHOME
             -DENABLE_OUTPUT_XDMF=ON
             -DXDMFHOME=$XDMFHOME
-            -DENABLE_DATETIME=ON
             -DENABLE_GRIB2=ON
           build_dir: build-grib2
       - persist_to_workspace:

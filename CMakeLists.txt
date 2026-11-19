@@ -78,6 +78,7 @@ find_package(Perl)
 # ...Language Specifications
 enable_language(Fortran)
 enable_language(C)
+enable_language(CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -137,20 +138,10 @@ include(options_flags)
 # ...Ensure that the netCDF libraries are working
 include(netcdf_check)
 
-# GRIB2 requires DATETIME, establish dependency
-if(ENABLE_GRIB2 AND NOT ENABLE_DATETIME)
-  message(STATUS "GRIB2 support requires datetime library, enabling ENABLE_DATETIME")
-  set(ENABLE_DATETIME
-      TRUE
-      CACHE BOOL "Enable datetime library (required by GRIB2)" FORCE)
-endif()
+# ...Build the fdate date/time library (required)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fdate EXCLUDE_FROM_ALL)
 
-# Build datetime_fortran if enabled
-if(ENABLE_DATETIME)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
-endif()
-
-# Build wgrib2 if GRIB2 is enabled (depends on datetime)
+# ...Build wgrib2 if GRIB2 is enabled
 if(ENABLE_GRIB2)
   set(JAS_ENABLE_SHARED
       FALSE
@@ -169,6 +160,9 @@ include(version)
 
 # ...Build the mkdir library
 include(mkdir)
+
+# ...Build the lenient date parsing module
+include(date_parsing)
 
 # ...Create interface libraries for compiler flags and dependencies
 adcirc_create_interface_libraries()
