@@ -947,65 +947,46 @@ contains
             iSpd(i), iCPress(i), iRRP(i), iRMW(i)
 
          ! yr,mo,dy,hr, ,type, inc,  lat,NS,  lon,EW,  spd,   pc,
-228      format(8x, i4, i2, i2, i2, 6x, a4, 2x, i3, 1x, i4, a1, 2x, i4, a1, 2x, i3, 2x, i4, 47x, i3, 2x, i3)
+228      format(8x, i4, i2, i2, i2, 6x, a4, 1x, i4, 1x, i4, a1, 2x, i4, a1, 2x, i3, 2x, i4, 47x, i3, 2x, i3)
 
          select case (trim(CastType(i)))
-         case ("BEST") ! nowcast/hindcast
-            !     Check to see if this is a repeated line. If so, go directly to the
-            !     next line without any processing.
-            if (i > 1) then
-               if (iYear(i) == iYear(i - 1) .and. &
-                   iMth(i) == iMth(i - 1) .and. &
-                   iDay(i) == iDay(i - 1) .and. &
-                   iHr(i) == iHr(i - 1)) then
-                  cycle
-               end if
+         case ("BEST", "OFCL") ! nowcast/hindcast or forecast
+            ! The valid time of any line is always DATE + FORECAST_HOURS,
+            ! regardless of whether the line is labeled BEST or OFCL.
+            ! Forecast hours may be negative or non-zero for either type.
+            FcstInc(i) = dble(iFcstInc(i))*3600.d0 ! convert hours to seconds
+            if (i == 1 .and. iFcstInc(i) /= 0) then
+               call allMessage(ECHO, 'The fort.22 file starts with non-zero forecast hour')
             end if
-            ! Save the central pressure, radius of last closed isobar, and
-            ! radius to max wind for use in forecasts
-            iNowcastCPress = iCPress(i)
-            iNowcastRMW = iRMW(i)
-            iNowcastRRP = iRRP(i)
 
-            ! Determine the time of this hindcast in seconds since the beginning
-            ! of the year.
+            ! Determine the valid time in seconds since the beginning of the
+            ! year, then relative to the beginning of the simulation.
             CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
+            CastTime(i) = CastTime(i) + FcstInc(i) - WindRefTime
 
-            ! Determine the CastTime in seconds since the beginning of the simulation.
-            CastTime(i) = CastTime(i) - WindRefTime
-            FcstInc(i) = dble(iFcstInc(i))
-
-         case ("OFCL") ! forecast
-            !  Check to see if this is a repeated line (i.e., a forecast that
-            !  coincides with the nowcast, or a repeated forecast). If so, go
-            !  directly to the next line without any processing.
+            ! Check to see if this is a repeated line (same valid time as the
+            ! previous kept line, e.g., quadrant-by-quadrant wind radii in
+            ! hindcasts, or a forecast coinciding with the nowcast). If so, go
+            ! directly to the next line without any processing.
             if (i > 1) then
-               if ((iFcstInc(i) == 0 .and. &
-                    (iYear(i) == iYear(i - 1) .and. &
-                     iMth(i) == iMth(i - 1) .and. &
-                     iDay(i) == iDay(i - 1) &
-                     .and. iHr(i) == iHr(i - 1))) &
-                   .or. (iFcstInc(i) /= 0 .and. iFcstInc(i) == iFcstInc(i - 1))) cycle
+               if (CastTime(i) == CastTime(i - 1)) cycle
             end if
-            FcstInc(i) = dble(iFcstInc(i))
 
-            ! Determine the time of this forecast in seconds since the beginning
-            ! of the year.
-            if (iFcstInc(i) == 0) then
-               CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
-               CastTime(i) = CastTime(i) - WindRefTime
+            if (trim(CastType(i)) == "BEST") then
+               ! Save the central pressure, radius of last closed isobar, and
+               ! radius to max wind for use in forecasts
+               iNowcastCPress = iCPress(i)
+               iNowcastRMW = iRMW(i)
+               iNowcastRRP = iRRP(i)
             else
-               FcstInc(i) = FcstInc(i)*3600.d0 ! convert hours to seconds
-               CastTime(i) = CastTime(i - 1) + (FcstInc(i) - FcstInc(i - 1))
-            end if
-
-            ! jgf48.4637 If the forecast values of central pressure or RMW are
-            ! zero (and they will be if unless the user has filled them in, because
-            ! the NHC does not forecast these parameters), exit with a fatal error.
-            if ((iCPress(i) == 0) .or. (iRMW(i) == 0)) then
-               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
-                              message='The storm hindcast/forecast input file (unit 22) '// &
-                              'contains invalid data for central pressure or Rmax.')
+               ! jgf48.4637 If the forecast values of central pressure or RMW are
+               ! zero (and they will be if unless the user has filled them in, because
+               ! the NHC does not forecast these parameters), exit with a fatal error.
+               if ((iCPress(i) == 0) .or. (iRMW(i) == 0)) then
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message='The storm hindcast/forecast input file (unit 22) '// &
+                                 'contains invalid data for central pressure or Rmax.')
+               end if
             end if
 
             ! @jasonfleming: Adding a new type to allow the analyst to add lines
