@@ -5312,6 +5312,9 @@ Csb...
 
         allocate (csr_position(mne,3,2))
         csr_position = 0
+C       periodic boundaries (IBTYPE 94): the neighbor table has the primary
+C       nodes in place of the slave nodes, as the GWCE's element table
+        call SWITCH_ELTAB_PERBC( IDIREC = 1 )
         do I=1,NE
            NN1=NM(I,1)
            NN2=NM(I,2)
@@ -5333,6 +5336,7 @@ Csb...
      &                       message=scratchMessage)
            endif
         enddo
+        call SWITCH_ELTAB_PERBC( IDIREC = 2 )
 
       !-----------------------------------------------------------------------
       end subroutine compute_csr_positions
