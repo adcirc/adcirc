@@ -328,7 +328,8 @@ C... SB
       USE VEW1D, ONLY : ROTATE_AT_CONDENSEDNODES_ALL
       USE WEIR_PAIRS, ONLY : IMPLICIT_WEIR, WEIR_PAIRS_SETUP,
      &   WEIR_PAIRS_SOLVE_LUMPED, WEIR_PAIR_ENTRY, WEIR_PAIRS_LINEARIZE,
-     &   WEIR_PAIRS_FINISH, WEIR_PAIRS_SYNC_MARKS, MNEIW, NEITABW
+     &   WEIR_PAIRS_FINISH, WEIR_PAIRS_SYNC_MARKS, MNEIW, NEITABW,
+     &   WEIR_PAIR_BLOCK_JACOBI, WEIR_BLOCKS_ON, ANY_PAIRS
 C... SB
 #ifdef CMPI
       USE MESSENGER
@@ -1887,6 +1888,16 @@ C...
 
 C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 
+C     JCG with the pairs' blocks, on every subdomain or none (not
+C     without pairs); their blocks go into the matrix before the
+C     exchange, so that the ghost nodes take their owners' diagonals
+      WEIR_BLOCKS_ON = (ILump.EQ.0).AND.IMPLICIT_WEIR.AND.
+     &   WEIR_PAIR_BLOCK_JACOBI.AND.ANY_PAIRS
+      IF (WEIR_BLOCKS_ON.AND.ALLOCATED(NEITABW)) THEN
+         CALL WEIR_PAIRS_LINEARIZE(COEF, GWCE_LV, ETA1, ETAS,
+     &      Tau0VAR, DT, QN0, QN1, NODECODE, RampIntFlux)
+      ENDIF
+
 #ifdef CMPI
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
@@ -2047,8 +2058,10 @@ C        tolerance of every later solve
          RPARM(1)=CONVCR
          IF (ALLOCATED(NEITABW)) THEN
 C           internal weir pairs: their blocks in the matrix for this solve
-            CALL WEIR_PAIRS_LINEARIZE(COEF, GWCE_LV, ETA1, ETAS,
-     &         Tau0VAR, DT, QN0, QN1, NODECODE, RampIntFlux)
+            IF (.NOT.WEIR_BLOCKS_ON) THEN
+               CALL WEIR_PAIRS_LINEARIZE(COEF, GWCE_LV, ETA1, ETAS,
+     &            Tau0VAR, DT, QN0, QN1, NODECODE, RampIntFlux)
+            ENDIF
             CALL JCG(NP,MNP,MNEIW,NEITABW,COEF,GWCE_LV,ETAS,
      &           IWKSP,NW,WKSP,IPARM,RPARM,IER)
             CALL WEIR_PAIRS_FINISH(COEF, ETAS, ETA1, QN2, NODECODE)
@@ -2056,6 +2069,7 @@ C           internal weir pairs: their blocks in the matrix for this solve
             CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
      &           IWKSP,NW,WKSP,IPARM,RPARM,IER)
          ENDIF
+         WEIR_BLOCKS_ON = .FALSE.
          NUMITR=IPARM(1)
          DO I=1,NP
             ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset

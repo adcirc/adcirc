@@ -3016,7 +3016,7 @@ nspool_TVW
 .. _boundaryControl:
 
 boundaryControl
-   Fortran namelist for flux boundary options: :ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>` and :ref:`WEIR_TOTAL_HEAD <WEIR_TOTAL_HEAD>`. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
+   Fortran namelist for flux boundary options: :ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>`, :ref:`WEIR_TOTAL_HEAD <WEIR_TOTAL_HEAD>` and :ref:`WEIR_PAIR_BLOCK_JACOBI <WEIR_PAIR_BLOCK_JACOBI>`. All entries are optional. In parallel runs, adcprep writes the namelist to each subdomain fort.15 file.
 
 .. _IMPLICIT_WEIR:
 
@@ -3027,6 +3027,11 @@ IMPLICIT_WEIR
 
 WEIR_TOTAL_HEAD
    Optional logical value (:ref:`boundaryControl <boundaryControl>`), default .false.: the spilling side of an internal barrier node pair (IBTYPE 4 and 24, and the weirs of IBTYPE 5 and 25) reads its total head, its level above the crest plus the velocity head of the node's velocity toward the weir (the component along the barrier's outward normal, from the momentum equations at the previous time step). The lower side keeps its level, since the velocity that leaves over the crest is lost behind it. The velocity head is fixed during a time step, so the flux still never falls as the spilling side's level rises, and any crest height, including a crest at the bed, is allowed. This holds for both the new time level scheme (:ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>` = .true.) and the previous time step scheme; in the latter the levels still decide the flow direction and whether flow passes. With .false. the spilling side reads its level alone.
+
+.. _WEIR_PAIR_BLOCK_JACOBI:
+
+WEIR_PAIR_BLOCK_JACOBI
+   Optional logical value (:ref:`boundaryControl <boundaryControl>`), default .true.: solver option of the consistent GWCE (ILump = 0) for the internal barrier pairs (IBTYPE 4 and 24) at the new time level (:ref:`IMPLICIT_WEIR <IMPLICIT_WEIR>` = .true.). ITPACK's JCG preconditions the nodes joined by flowing pairs with the block of those pairs instead of the diagonal alone. The equations and the solution are the same to the convergence tolerance; pairs whose levels are nearly equal, which need many JCG iterations with the diagonal alone, then need few. ITMAX and CONVCR apply as before. Set .false. for the diagonal alone. It has no effect without pairs in the mesh or with the lumped GWCE.
 
 .. _TVW:
 

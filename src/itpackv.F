@@ -62,6 +62,12 @@ c--------------------data declarations end here-------------------------------c
 
       subroutine jcg (n,ndim,maxnz,jcoef,coef,rhs,u,iwksp,nw,wksp,
      *                iparm,rparm,ier)
+      use weir_pairs, only: weir_blocks_on, weir_blocks_setup,
+     *   weir_blocks_half, weir_blocks_full
+#ifdef CMPI
+      use weir_pairs, only: weir_blocks_exchange
+      use messenger, only: updater_subset
+#endif
       implicit none
       integer n,ndim,maxnz,nw,ier,ib1,ib2,ib3,ib4,ib5,nb,n3,i,nbo,
      *  itmax1,loop,idgts
@@ -69,6 +75,9 @@ c--------------------data declarations end here-------------------------------c
       integer jcoef(ndim,maxnz),iwksp(3*n),iparm(12)
       real(8) timi1,timj1,temp,time1,time2,timi2,timj2,digit1,
      *   digit2,tol
+C     block Jacobi (weir_blocks): scratch
+      real(8), allocatable :: bwrk(:)
+      real(8) dumy1(1),dumy2(1)
       real(8) coef(ndim,maxnz),rhs(n),u(n),wksp(nw),rparm(12)
 c
 c *** begin -- itpackv common
@@ -250,6 +259,13 @@ c ... scale linear system, u, and rhs by the square root of the
 c ... diagonal elements.
 c
    50 continue
+C     block Jacobi: the caller adds the pairs' blocks before the ghost
+C     nodes take their owners' diagonals
+      if (weir_blocks_on) then
+         dumy1(1) = 0.0d0
+         dumy2(1) = 0.0d0
+         allocate (bwrk(ndim))
+      endif
       call scal (n,ndim,maxnz,jcoef,coef,rhs,u,wksp,ier)
       if (ier.eq.0) go to 70
       if (level.ge.0) write (nout,60) ier
@@ -351,6 +367,21 @@ c
       do 240 i = 1,n
          wksp(n+i) = wksp(n+i)-u(i)
   240 continue
+C     block Jacobi: JCG's variables are C^-1/2 of the scaled ones (the
+C     pseudo-residual too) and C^1/2 u; coef(:,1) is 1/sqrt(diagonal)
+      if (weir_blocks_on) then
+         call weir_blocks_setup (n,coef(:,1))
+#ifdef CMPI
+         call weir_blocks_exchange(wksp(ib2:ib3-1),dumy1,dumy2,1)
+#endif
+         call weir_blocks_half (n,wksp(ib2:ib3-1),bwrk)
+         call scopy (n,bwrk,1,wksp(ib2),1)
+         call weir_blocks_full (n,u,bwrk)
+#ifdef CMPI
+         call updater_subset (n,bwrk,1,dumy1,0)
+#endif
+         call weir_blocks_half (n,bwrk,u)
+      endif
 c
 c ... iteration sequence
 c
@@ -406,6 +437,12 @@ c ... put solution into u if not already there.
 c
   320 continue
       if (mod(in,2).eq.1) call scopy (n,wksp,1,u,1)
+C     block Jacobi: back to the scaled variables
+      if (weir_blocks_on) then
+         call weir_blocks_half (n,u,bwrk)
+         call scopy (n,bwrk,1,u,1)
+         deallocate (bwrk)
+      endif
 c
 c ... un-permute matrix,rhs, and solution
 c
@@ -458,6 +495,11 @@ c
 
       subroutine itjcg (n,ndim,maxnz,jcoef,coef,u,u1,d,d1,dtwd,tri)
       use global,only:nperseg
+      use weir_pairs, only: weir_blocks_on, weir_blocks_half,
+     &   weir_blocks_local, weir_blocks_bt, weir_blocks_dt
+#ifdef CMPI
+      use weir_pairs, only: weir_blocks_exchange
+#endif
       implicit none
 C
       integer n,ndim,maxnz,i,j
@@ -467,7 +509,8 @@ C
       real(8) gamold,rhoold,rhotmp,dnrm,con,dtnrm,c1,c2,c3,c4
       real(8) dumy1(1),dumy2(1),del3nrms(3),unorm
       real(8) vic1, vic2 !jgf46.00 added
-      logical q1
+      real(8), allocatable :: bt(:), by(:) ! block Jacobi (saved)
+      logical q1, blocal
 c
 c *** begin -- itpackv common
 c
@@ -530,20 +573,51 @@ C   ...UPDATE PSEUDO-RESIDUAL VECTOR "d" OF SIZE "n"
 C   ...BEFORE PERFORMING ONE JACOBI ITERATION
 C
 
+      blocal = weir_blocks_on.and.weir_blocks_local()
 #ifdef CMPI
       dumy1(1) = 0.0d0 !jgf46.00 added
       dumy2(1) = 0.0d0 !jgf46.00 added
+C     block Jacobi: d is already right at the ghost nodes
+      if (.not.weir_blocks_on) then
       if(nperseg.gt.0)then
           CALL UPDATER_W_PERBC(d,dumy1,dumy2,1) ;
       else
           CALL UPDATER(d,dumy1,dumy2,1)
+      endif
       endif
 #endif
  
       do 10 i = 1,n
          dtwd(i) = 0.0d0
    10 continue
+      if (blocal) then
+C        d - C^-1/2 A C^-1/2 d, with work only at the blocks' nodes; the
+C        product is exchanged, so that it is right at the ghost nodes
+         call weir_blocks_bt (d)
+         call pjac (n,ndim,maxnz,jcoef,coef,d,dtwd)
+#ifdef CMPI
+         call weir_blocks_exchange(dtwd,dumy1,dumy2,1)
+#endif
+         call weir_blocks_dt (d,dtwd)
+      else if (weir_blocks_on) then
+C        d - C^-1/2 A C^-1/2 d; the product is exchanged before the
+C        second C^-1/2, so that the result is right at the ghost nodes
+         if (.not.allocated(bt)) allocate (bt(ndim),by(ndim))
+         call weir_blocks_half (n,d,bt)
+         call pjac (n,ndim,maxnz,jcoef,coef,bt,dtwd)
+         do i = 1,n
+            by(i) = bt(i)-dtwd(i)
+         enddo
+#ifdef CMPI
+         call weir_blocks_exchange(by,dumy1,dumy2,1)
+#endif
+         call weir_blocks_half (n,by,bt)
+         do i = 1,n
+            dtwd(i) = d(i)-bt(i)
+         enddo
+      else
       call pjac (n,ndim,maxnz,jcoef,coef,d,dtwd)
+      endif
 
 C       
 c ... test for stopping
