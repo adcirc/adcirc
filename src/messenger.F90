@@ -65,6 +65,13 @@ module MESSENGER
    integer, allocatable :: INDX(:)
    real(8), allocatable :: SENDBUF(:, :), RECVBUF(:, :)
    complex(8), allocatable :: SENDBUF_COMPLEX(:, :), RECVBUF_COMPLEX(:, :)
+   !...UPDATER_SUBSET: for each neighbor, the marked nodes among the ones sent to it and
+   !   taken from it (MSG_SUBSET_SETUP), and their buffers
+   logical :: SUBSET_LISTS = .false.
+   integer, parameter :: TAG_SUBSET = 101
+   integer :: SUBSET_MAXV = 0
+   integer, allocatable :: SUBSET_SCNT(:), SUBSET_RCNT(:), SUBSET_SIDX(:, :), SUBSET_RIDX(:, :)
+   real(8), allocatable :: SUBSET_SBUF(:, :), SUBSET_RBUF(:, :)
    !jgf50.82: Create a flag for unrecoverable issue on a subdomain
    logical :: subdomainFatalError = .false. ! true if mpi_abort should be called
    logical :: writers_active = .false.
@@ -76,7 +83,7 @@ module MESSENGER
              msg_imax, updatec3d, updater_w_perbc, mapToSubdomainrealmpi, &
              updater3d, updatem4r, psdot, subdomainFatalError, tag, &
              mpi_comm_adcirc, writers_active, resnode, &
-             msg_abort, neighproc, nnodrecv, irecvloc
+             msg_abort, neighproc, nnodrecv, irecvloc, msg_subset_setup, updater_subset
 
 contains
 
@@ -897,6 +904,140 @@ contains
          end if
       end if
    end subroutine UPDATER_W_PERBC
+
+   !---------------------------------------------------------------------
+   !  MSG_SUBSET_SETUP: the nodes UPDATER_SUBSET exchanges, the ones
+   !  marked (MARK > 0.5) by their owners. On return MARK holds the
+   !  owners' marks at the ghost nodes too. MAXV: the most vectors one
+   !  UPDATER_SUBSET call passes. With periodic boundaries UPDATER_SUBSET
+   !  exchanges every node (UPDATER_W_PERBC). A collective call.
+   !---------------------------------------------------------------------
+   subroutine MSG_SUBSET_SETUP(MARK, MAXV)
+      use global, only: NPERSEG
+      implicit none
+      real(8), intent(INOUT) :: MARK(:)
+      integer, intent(IN) :: MAXV
+      real(8) :: dum(1)
+      integer :: i, j, ms, mr
+
+      dum = 0.d0
+      call UPDATER(MARK, dum, dum, 1)
+      SUBSET_LISTS = NPERSEG <= 0
+      if (.not. SUBSET_LISTS) return
+      if (allocated(SUBSET_SCNT)) then
+         deallocate (SUBSET_SCNT, SUBSET_RCNT, SUBSET_SIDX, SUBSET_RIDX, SUBSET_SBUF, SUBSET_RBUF)
+      end if
+      allocate (SUBSET_SCNT(NEIGHPROC), SUBSET_RCNT(NEIGHPROC))
+      SUBSET_SCNT = 0
+      SUBSET_RCNT = 0
+      do j = 1, NEIGHPROC
+         do i = 1, NNODSEND(j)
+            if (MARK(ISENDLOC(i, j)) > 0.5d0) SUBSET_SCNT(j) = SUBSET_SCNT(j) + 1
+         end do
+         do i = 1, NNODRECV(j)
+            if (MARK(IRECVLOC(i, j)) > 0.5d0) SUBSET_RCNT(j) = SUBSET_RCNT(j) + 1
+         end do
+      end do
+      ms = max(1, maxval(SUBSET_SCNT))
+      mr = max(1, maxval(SUBSET_RCNT))
+      SUBSET_MAXV = max(1, MAXV)
+      allocate (SUBSET_SIDX(ms, NEIGHPROC), SUBSET_RIDX(mr, NEIGHPROC))
+      allocate (SUBSET_SBUF(SUBSET_MAXV*ms, NEIGHPROC), SUBSET_RBUF(SUBSET_MAXV*mr, NEIGHPROC))
+      SUBSET_SCNT = 0
+      SUBSET_RCNT = 0
+      do j = 1, NEIGHPROC
+         do i = 1, NNODSEND(j)
+            if (MARK(ISENDLOC(i, j)) < 0.5d0) cycle
+            SUBSET_SCNT(j) = SUBSET_SCNT(j) + 1
+            SUBSET_SIDX(SUBSET_SCNT(j), j) = ISENDLOC(i, j)
+         end do
+         do i = 1, NNODRECV(j)
+            if (MARK(IRECVLOC(i, j)) < 0.5d0) cycle
+            SUBSET_RCNT(j) = SUBSET_RCNT(j) + 1
+            SUBSET_RIDX(SUBSET_RCNT(j), j) = IRECVLOC(i, j)
+         end do
+      end do
+   end subroutine MSG_SUBSET_SETUP
+
+   !---------------------------------------------------------------------
+   !  UPDATER_SUBSET: the ghost nodes of MSG_SUBSET_SETUP's set take
+   !  their owners' values in the N1 columns of V1 and the N2 of V2
+   !  (N1 + N2 <= MAXV); the other nodes keep theirs. Messages go only
+   !  between the neighbors that share such nodes, so a subdomain without
+   !  them sends and waits for nothing.
+   !---------------------------------------------------------------------
+   subroutine UPDATER_SUBSET(NN, V1, N1, V2, N2)
+      use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitall, MPI_STATUSES_IGNORE, &
+                         MPI_DOUBLE_PRECISION
+      use GLOBAL, only: COMM
+      implicit none
+      integer, intent(IN) :: NN, N1, N2
+      real(8), intent(INOUT) :: V1(NN, N1), V2(NN, N2)
+      type(MPI_Request), allocatable :: req(:)
+      integer :: j, k, l, m, nr
+      real(8) :: dum(1)
+
+      if (.not. SUBSET_LISTS) then
+         dum = 0.d0
+         do l = 1, N1
+            call UPDATER_W_PERBC(V1(:, l), dum, dum, 1)
+         end do
+         do l = 1, N2
+            call UPDATER_W_PERBC(V2(:, l), dum, dum, 1)
+         end do
+         return
+      end if
+      if (N1 + N2 > SUBSET_MAXV) then
+         block
+            use mod_logging, only: allMessage, ERROR
+            call allMessage(ERROR, "UPDATER_SUBSET: more vectors than MSG_SUBSET_SETUP's MAXV.")
+         end block
+         call MSG_ABORT()
+      end if
+      allocate (req(2*NEIGHPROC))
+      nr = 0
+      do j = 1, NEIGHPROC
+         if (SUBSET_RCNT(j) == 0) cycle
+         nr = nr + 1
+         call MPI_Irecv(SUBSET_RBUF(1, j), SUBSET_RCNT(j)*(N1 + N2), MPI_DOUBLE_PRECISION, &
+                        IPROC(j), TAG_SUBSET, COMM, req(nr))
+      end do
+      do j = 1, NEIGHPROC
+         if (SUBSET_SCNT(j) == 0) cycle
+         m = 0
+         do l = 1, N1
+            do k = 1, SUBSET_SCNT(j)
+               m = m + 1
+               SUBSET_SBUF(m, j) = V1(SUBSET_SIDX(k, j), l)
+            end do
+         end do
+         do l = 1, N2
+            do k = 1, SUBSET_SCNT(j)
+               m = m + 1
+               SUBSET_SBUF(m, j) = V2(SUBSET_SIDX(k, j), l)
+            end do
+         end do
+         nr = nr + 1
+         call MPI_Isend(SUBSET_SBUF(1, j), m, MPI_DOUBLE_PRECISION, IPROC(j), TAG_SUBSET, COMM, &
+                        req(nr))
+      end do
+      call MPI_Waitall(nr, req, MPI_STATUSES_IGNORE)
+      do j = 1, NEIGHPROC
+         m = 0
+         do l = 1, N1
+            do k = 1, SUBSET_RCNT(j)
+               m = m + 1
+               V1(SUBSET_RIDX(k, j), l) = SUBSET_RBUF(m, j)
+            end do
+         end do
+         do l = 1, N2
+            do k = 1, SUBSET_RCNT(j)
+               m = m + 1
+               V2(SUBSET_RIDX(k, j), l) = SUBSET_RBUF(m, j)
+            end do
+         end do
+      end do
+   end subroutine UPDATER_SUBSET
    !..... DW
    !
    !---------------------------------------------------------------------

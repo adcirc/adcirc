@@ -70,9 +70,15 @@ module WEIR_PAIRS
    !   plus the velocity head of the node's velocity toward the weir, from the
    !   momentum equations at time level n (here and in WEIR_FLUX)
    logical, public :: WEIR_TOTAL_HEAD = .false.
+   !...consistent GWCE: ITPACK's JCG with the blocks of the connected pairs (WEIR_BLOCKS)
+   !   in place of the diagonal alone (default) or, with &boundaryControl
+   !   WEIR_PAIR_BLOCK_JACOBI = .false., the diagonal alone
+   logical, public :: WEIR_PAIR_BLOCK_JACOBI = .true.
+   !...set by the GWCE for the solve that uses them
+   logical, public :: WEIR_BLOCKS_ON = .false.
 
    integer :: NPAIR = -1 !...-1: not set up yet
-   logical :: ANY_PAIRS = .false. !...some subdomain has a pair
+   logical, public :: ANY_PAIRS = .false. !...some subdomain has a pair
    integer, allocatable :: PA(:), PB(:) !...boundary entries of sides a, b
    integer, allocatable :: NA_NEI(:, :), NB_NEI(:, :) !...nodes next along the weir (0: none)
    real(8), allocatable :: PLEN(:) !...the pair's length l [m]
@@ -90,11 +96,39 @@ module WEIR_PAIRS
    integer, allocatable, public :: NEITABW(:, :), NNEIGHW(:)
    integer, allocatable :: SLOTA(:), SLOTB(:) !...column of b in a's row, of a in b's row
    real(8), allocatable :: LSLOPE(:), LBASE(:) !...the pair's line
+   real(8), allocatable :: LBLOCK(:) !...its coefficient in the matrix
+   integer, allocatable :: LRA(:), LRB(:) !...the rows it is in
    real(8), allocatable :: SAVED(:, :) !...matrix entries before the blocks
    logical, allocatable :: LACTIVE(:)
 
+   !...the pairs' blocks (WEIR_BLOCKS): components of the flowing pairs with a resident
+   !   node; component c has the nodes BNODE(BPTR(c)+1:BPTR(c+1)) and the matrices C and
+   !   C^-1/2 by rows in BC, BMAT(BMPTR(c)+1:BMPTR(c+1))
+   integer, parameter :: MAXC = 4 !...largest component whose rows go to ghost nodes
+   integer :: NCOMP = 0, BMODE = 0
+   integer, allocatable :: BNODE(:), BPTR(:), BMPTR(:)
+   real(8), allocatable :: BC(:), BMAT(:)
+   integer, allocatable :: BLIST(:), BROOT(:), BPOS(:) !...work: nodes of the flowing pairs, their roots
+   real(8), allocatable :: BWT(:), BWS(:), BWY(:) !...work of WEIR_BLOCKS_BT, _DT (at the blocks' nodes only)
+#ifdef CMPI
+   !...ghost nodes with a row: columns BGIDX(BGPTR(k)+1:BGPTR(k+1)), entries BGVAL
+   integer :: NGROW = 0
+   integer, allocatable :: BGNODE(:), BGPTR(:), BGIDX(:)
+   real(8), allocatable :: BGVAL(:)
+   integer, allocatable :: BGHOST(:) !...the subdomain's ghost nodes
+   integer, allocatable :: BSFULL(:), BSLOC(:) !...full-domain node numbers, sorted, and their nodes
+   integer :: NBSENT = 0
+   integer, allocatable :: BSENT(:) !...nodes whose rows are in BRVAL, BRCOL
+   real(8), allocatable :: BRVAL(:, :), BRCOL(:, :) !...rows sent: entries, full-domain column numbers
+#endif
+
    public :: WEIR_PAIRS_SETUP, WEIR_PAIRS_SYNC_MARKS, WEIR_PAIRS_SOLVE_LUMPED, WEIR_OVERFLOW, &
-             WEIR_PAIRS_GRAPH, WEIR_PAIRS_LINEARIZE, WEIR_PAIRS_FINISH
+             WEIR_PAIRS_GRAPH, WEIR_PAIRS_LINEARIZE, WEIR_PAIRS_FINISH, &
+             WEIR_BLOCKS_SETUP, WEIR_BLOCKS_HALF, WEIR_BLOCKS_FULL, WEIR_BLOCKS_LOCAL, &
+             WEIR_BLOCKS_BT, WEIR_BLOCKS_DT
+#ifdef CMPI
+   public :: WEIR_BLOCKS_EXCHANGE
+#endif
 
 contains
 
@@ -492,7 +526,7 @@ contains
          NNEIGHW(I) = NNEIGH(I) + nextra(I)
       end do
       allocate (SLOTA(NPAIR), SLOTB(NPAIR), LSLOPE(NPAIR), LBASE(NPAIR), SAVED(4, NPAIR), &
-                LACTIVE(NPAIR))
+                LACTIVE(NPAIR), LBLOCK(NPAIR), LRA(NPAIR), LRB(NPAIR))
       do P = 1, NPAIR
          NA = NBV(PA(P))
          NB = NBV(PB(P))
@@ -615,6 +649,9 @@ contains
          GWCE_LV(NB) = GWCE_LV(NB) + PLEN(P)*(TAU0V(NB) - tau)*qn
          LSLOPE(P) = s
          LBASE(P) = q0
+         LBLOCK(P) = m
+         LRA(P) = NA
+         LRB(P) = NB
          LACTIVE(P) = .true.
       end do
    end subroutine WEIR_PAIRS_LINEARIZE
@@ -658,5 +695,649 @@ contains
          call MARK_PAIR(P, la, lb, q, NODECODE)
       end do
    end subroutine WEIR_PAIRS_FINISH
+
+   !-----------------------------------------------------------------------
+   !  The pairs' blocks for ITPACK's JCG (&boundaryControl
+   !  WEIR_PAIR_BLOCK_JACOBI). JCG scales the matrix to a unit diagonal. In
+   !  the scaled matrix a flowing pair ties its two nodes by one negative
+   !  term; the nodes joined by flowing pairs are a component (2 nodes, or
+   !  more where pairs share a node), and C is the identity with each
+   !  component's unit diagonal and these terms. C is symmetric and positive
+   !  definite. JCG then solves C^-1/2 A C^-1/2 instead of A, which takes
+   !  the pairs' stiffness out of the iterations:
+   !     WEIR_BLOCKS_SETUP  the components of this solve, and their C^-1/2
+   !     WEIR_BLOCKS_HALF   C^-1/2 x
+   !     WEIR_BLOCKS_FULL   C x
+   !  WEIR_BLOCKS_ON is set by the GWCE for its solve, on every subdomain or
+   !  none. Components with a resident node are kept; a ghost node takes its
+   !  owner's row of C^-1/2 (BMODE 0), so that HALF is right at ghost nodes
+   !  without an exchange of its result. If a row cannot be used (a component
+   !  of more than MAXC nodes, a node not held) the result is exchanged
+   !  (BMODE 1); if the subdomains see a component differently, the components
+   !  across subdomains are left out as well (BMODE 2).
+   !-----------------------------------------------------------------------
+   subroutine WEIR_BLOCKS_SETUP(N, WK)
+#ifdef CMPI
+      use MESSENGER, only: RESNODE, msg_imax, UPDATER_SUBSET
+      use GLOBAL, only: NODES_LG
+#endif
+      use GLOBAL, only: NPERSEG, PERBC_IDN_MAP
+      implicit none
+      integer, intent(IN) :: N
+      real(8), intent(IN) :: WK(:) !...1/sqrt(diagonal) at every node (ghost: its owner's)
+      integer :: P, K, c, ib, jb, kb, n1, nlist, nmat
+      real(8) :: t
+
+      if (.not. allocated(BROOT)) call INIT()
+      !...the nodes of the flowing pairs, joined into components
+      nlist = 0
+      do P = 1, NPAIR
+         if (.not. PAIR_USED(P)) cycle
+         call ADD_NODE(LRA(P))
+         call ADD_NODE(LRB(P))
+         ib = BFIND(LRA(P))
+         jb = BFIND(LRB(P))
+         if (ib /= jb) BROOT(max(ib, jb)) = min(ib, jb)
+      end do
+      !...number the components that have a resident node (BPOS of the root)
+      NCOMP = 0
+      do K = 1, nlist
+         if (.not. OWNED(BLIST(K))) cycle
+         c = BFIND(BLIST(K))
+         if (BPOS(c) == 0) then
+            NCOMP = NCOMP + 1
+            BPOS(c) = NCOMP
+         end if
+      end do
+      !...their nodes: BPTR(c+1) counts, then is the next free place, then the end
+      BPTR(1:NCOMP + 1) = 0
+      do K = 1, nlist
+         c = BPOS(BFIND(BLIST(K)))
+         if (c > 0) BPTR(c + 1) = BPTR(c + 1) + 1
+      end do
+      BMPTR(1) = 0
+      do c = 1, NCOMP
+         BMPTR(c + 1) = BMPTR(c) + BPTR(c + 1)**2
+         BPTR(c + 1) = BPTR(c + 1) + BPTR(c)
+      end do
+      do c = NCOMP, 1, -1
+         BPTR(c + 1) = BPTR(c)
+      end do
+      do K = 1, nlist
+         c = BPOS(BFIND(BLIST(K)))
+         if (c == 0) cycle
+         BPTR(c + 1) = BPTR(c + 1) + 1
+         BNODE(BPTR(c + 1)) = BLIST(K)
+      end do
+      !...C of each component, by rows
+      nmat = BMPTR(NCOMP + 1)
+      if (allocated(BC)) then
+         if (size(BC) < nmat) deallocate (BC, BMAT)
+      end if
+      if (.not. allocated(BC)) allocate (BC(nmat), BMAT(nmat))
+      BC(1:nmat) = 0.d0
+      do c = 1, NCOMP
+         n1 = BPTR(c + 1) - BPTR(c)
+         do ib = 1, n1
+            BC(BMPTR(c) + (ib - 1)*n1 + ib) = 1.d0
+         end do
+      end do
+      do P = 1, NPAIR
+         if (.not. PAIR_USED(P)) cycle
+         c = BPOS(BFIND(LRA(P)))
+         if (c == 0) cycle
+         n1 = BPTR(c + 1) - BPTR(c)
+         ib = 0
+         jb = 0
+         do kb = 1, n1
+            if (BNODE(BPTR(c) + kb) == LRA(P)) ib = kb
+            if (BNODE(BPTR(c) + kb) == LRB(P)) jb = kb
+         end do
+         t = LBLOCK(P)*WK(LRA(P))*WK(LRB(P))
+         kb = BMPTR(c) + (ib - 1)*n1 + jb
+         BC(kb) = BC(kb) - t
+         kb = BMPTR(c) + (jb - 1)*n1 + ib
+         BC(kb) = BC(kb) - t
+      end do
+      !...C^-1/2 of each component
+      BMAT(1:nmat) = BC(1:nmat)
+      do c = 1, NCOMP
+         call INVERSE_ROOT(BMAT(BMPTR(c) + 1:BMPTR(c + 1)), BPTR(c + 1) - BPTR(c))
+      end do
+      !...clear the work arrays for the next solve
+      do K = 1, nlist
+         BROOT(BLIST(K)) = 0
+         BPOS(BLIST(K)) = 0
+      end do
+      BMODE = 0
+#ifdef CMPI
+      call GHOST_ROWS()
+#endif
+
+   contains
+
+      !...arrays of the run
+      subroutine INIT()
+         integer :: np2
+#ifdef CMPI
+         integer :: i1, ng
+#endif
+         np2 = max(NPAIR, 0)
+         allocate (BROOT(N), BPOS(N))
+         BROOT = 0
+         BPOS = 0
+         allocate (BLIST(2*np2), BNODE(2*np2), BPTR(2*np2 + 1), BMPTR(2*np2 + 1))
+         allocate (BWT(N), BWS(N), BWY(N))
+#ifdef CMPI
+         ng = 0
+         do i1 = 1, N
+            if (.not. RESNODE(i1)) ng = ng + 1
+         end do
+         allocate (BGHOST(ng), BGNODE(ng), BGPTR(ng + 1), BGIDX(MAXC*ng), BGVAL(MAXC*ng))
+         ng = 0
+         do i1 = 1, N
+            if (RESNODE(i1)) cycle
+            ng = ng + 1
+            BGHOST(ng) = i1
+         end do
+         allocate (BSENT(2*np2), BRVAL(N, MAXC), BRCOL(N, MAXC), BSFULL(N), BSLOC(N))
+         BRVAL = 0.d0
+         BRCOL = 0.d0
+         do i1 = 1, N
+            BSLOC(i1) = i1
+            BSFULL(i1) = abs(NODES_LG(i1))
+         end do
+         call SORT_FULL(N)
+         call PAIR_LISTS()
+#endif
+      end subroutine INIT
+
+#ifdef CMPI
+      !...the nodes of the pairs, the only ones where the values the blocks
+      !   exchange (UPDATER_SUBSET) differ from the ones the ghost nodes have;
+      !   the ghost nodes whose rows GHOST_ROWS takes are then these nodes only
+      subroutine PAIR_LISTS()
+         use MESSENGER, only: MSG_SUBSET_SETUP
+         use BOUNDARIES, only: NBV
+         real(8), allocatable :: mk(:)
+         integer :: p1, i1, ng
+         allocate (mk(N))
+         mk = 0.d0
+         do p1 = 1, NPAIR
+            mk(NBV(PA(p1))) = 1.d0
+            mk(NBV(PB(p1))) = 1.d0
+         end do
+         call MSG_SUBSET_SETUP(mk, 2*MAXC)
+         if (NPERSEG > 0) return
+         ng = 0
+         do i1 = 1, size(BGHOST)
+            if (mk(BGHOST(i1)) < 0.5d0) cycle
+            ng = ng + 1
+            BGHOST(ng) = BGHOST(i1)
+         end do
+         BGHOST = BGHOST(1:ng)
+      end subroutine PAIR_LISTS
+#endif
+
+      logical function PAIR_USED(P1)
+         integer, intent(IN) :: P1
+         PAIR_USED = .false.
+         if (.not. LACTIVE(P1)) return
+         PAIR_USED = LBLOCK(P1) > 0.d0
+         !...a periodic slave node's row (IBTYPE 94) is cut off from the rest, so
+         !   its pair needs no block
+         if (NPERSEG > 0 .and. PAIR_USED) then
+            if (PERBC_IDN_MAP(LRA(P1)) /= LRA(P1) .or. PERBC_IDN_MAP(LRB(P1)) /= LRB(P1)) PAIR_USED = .false.
+         end if
+      end function PAIR_USED
+
+      subroutine ADD_NODE(J1)
+         integer, intent(IN) :: J1
+         if (BROOT(J1) > 0) return
+         BROOT(J1) = J1
+         nlist = nlist + 1
+         BLIST(nlist) = J1
+      end subroutine ADD_NODE
+
+      recursive integer function BFIND(J1) result(R1)
+         integer, intent(IN) :: J1
+         R1 = J1
+         if (BROOT(J1) /= J1) then
+            R1 = BFIND(BROOT(J1))
+            BROOT(J1) = R1
+         end if
+      end function BFIND
+
+      logical function OWNED(I1)
+         integer, intent(IN) :: I1
+#ifdef CMPI
+         OWNED = RESNODE(I1)
+#else
+         OWNED = I1 > 0
+#endif
+      end function OWNED
+
+      !...A^-1/2 of a symmetric positive definite matrix, by Jacobi rotations
+      subroutine INVERSE_ROOT(A1, n2)
+         integer, intent(IN) :: n2
+         real(8), intent(INOUT) :: A1(n2, n2)
+         real(8) :: V(n2, n2), W1(n2), t, cs, sn, th, x1, x2, off
+         integer :: i1, j1, k1, it
+         V = 0.d0
+         do i1 = 1, n2
+            V(i1, i1) = 1.d0
+         end do
+         do it = 1, 60
+            off = 0.d0
+            do i1 = 1, n2 - 1
+               do j1 = i1 + 1, n2
+                  off = max(off, abs(A1(i1, j1)))
+               end do
+            end do
+            if (off <= 1.d-15) exit
+            do i1 = 1, n2 - 1
+               do j1 = i1 + 1, n2
+                  if (abs(A1(i1, j1)) <= 1.d-16) cycle
+                  th = 0.5d0*(A1(j1, j1) - A1(i1, i1))/A1(i1, j1)
+                  t = sign(1.d0, th)/(abs(th) + sqrt(1.d0 + th*th))
+                  cs = 1.d0/sqrt(1.d0 + t*t)
+                  sn = t*cs
+                  do k1 = 1, n2
+                     x1 = A1(k1, i1)
+                     x2 = A1(k1, j1)
+                     A1(k1, i1) = cs*x1 - sn*x2
+                     A1(k1, j1) = sn*x1 + cs*x2
+                  end do
+                  do k1 = 1, n2
+                     x1 = A1(i1, k1)
+                     x2 = A1(j1, k1)
+                     A1(i1, k1) = cs*x1 - sn*x2
+                     A1(j1, k1) = sn*x1 + cs*x2
+                  end do
+                  do k1 = 1, n2
+                     x1 = V(k1, i1)
+                     x2 = V(k1, j1)
+                     V(k1, i1) = cs*x1 - sn*x2
+                     V(k1, j1) = sn*x1 + cs*x2
+                  end do
+               end do
+            end do
+         end do
+         do i1 = 1, n2
+            W1(i1) = 1.d0/sqrt(A1(i1, i1))
+         end do
+         do i1 = 1, n2
+            do j1 = 1, n2
+               A1(i1, j1) = 0.d0
+               do k1 = 1, n2
+                  A1(i1, j1) = A1(i1, j1) + V(i1, k1)*W1(k1)*V(j1, k1)
+               end do
+            end do
+         end do
+      end subroutine INVERSE_ROOT
+
+#ifdef CMPI
+      !...send the resident members' rows, take the ghost nodes' rows, and check
+      !   that the subdomains agree on the components (BMODE)
+      subroutine GHOST_ROWS()
+         integer :: i1, c1, j1, k1, m1, n2, l, nrow
+         logical :: held
+         do k1 = 1, NBSENT
+            BRVAL(BSENT(k1), :) = 0.d0
+            BRCOL(BSENT(k1), :) = 0.d0
+         end do
+         NBSENT = 0
+         do c1 = 1, NCOMP
+            n2 = BPTR(c1 + 1) - BPTR(c1)
+            if (n2 > MAXC) BMODE = 1
+            if (n2 > MAXC) cycle
+            do k1 = 1, n2
+               i1 = BNODE(BPTR(c1) + k1)
+               if (.not. OWNED(i1)) cycle
+               NBSENT = NBSENT + 1
+               BSENT(NBSENT) = i1
+               do j1 = 1, n2
+                  BRVAL(i1, j1) = BMAT(BMPTR(c1) + (k1 - 1)*n2 + j1)
+                  BRCOL(i1, j1) = dble(abs(NODES_LG(BNODE(BPTR(c1) + j1))))
+               end do
+            end do
+         end do
+         call UPDATER_SUBSET(N, BRVAL, MAXC, BRCOL, MAXC)
+         NGROW = 0
+         BGPTR(1) = 0
+         do k1 = 1, size(BGHOST)
+            i1 = BGHOST(k1)
+            nrow = BGPTR(NGROW + 1)
+            held = .true.
+            do j1 = 1, MAXC
+               if (BRCOL(i1, j1) < 0.5d0) exit
+               l = LOCAL_NODE(nint(BRCOL(i1, j1)))
+               if (l == 0) then
+                  held = .false.
+                  exit
+               end if
+               nrow = nrow + 1
+               BGIDX(nrow) = l
+               BGVAL(nrow) = BRVAL(i1, j1)
+            end do
+            if (.not. held) BMODE = max(BMODE, 1)
+            if (.not. held .or. nrow == BGPTR(NGROW + 1)) cycle
+            NGROW = NGROW + 1
+            BGNODE(NGROW) = i1
+            BGPTR(NGROW + 1) = nrow
+         end do
+         !...the ghost members of the local components must have the owner's rows
+         do c1 = 1, NCOMP
+            n2 = BPTR(c1 + 1) - BPTR(c1)
+            do k1 = 1, n2
+               i1 = BNODE(BPTR(c1) + k1)
+               if (OWNED(i1)) cycle
+               if (n2 > MAXC) then
+                  BMODE = 2
+                  cycle
+               end if
+               do j1 = 1, n2
+                  l = 0
+                  do m1 = 1, MAXC
+                     if (nint(BRCOL(i1, m1)) == abs(NODES_LG(BNODE(BPTR(c1) + j1)))) l = m1
+                  end do
+                  if (l == 0) then
+                     BMODE = 2
+                  else if (abs(BRVAL(i1, l) - BMAT(BMPTR(c1) + (k1 - 1)*n2 + j1)) > 1.d-8*abs(BRVAL(i1, l))) then
+                     BMODE = 2
+                  end if
+               end do
+               if (n2 < MAXC) then
+                  if (BRCOL(i1, n2 + 1) > 0.5d0) BMODE = 2
+               end if
+            end do
+         end do
+         BMODE = msg_imax(BMODE)
+         if (BMODE < 2) return
+         !...leave the components across subdomains out
+         do c1 = 1, NCOMP
+            n2 = BPTR(c1 + 1) - BPTR(c1)
+            held = .true.
+            do k1 = 1, n2
+               if (.not. OWNED(BNODE(BPTR(c1) + k1))) held = .false.
+            end do
+            if (held) cycle
+            BMAT(BMPTR(c1) + 1:BMPTR(c1 + 1)) = 0.d0
+            BC(BMPTR(c1) + 1:BMPTR(c1 + 1)) = 0.d0
+            do k1 = 1, n2
+               BMAT(BMPTR(c1) + (k1 - 1)*n2 + k1) = 1.d0
+               BC(BMPTR(c1) + (k1 - 1)*n2 + k1) = 1.d0
+            end do
+         end do
+      end subroutine GHOST_ROWS
+
+      !...subdomain node of a full-domain node, 0 if not held
+      integer function LOCAL_NODE(IFULL)
+         integer, intent(IN) :: IFULL
+         integer :: lo, hi, mid
+         LOCAL_NODE = 0
+         lo = 1
+         hi = N
+         do while (lo <= hi)
+            mid = (lo + hi)/2
+            if (BSFULL(mid) == IFULL) then
+               LOCAL_NODE = BSLOC(mid)
+               return
+            else if (BSFULL(mid) < IFULL) then
+               lo = mid + 1
+            else
+               hi = mid - 1
+            end if
+         end do
+      end function LOCAL_NODE
+
+      subroutine SORT_FULL(N2)
+         integer, intent(IN) :: N2
+         integer :: k1, m1, t1, t2
+         do k1 = N2/2, 1, -1
+            call SIFT(k1, N2)
+         end do
+         do m1 = N2, 2, -1
+            t1 = BSFULL(1)
+            t2 = BSLOC(1)
+            BSFULL(1) = BSFULL(m1)
+            BSLOC(1) = BSLOC(m1)
+            BSFULL(m1) = t1
+            BSLOC(m1) = t2
+            call SIFT(1, m1 - 1)
+         end do
+      end subroutine SORT_FULL
+
+      subroutine SIFT(ilo, ihi)
+         integer, intent(IN) :: ilo, ihi
+         integer :: a1, b1, t1, t2
+         t1 = BSFULL(ilo)
+         t2 = BSLOC(ilo)
+         a1 = ilo
+         b1 = 2*a1
+         do while (b1 <= ihi)
+            if (b1 < ihi) then
+               if (BSFULL(b1 + 1) > BSFULL(b1)) b1 = b1 + 1
+            end if
+            if (BSFULL(b1) <= t1) exit
+            BSFULL(a1) = BSFULL(b1)
+            BSLOC(a1) = BSLOC(b1)
+            a1 = b1
+            b1 = 2*a1
+         end do
+         BSFULL(a1) = t1
+         BSLOC(a1) = t2
+      end subroutine SIFT
+#endif
+
+   end subroutine WEIR_BLOCKS_SETUP
+
+#ifdef CMPI
+   !-----------------------------------------------------------------------
+   !  WEIR_BLOCKS_EXCHANGE: ghost nodes take their owners' values, as JCG's
+   !  exchange (with periodic boundaries, a ghost slave node its primary's)
+   !-----------------------------------------------------------------------
+   subroutine WEIR_BLOCKS_EXCHANGE(V1, V2, V3, NMSG)
+      use MESSENGER, only: UPDATER, UPDATER_W_PERBC
+      use GLOBAL, only: NPERSEG
+      implicit none
+      integer, intent(IN) :: NMSG
+      real(8), intent(INOUT) :: V1(:), V2(:), V3(:)
+      if (NPERSEG > 0) then
+         call UPDATER_W_PERBC(V1, V2, V3, NMSG)
+      else
+         call UPDATER(V1, V2, V3, NMSG)
+      end if
+   end subroutine WEIR_BLOCKS_EXCHANGE
+#endif
+
+   !-----------------------------------------------------------------------
+   !  WEIR_BLOCKS_HALF: Y = C^-1/2 X; X valid at ghost nodes too
+   !-----------------------------------------------------------------------
+   subroutine WEIR_BLOCKS_HALF(N, X, Y)
+#ifdef CMPI
+      use MESSENGER, only: RESNODE, UPDATER_SUBSET
+#endif
+      implicit none
+      integer, intent(IN) :: N
+      real(8), intent(IN) :: X(:)
+      real(8), intent(INOUT) :: Y(:)
+      integer :: c, ii, jj, n1
+      real(8) :: t
+      real(8) :: dum(1)
+      dum = 0.d0
+      Y(1:N) = X(1:N)
+      do c = 1, NCOMP
+         n1 = BPTR(c + 1) - BPTR(c)
+         do ii = 1, n1
+#ifdef CMPI
+            if (.not. RESNODE(BNODE(BPTR(c) + ii))) cycle
+#endif
+            t = 0.d0
+            do jj = 1, n1
+               t = t + BMAT(BMPTR(c) + (ii - 1)*n1 + jj)*X(BNODE(BPTR(c) + jj))
+            end do
+            Y(BNODE(BPTR(c) + ii)) = t
+         end do
+      end do
+#ifdef CMPI
+      if (BMODE > 0) then
+         call UPDATER_SUBSET(N, Y, 1, dum, 0)
+      else
+         do c = 1, NGROW
+            t = 0.d0
+            do jj = BGPTR(c) + 1, BGPTR(c + 1)
+               t = t + BGVAL(jj)*X(BGIDX(jj))
+            end do
+            Y(BGNODE(c)) = t
+         end do
+      end if
+#endif
+   end subroutine WEIR_BLOCKS_HALF
+
+   !-----------------------------------------------------------------------
+   !  WEIR_BLOCKS_LOCAL: C^-1/2 is right at ghost nodes without an exchange
+   !  (BMODE 0), so that JCG's iteration can use WEIR_BLOCKS_BT and _DT
+   !-----------------------------------------------------------------------
+   logical function WEIR_BLOCKS_LOCAL()
+      WEIR_BLOCKS_LOCAL = BMODE == 0
+   end function WEIR_BLOCKS_LOCAL
+
+   !-----------------------------------------------------------------------
+   !  WEIR_BLOCKS_BT, WEIR_BLOCKS_DT: JCG's DTWD = D - C^-1/2 A C^-1/2 D,
+   !  with work only at the blocks' nodes, where C^-1/2 is not the identity:
+   !     call WEIR_BLOCKS_BT(D)           D = C^-1/2 D (saving D)
+   !     DTWD = D - A D                   JCG's product, then its exchange
+   !     call WEIR_BLOCKS_DT(D, DTWD)     D back, and DTWD at the blocks' nodes
+   !  Elsewhere C^-1/2 A C^-1/2 D and A C^-1/2 D are the same. BMODE 0 only.
+   !-----------------------------------------------------------------------
+   subroutine WEIR_BLOCKS_BT(D)
+#ifdef CMPI
+      use MESSENGER, only: RESNODE
+#endif
+      implicit none
+      real(8), intent(INOUT) :: D(:)
+      integer :: c, ii, i1
+      do c = 1, NCOMP
+         do ii = 1, BPTR(c + 1) - BPTR(c)
+            i1 = BNODE(BPTR(c) + ii)
+#ifdef CMPI
+            if (.not. RESNODE(i1)) cycle
+#endif
+            BWT(i1) = BLOCK_ROW(c, ii, D)
+         end do
+      end do
+#ifdef CMPI
+      do c = 1, NGROW
+         BWT(BGNODE(c)) = GHOST_ROW(c, D)
+      end do
+#endif
+      do c = 1, NCOMP
+         do ii = 1, BPTR(c + 1) - BPTR(c)
+            i1 = BNODE(BPTR(c) + ii)
+#ifdef CMPI
+            if (.not. RESNODE(i1)) cycle
+#endif
+            BWS(i1) = D(i1)
+            D(i1) = BWT(i1)
+         end do
+      end do
+#ifdef CMPI
+      do c = 1, NGROW
+         i1 = BGNODE(c)
+         BWS(i1) = D(i1)
+         D(i1) = BWT(i1)
+      end do
+#endif
+   end subroutine WEIR_BLOCKS_BT
+
+   subroutine WEIR_BLOCKS_DT(D, DTWD)
+#ifdef CMPI
+      use MESSENGER, only: RESNODE
+#endif
+      implicit none
+      real(8), intent(INOUT) :: D(:), DTWD(:)
+      integer :: c, ii, i1
+      !...A C^-1/2 D at the rows' columns (all of them nodes of the blocks)
+      do c = 1, NCOMP
+         do ii = BPTR(c) + 1, BPTR(c + 1)
+            BWY(BNODE(ii)) = D(BNODE(ii)) - DTWD(BNODE(ii))
+         end do
+      end do
+#ifdef CMPI
+      do c = 1, NGROW
+         i1 = BGNODE(c)
+         BWY(i1) = D(i1) - DTWD(i1)
+         do ii = BGPTR(c) + 1, BGPTR(c + 1)
+            BWY(BGIDX(ii)) = D(BGIDX(ii)) - DTWD(BGIDX(ii))
+         end do
+      end do
+#endif
+      do c = 1, NCOMP
+         do ii = 1, BPTR(c + 1) - BPTR(c)
+            i1 = BNODE(BPTR(c) + ii)
+#ifdef CMPI
+            if (.not. RESNODE(i1)) cycle
+#endif
+            D(i1) = BWS(i1)
+            DTWD(i1) = D(i1) - BLOCK_ROW(c, ii, BWY)
+         end do
+      end do
+#ifdef CMPI
+      do c = 1, NGROW
+         i1 = BGNODE(c)
+         D(i1) = BWS(i1)
+         DTWD(i1) = D(i1) - GHOST_ROW(c, BWY)
+      end do
+#endif
+   end subroutine WEIR_BLOCKS_DT
+
+   !...row ii of component c of C^-1/2, times X
+   real(8) function BLOCK_ROW(C, II, X)
+      integer, intent(IN) :: C, II
+      real(8), intent(IN) :: X(:)
+      integer :: jj, n1
+      n1 = BPTR(C + 1) - BPTR(C)
+      BLOCK_ROW = 0.d0
+      do jj = 1, n1
+         BLOCK_ROW = BLOCK_ROW + BMAT(BMPTR(C) + (II - 1)*n1 + jj)*X(BNODE(BPTR(C) + jj))
+      end do
+   end function BLOCK_ROW
+
+#ifdef CMPI
+   !...ghost row c of C^-1/2, times X
+   real(8) function GHOST_ROW(C, X)
+      integer, intent(IN) :: C
+      real(8), intent(IN) :: X(:)
+      integer :: jj
+      GHOST_ROW = 0.d0
+      do jj = BGPTR(C) + 1, BGPTR(C + 1)
+         GHOST_ROW = GHOST_ROW + BGVAL(jj)*X(BGIDX(jj))
+      end do
+   end function GHOST_ROW
+#endif
+
+   !-----------------------------------------------------------------------
+   !  WEIR_BLOCKS_FULL: Y = C X at the resident nodes
+   !-----------------------------------------------------------------------
+   subroutine WEIR_BLOCKS_FULL(N, X, Y)
+      implicit none
+      integer, intent(IN) :: N
+      real(8), intent(IN) :: X(:)
+      real(8), intent(INOUT) :: Y(:)
+      integer :: c, ii, jj, n1
+      real(8) :: t
+      Y(1:N) = X(1:N)
+      do c = 1, NCOMP
+         n1 = BPTR(c + 1) - BPTR(c)
+         do ii = 1, n1
+            t = 0.d0
+            do jj = 1, n1
+               t = t + BC(BMPTR(c) + (ii - 1)*n1 + jj)*X(BNODE(BPTR(c) + jj))
+            end do
+            Y(BNODE(BPTR(c) + ii)) = t
+         end do
+      end do
+   end subroutine WEIR_BLOCKS_FULL
 
 end module WEIR_PAIRS
